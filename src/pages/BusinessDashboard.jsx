@@ -51,7 +51,10 @@ export default function BusinessDashboard() {
           <h1 style={{ fontSize: '24px' }}>Business Portal</h1>
           <p className="results-meta">Manage your listing on Dotch</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <Link to="/subscription" className="btn btn-primary">
+            ⚡ Upgrade / Plans
+          </Link>
           <Link to="/business/setup" className="btn btn-outline">
             ✏️ Edit Listing
           </Link>
@@ -59,6 +62,34 @@ export default function BusinessDashboard() {
             {deleting ? 'Deleting…' : 'Delete'}
           </button>
         </div>
+      </div>
+
+      {/* Subscription Tier Banner */}
+      <div className="subscription-dashboard-card">
+        <div className="sub-dash-left">
+          <div className="sub-dash-badge">
+            {business.subscriptionTier === 'growth_vip'
+              ? '👑 VIP Growth Partner'
+              : business.subscriptionTier === 'pro_monthly'
+              ? '⚡ Pro Verified Vendor'
+              : '🌱 Free Starter Tier'}
+          </div>
+          <h2 style={{ fontSize: '18px', margin: '6px 0 4px' }}>
+            {business.subscriptionTier === 'growth_vip'
+              ? 'Maximum Search Priority Active'
+              : business.subscriptionTier === 'pro_monthly'
+              ? '3x Local Search Boost Active'
+              : 'Standard Search Visibility'}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+            {business.subscriptionTier
+              ? `Plan expires / renews in ~30 days. WhatsApp direct link active.`
+              : `Upgrade to Pro Vendor or VIP to get priority AI recommendations and 3x more customer inquiries.`}
+          </p>
+        </div>
+        <Link to="/subscription" className="btn btn-outline btn-sm">
+          {business.subscriptionTier ? 'Manage Subscription →' : '⚡ Upgrade to Pro (₦5k/mo) →'}
+        </Link>
       </div>
 
       {/* Analytics Preview Cards */}

@@ -10,6 +10,7 @@ import BusinessDashboard from './pages/BusinessDashboard'
 import BusinessSetup from './pages/BusinessSetup'
 import BusinessDetail from './pages/BusinessDetail'
 import Account from './pages/Account'
+import Subscription from './pages/Subscription'
 import SetupNotice from './components/SetupNotice'
 
 function Protected({ children }) {
@@ -34,6 +35,7 @@ export default function App() {
 
           <Route path="/dashboard" element={<FinderDashboard />} />
           <Route path="/account" element={<Account />} />
+          <Route path="/subscription" element={<Subscription />} />
 
           <Route
             path="/business"

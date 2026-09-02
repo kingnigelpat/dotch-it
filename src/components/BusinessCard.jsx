@@ -55,7 +55,13 @@ export default function BusinessCard({ business }) {
         <div className="result-header-text">
           <div className="result-title-row">
             <h3 className="result-title">{business.name}</h3>
-            {business.verified && <span className="badge-verified">✓ Verified</span>}
+            {business.subscriptionTier === 'growth_vip' ? (
+              <span className="badge-vip" title="VIP Featured Growth Partner">👑 VIP Partner</span>
+            ) : business.subscriptionTier === 'pro_monthly' ? (
+              <span className="badge-pro" title="Pro Verified Seller">⚡ Pro Seller</span>
+            ) : business.verified ? (
+              <span className="badge-verified">✓ Verified</span>
+            ) : null}
           </div>
           <span className="result-category">{business.category || 'Local Business'}</span>
           {business.price && (

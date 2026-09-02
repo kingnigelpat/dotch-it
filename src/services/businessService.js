@@ -470,6 +470,14 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
     }
   }
 
+  // Sort by subscription tier first (growth_vip > pro_monthly > starter)
+  const tierWeight = { growth_vip: 3, pro_monthly: 2, starter: 1 }
+  filtered.sort((a, b) => {
+    const weightA = tierWeight[a.subscriptionTier] || 0
+    const weightB = tierWeight[b.subscriptionTier] || 0
+    return weightB - weightA
+  })
+
   return filtered.slice(0, max)
 }
 
@@ -485,6 +493,38 @@ export async function getAllBusinesses(max = 50) {
 
   const existingIds = new Set(dbResults.map((b) => b.id))
   const combined = [...dbResults, ...DEMO_BUSINESSES.filter((d) => !existingIds.has(d.id))]
+  
+  // Sort priority tiers first
+  const tierWeight = { growth_vip: 3, pro_monthly: 2, starter: 1 }
+  combined.sort((a, b) => {
+    const weightA = tierWeight[a.subscriptionTier] || 0
+    const weightB = tierWeight[b.subscriptionTier] || 0
+    return weightB - weightA
+  })
+
   return combined.slice(0, max)
+}
+
+export async function updateBusinessSubscription(businessId, { planId, reference, amount }) {
+  const expiresAt = new Date()
+  expiresAt.setDate(expiresAt.getDate() + 30) // 30 days monthly cycle
+
+  const updateData = {
+    subscriptionTier: planId,
+    subscriptionStatus: 'active',
+    subscriptionReference: reference,
+    subscriptionAmount: amount,
+    subscribedAt: new Date().toISOString(),
+    subscriptionExpiresAt: expiresAt.toISOString(),
+  }
+
+  try {
+    const docRef = doc(db, BUSINESS_COLLECTION, businessId)
+    await updateDoc(docRef, updateData)
+  } catch (err) {
+    console.warn('Could not update Firestore subscription doc, fallback local cache:', err)
+  }
+
+  return updateData
 }
 
