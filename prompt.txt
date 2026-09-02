@@ -1,0 +1,611 @@
+# REDESIGN THE SEARCH — SEARCH ENGINE EXPERIENCE
+
+I want to completely redesign the **UI/UX** of The Search.
+
+The current application is functional, but the interface feels too plain and generic. It currently looks more like a basic business directory than a serious search product.
+
+**Do NOT rebuild the backend or change working functionality unnecessarily.**
+
+This task is primarily a **visual and UX transformation**.
+
+The goal is for someone to open The Search and immediately understand:
+
+> **This is a search engine for finding businesses, products and services around you.**
+
+The experience should feel inspired by the simplicity and confidence of Google Search, but it must have its own original identity. Do NOT copy Google's branding, exact layout, colors, logo, or UI.
+
+---
+
+# 1. CORE DESIGN IDEA
+
+The Search should be built around one central interaction:
+
+## "What are you looking for?"
+
+The search bar is the most important element on the homepage.
+
+The homepage should feel almost like a modern search engine:
+
+* Logo/wordmark
+* Huge central search bar
+* Short supporting statement
+* Search button
+* Optional location indicator
+* Popular/trending searches underneath
+* Minimal distractions
+
+Do not fill the homepage with unnecessary cards, feature grids, statistics, or excessive text.
+
+The search itself is the hero.
+
+---
+
+# 2. HERO EXPERIENCE
+
+Create a powerful minimalist hero.
+
+Example direction:
+
+THE SEARCH
+
+**Find what you need.
+Find who has it.**
+
+Large search field:
+
+> 🔍  What are you looking for?
+
+Placeholder examples should rotate subtly:
+
+* "Nike shoes around Lagos..."
+* "Best restaurants in Asaba..."
+* "iPhone repair near me..."
+* "Birthday cakes in Lekki..."
+* "Who sells basketball shoes in Warri?"
+
+Under the search field:
+
+**Search businesses, products & services**
+
+Then optional location:
+
+📍 Use my location
+
+The page should have substantial whitespace.
+
+The first screen should feel premium and intentional.
+
+---
+
+# 3. GOOGLE-LIKE SEARCH BAR BEHAVIOR
+
+The search bar should feel like a real search engine.
+
+When inactive:
+
+* Large rounded container
+* Subtle border
+* Very light shadow
+* Search icon
+* Placeholder text
+* Location/action icon where appropriate
+
+When focused:
+
+* Slight visual elevation
+* Clear focus state
+* Search suggestions appear
+
+When the user types:
+
+> "shoe"
+
+show suggestions such as:
+
+**Search for "shoe"**
+
+* 👟 Shoe sellers near me
+* 👟 Shoes in Lagos
+* 👟 Nike shoes
+* 👟 Men's shoes
+* 👟 Women's shoes
+
+Do not hardcode every suggestion.
+
+Use the existing search architecture where possible.
+
+---
+
+# 4. SEARCH SUBMISSION
+
+When the user presses Enter or taps Search:
+
+Transition smoothly into the search results experience.
+
+Do not make the transition feel like navigating to an unrelated page.
+
+The search bar should remain visible at the top of the results page.
+
+The result page should feel like:
+
+**The Search engine**
+
+rather than:
+
+**A business dashboard.**
+
+---
+
+# 5. RESULTS PAGE
+
+Create a clean search-results layout.
+
+Top:
+
+THE SEARCH logo
+
+Large search bar containing the user's query.
+
+Example:
+
+> 🔍 Nike shoes around Robinson, Lagos
+
+Below:
+
+**Results near Robinson, Lagos**
+
+Small metadata:
+
+> 8 businesses found
+
+Then the results.
+
+---
+
+# 6. RESULT CARD DESIGN
+
+Make business results visually rich but clean.
+
+Each result should have:
+
+* Business/product image
+* Business name
+* Verified badge if verified
+* Matching product/service
+* Price
+* Short description
+* Distance
+* Area/location
+* Open/closed state if available
+* Rating if available
+* Contact button
+* View business button
+
+Example visual hierarchy:
+
+**KICKS HUB ✓**
+
+Nike Air Force 1
+
+₦85,000
+
+📍 0.8 km · Robinson, Lagos
+
+⭐ 4.8
+
+[ WhatsApp ] [ View ]
+
+The matching product should be visually emphasized because the user searched for a product.
+
+---
+
+# 7. NO RESULTS EXPERIENCE
+
+Do NOT show a boring:
+
+> No results found.
+
+Instead create an intelligent empty state.
+
+Example:
+
+**Nothing exact around Robinson.**
+
+We couldn't find a seller matching your search in Robinson.
+
+Then:
+
+**Try nearby**
+
+Ikeja · 4.2 km
+Yaba · 7.1 km
+Surulere · 9.4 km
+
+[Search nearby areas]
+
+Make the experience feel helpful rather than broken.
+
+---
+
+# 8. LOCATION EXPERIENCE
+
+Location should be a first-class part of the UI.
+
+Users should understand:
+
+**What**
+
+*
+
+**Where**
+
+Example:
+
+> 👟 Nike shoes
+> 📍 Robinson, Lagos
+
+The UI should visually separate the product/search intent from the location.
+
+Allow:
+
+**Use my location**
+
+and
+
+**Change location**
+
+without forcing location permissions.
+
+---
+
+# 9. SEARCH INTENT VISUALIZATION
+
+Since The Search uses AI, subtly show what it understood.
+
+After searching:
+
+> **Looking for**
+>
+> 👟 Nike shoes
+>
+> 📍 Robinson, Lagos
+
+This should be subtle and elegant.
+
+Do not expose technical JSON or AI terminology.
+
+The user should feel:
+
+> "The Search understood me."
+
+---
+
+# 10. LANDING PAGE CONTENT
+
+Remove unnecessary generic marketing sections from the first viewport.
+
+The landing page should prioritize:
+
+1. Logo
+2. Hero statement
+3. Search bar
+4. Location
+5. Popular searches
+6. Small explanation of what The Search does
+
+Example:
+
+### Popular searches
+
+Shoes · Restaurants · Phones · Barbers · Hotels · Cakes · Mechanics
+
+These should be clickable and trigger searches.
+
+---
+
+# 11. VISUAL DESIGN
+
+Create a completely more polished visual system.
+
+Direction:
+
+* Premium
+* Minimal
+* Modern
+* Intelligent
+* Global
+* Confident
+* Clean
+* Slightly futuristic
+
+Avoid:
+
+* Generic SaaS gradients
+* Excessive purple gradients
+* Too many cards
+* Excessive rounded containers
+* Huge feature grids
+* Cheap-looking shadows
+* Too many icons
+* Clutter
+* Dashboard-heavy aesthetics
+
+Use whitespace intentionally.
+
+Typography should feel strong and modern.
+
+Use large headings with clear hierarchy.
+
+---
+
+# 12. COLOR SYSTEM
+
+Create a consistent brand color system for The Search.
+
+Do not blindly copy Google's colors.
+
+The brand should have:
+
+* Strong primary text
+* Neutral background
+* One distinctive brand accent
+* Subtle borders
+* Very restrained secondary colors
+
+The interface should still look excellent in both:
+
+**Light mode**
+
+and
+
+**Dark mode**
+
+if the existing application supports them.
+
+---
+
+# 13. MICRO-INTERACTIONS
+
+Add subtle animations.
+
+Examples:
+
+* Search bar focus animation
+* Search suggestions appearing smoothly
+* Results loading
+* Search transition
+* Cards appearing progressively
+* Hover states
+* Button feedback
+* Location detection animation
+
+Keep animations fast and subtle.
+
+Do not make the application feel like a flashy animation demo.
+
+---
+
+# 14. MOBILE EXPERIENCE
+
+The mobile version is extremely important.
+
+On mobile:
+
+The Search should basically feel like:
+
+**Open app → search immediately.**
+
+The search bar should occupy a large portion of the first screen.
+
+Results should be easy to scan.
+
+WhatsApp/contact actions should be easy to reach with one hand.
+
+Avoid desktop-style layouts squeezed onto mobile.
+
+---
+
+# 15. BUSINESS PAGE
+
+Redesign the business detail page to match the new identity.
+
+It should feel like a premium business profile.
+
+Top:
+
+Business image/logo
+
+**Business Name ✓**
+
+Category
+
+📍 Location
+
+⭐ Rating
+
+Open/closed
+
+Then:
+
+About
+
+Products/services
+
+Gallery
+
+Contact
+
+WhatsApp
+
+Website
+
+Location
+
+The page should feel trustworthy enough that a user would actually contact the business.
+
+---
+
+# 16. FINDER DASHBOARD
+
+The Finder dashboard should stop looking like a generic dashboard.
+
+It should essentially become the **Search experience**.
+
+Instead of:
+
+Dashboard
+
+Sidebar
+
+Cards
+
+Stats
+
+etc.
+
+Make the primary experience:
+
+**Search**
+
+with:
+
+* Search bar
+* Recent searches
+* Popular searches
+* Nearby businesses
+* Saved businesses if functionality exists
+
+The user should not feel like they are operating software.
+
+They should feel like they are **using a search engine.**
+
+---
+
+# 17. BUSINESS DASHBOARD
+
+Keep the business dashboard functional, but redesign it to fit the new visual identity.
+
+Business owners should see:
+
+**Your Business**
+
+Listing status
+
+Views
+
+Search appearances
+
+Contacts
+
+Products
+
+Profile completeness
+
+Edit profile
+
+Eventually this can become the foundation for seller analytics.
+
+---
+
+# 18. NAVIGATION
+
+Keep navigation extremely simple.
+
+Possible structure:
+
+**The Search**
+
+Search
+
+Businesses
+
+For Businesses
+
+Profile
+
+Do not create unnecessary navigation items.
+
+The Search should always remain one click away.
+
+---
+
+# 19. RESPONSIVE QUALITY
+
+Test at:
+
+* 375px
+* 390px
+* 430px
+* 768px
+* 1024px
+* 1440px
+* 1920px
+
+Make sure the design doesn't simply stretch.
+
+The desktop version should have controlled maximum widths.
+
+The mobile version should feel intentionally designed.
+
+---
+
+# 20. IMPORTANT IMPLEMENTATION RULES
+
+Before modifying anything:
+
+1. Inspect the existing components.
+2. Reuse working Firebase/search/auth logic.
+3. Do not break existing routes.
+4. Do not replace working services unnecessarily.
+5. Keep UI components modular.
+6. Create reusable components for:
+
+   * SearchBar
+   * SearchSuggestions
+   * ResultCard
+   * LocationSelector
+   * SearchIntent
+   * EmptyState
+   * BusinessCard
+7. Keep the existing functionality intact.
+8. Remove visual clutter rather than adding more components.
+9. Do not use placeholder data where real data already exists.
+10. Do not fake ratings, distance, verification, prices, or business information.
+
+---
+
+# 21. MOST IMPORTANT REQUIREMENT
+
+When finished, opening The Search should immediately feel different from the current version.
+
+The first reaction should be:
+
+> **"This looks like a real search product."**
+
+Not:
+
+> "This is a Firebase business directory."
+
+The search bar should be the visual centerpiece.
+
+The product should feel like a **search engine for local commerce**.
+
+Prioritize the first 10 seconds of the user's experience over adding more features.
+
+After implementation:
+
+* Run the app.
+* Test search.
+* Test login.
+* Test business pages.
+* Test mobile.
+* Check console errors.
+* Make sure existing functionality still works.
+
+Then provide a short report describing:
+
+1. What UI changed
+2. What components were created
+3. What existing functionality was preserved
+4. Any remaining visual problems
+5. What should be improved next

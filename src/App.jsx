@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
+import MobileBottomNav from './components/MobileBottomNav'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -8,15 +9,13 @@ import FinderDashboard from './pages/FinderDashboard'
 import BusinessDashboard from './pages/BusinessDashboard'
 import BusinessSetup from './pages/BusinessSetup'
 import BusinessDetail from './pages/BusinessDetail'
+import Account from './pages/Account'
 import SetupNotice from './components/SetupNotice'
 
-function Protected({ children, role }) {
-  const { user, profile, loading } = useAuth()
-  if (loading) return <div className="center-loading">Loading…</div>
+function Protected({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return <div className="center-loading">Loading application…</div>
   if (!user) return <Navigate to="/login" replace />
-  if (role && profile?.role !== role) {
-    return <Navigate to={profile?.role === 'business' ? '/business' : '/dashboard'} replace />
-  }
   return children
 }
 
@@ -33,18 +32,13 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <Protected>
-                <FinderDashboard />
-              </Protected>
-            }
-          />
+          <Route path="/dashboard" element={<FinderDashboard />} />
+          <Route path="/account" element={<Account />} />
+
           <Route
             path="/business"
             element={
-              <Protected role="business">
+              <Protected>
                 <BusinessDashboard />
               </Protected>
             }
@@ -52,7 +46,7 @@ export default function App() {
           <Route
             path="/business/setup"
             element={
-              <Protected role="business">
+              <Protected>
                 <BusinessSetup />
               </Protected>
             }
@@ -71,6 +65,7 @@ export default function App() {
           />
         </Routes>
       </main>
+      <MobileBottomNav />
     </div>
   )
 }

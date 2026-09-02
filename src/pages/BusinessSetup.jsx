@@ -11,15 +11,22 @@ import { getSuggestedCategories } from '../services/openrouterService'
 
 function ImagePicker({ label, file, url, onChange }) {
   return (
-    <div className="field">
+    <div className="form-group">
       <label>{label}</label>
       <input
         type="file"
         accept="image/*"
+        className="form-control"
         onChange={(e) => onChange(e.target.files[0])}
       />
-      {url && <img src={url} alt={label} className="preview" />}
-      {!url && file && <p className="muted">Selected: {file.name}</p>}
+      {url && (
+        <img
+          src={url}
+          alt={label}
+          style={{ width: '80px', height: '80px', borderRadius: '10px', objectFit: 'cover', marginTop: '8px' }}
+        />
+      )}
+      {!url && file && <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Selected: {file.name}</p>}
     </div>
   )
 }
@@ -32,6 +39,9 @@ export default function BusinessSetup() {
   const [editingId, setEditingId] = useState(null)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
+  const [location, setLocation] = useState('')
+  const [phone, setPhone] = useState('')
+  const [price, setPrice] = useState('')
   const [description, setDescription] = useState('')
   const [logo, setLogo] = useState(null)
   const [logoUrl, setLogoUrl] = useState('')
@@ -49,6 +59,9 @@ export default function BusinessSetup() {
         setEditingId(b.id)
         setName(b.name || '')
         setCategory(b.category || '')
+        setLocation(b.location || b.city || '')
+        setPhone(b.phone || '')
+        setPrice(b.price || '')
         setDescription(b.description || '')
         setLogoUrl(b.logoUrl || '')
         setImg1Url(b.image1Url || '')
@@ -69,8 +82,6 @@ export default function BusinessSetup() {
 
     if (!name.trim()) return setError('Business name is required.')
     if (!logo && !logoUrl) return setError('Please add a business logo.')
-    if (!img1 && !img1Url) return setError('Please add at least the first photo.')
-    if (!img2 && !img2Url) return setError('Please add the second photo.')
 
     setUploading(true)
     setSaving(true)
@@ -83,11 +94,20 @@ export default function BusinessSetup() {
       const data = {
         name: name.trim(),
         category,
+        location: location.trim() || 'Lagos',
+        city: location.trim() || 'Lagos',
+        phone: phone.trim(),
+        price: price.trim(),
         description: description.trim(),
         logoUrl: l || logoUrl,
         image1Url: i1 || img1Url,
         image2Url: i2 || img2Url,
-        keywords: [name.trim().toLowerCase(), category.toLowerCase()].filter(Boolean),
+        verified: true,
+        keywords: [
+          name.trim().toLowerCase(),
+          category.toLowerCase(),
+          location.trim().toLowerCase(),
+        ].filter(Boolean),
       }
 
       if (editingId) {
@@ -98,7 +118,7 @@ export default function BusinessSetup() {
       navigate('/business')
     } catch (err) {
       console.error(err)
-      setError('Could not save. Check your Cloudinary keys and try again.')
+      setError('Could not save. Check Cloudinary settings or try again.')
     } finally {
       setUploading(false)
       setSaving(false)
@@ -106,28 +126,32 @@ export default function BusinessSetup() {
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1>{editingId ? 'Edit your business' : 'Set up your business'}</h1>
-        <p>Your name, logo and two photos are what finders will see.</p>
-      </div>
+    <div className="setup-card">
+      <h1 style={{ fontSize: '24px', marginBottom: '8px' }}>
+        {editingId ? 'Edit business listing' : 'List your business on Dotch'}
+      </h1>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
+        Get discovered by customers searching for your products and services around you.
+      </p>
 
-      <form className="setup-form" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         {error && <div className="alert alert-error">{error}</div>}
 
-        <div className="field">
-          <label>Business name</label>
+        <div className="form-group">
+          <label>Business Name</label>
           <input
+            className="form-control"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Joe's Pizza"
+            placeholder="e.g. Kicks Hub Lagos"
             required
           />
         </div>
 
-        <div className="field">
+        <div className="form-group">
           <label>Category</label>
           <select
+            className="form-control"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             required
@@ -141,28 +165,54 @@ export default function BusinessSetup() {
           </select>
         </div>
 
-        <div className="field">
-          <label>Short description</label>
+        <div className="form-group">
+          <label>City / Location</label>
+          <input
+            className="form-control"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="e.g. Lekki, Lagos or Asaba"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label>WhatsApp / Phone Number</label>
+          <input
+            className="form-control"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="e.g. +2348012345678"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Price Range (Optional)</label>
+          <input
+            className="form-control"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="e.g. ₦10,000 - ₦50,000"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Description & Services Offered</label>
           <textarea
+            className="form-control"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="What do you offer? This helps AI find you."
+            placeholder="Describe what products/services you sell. This helps AI find your store."
             rows={3}
           />
         </div>
 
-        <ImagePicker label="Logo" file={logo} url={logoUrl} onChange={setLogo} />
-        <ImagePicker label="Photo 1 (product or service)" file={img1} url={img1Url} onChange={setImg1} />
-        <ImagePicker label="Photo 2 (product or service)" file={img2} url={img2Url} onChange={setImg2} />
+        <ImagePicker label="Business Logo" file={logo} url={logoUrl} onChange={setLogo} />
+        <ImagePicker label="Product Photo 1" file={img1} url={img1Url} onChange={setImg1} />
+        <ImagePicker label="Product Photo 2" file={img2} url={img2Url} onChange={setImg2} />
 
-        <button className="btn btn-primary btn-block" disabled={uploading || saving}>
-          {uploading
-            ? 'Uploading images…'
-            : saving
-              ? 'Saving…'
-              : editingId
-                ? 'Save changes'
-                : 'Create business'}
+        <button className="btn btn-primary btn-block" disabled={uploading || saving} style={{ marginTop: '16px' }}>
+          {uploading ? 'Uploading images…' : saving ? 'Saving…' : editingId ? 'Save listing' : 'Publish listing'}
         </button>
       </form>
     </div>

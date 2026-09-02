@@ -3,22 +3,23 @@ const model = import.meta.env.VITE_OPENROUTER_MODEL
 
 export const isOpenRouterConfigured = Boolean(apiKey)
 
-const SYSTEM_PROMPT = `You are the search brain of a local business finder app called "Local Search".
-You understand natural-language searches and help find businesses.
+const SYSTEM_PROMPT = `You are the AI Search Engine Brain of "Dotch" (also known as "Just Dotch It"), a fast local business, product, and services discovery search engine.
+Analyze natural language user searches (e.g., "Nike shoes around Lagos", "best pizza near Ikeja", "iPhone repair").
 
 Rules:
-- Always answer with ONLY a single valid JSON object, no markdown, no extra text.
-- The JSON must have exactly this shape:
+- Always reply ONLY with a single JSON object. No markdown formatting.
+- JSON structure:
 {
-  "category": "the best matching category, or empty string if unknown",
-  "keywords": ["2 to 5 short keyword strings a user would type to find this"],
-  "intent": "one short sentence describing what the user wants",
+  "category": "best matching category name from standard list (e.g. Fashion & Clothing, Restaurant, Electronics & Tech, Beauty & Salon, Auto Repair, Food & Drink)",
+  "keywords": ["2 to 5 short keyword strings extracted from user query"],
+  "location": "extracted location or city from query if present, otherwise empty string",
+  "intent": "clean 1-line query summary (e.g. Nike Air Force 1 shoes)",
   "aiSuggestions": [
-    { "name": "suggested business name", "category": "category", "description": "short one-line description", "reason": "why this matches" }
+    { "name": "sample business name", "category": "category", "description": "short 1-line description of product/service", "reason": "why it matches" }
   ]
 }
-- Use your general knowledge to give up to 3 aiSuggestions ("outside" results).
-- If the query is gibberish, return empty strings and an empty aiSuggestions array.`
+- Provide up to 2 realistic local business suggestions in aiSuggestions if applicable.
+- If query is unclear, return empty strings.`
 
 function extractJson(text) {
   const cleaned = text
@@ -40,9 +41,8 @@ function extractJson(text) {
   }
 }
 
-export async function understandSearch(query) {
+export async function understandSearch(query, locationFilter = '') {
   if (!isOpenRouterConfigured) {
-    // Offline fallback: simple keyword splitting so search still works.
     return {
       category: '',
       keywords: query
@@ -50,6 +50,7 @@ export async function understandSearch(query) {
         .split(/[^a-z0-9]+/i)
         .filter((w) => w.length > 2)
         .slice(0, 5),
+      location: locationFilter,
       intent: query,
       aiSuggestions: [],
       usedAI: false,
@@ -67,7 +68,7 @@ export async function understandSearch(query) {
         model,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Search query: "${query}"` },
+          { role: 'user', content: `Query: "${query}". Location context: "${locationFilter}"` },
         ],
         temperature: 0.3,
       }),
@@ -86,6 +87,7 @@ export async function understandSearch(query) {
       keywords: Array.isArray(parsed?.keywords)
         ? parsed.keywords.slice(0, 5)
         : [],
+      location: parsed?.location || locationFilter,
       intent: parsed?.intent || query,
       aiSuggestions: Array.isArray(parsed?.aiSuggestions)
         ? parsed.aiSuggestions.slice(0, 3)
@@ -93,7 +95,7 @@ export async function understandSearch(query) {
       usedAI: true,
     }
   } catch (err) {
-    console.warn('OpenRouter failed, falling back to keyword split.', err)
+    console.warn('OpenRouter search parse fallback:', err)
     return {
       category: '',
       keywords: query
@@ -101,6 +103,7 @@ export async function understandSearch(query) {
         .split(/[^a-z0-9]+/i)
         .filter((w) => w.length > 2)
         .slice(0, 5),
+      location: locationFilter,
       intent: query,
       aiSuggestions: [],
       usedAI: false,
@@ -112,24 +115,17 @@ export function getSuggestedCategories() {
   return [
     'Restaurant',
     'Food & Drink',
-    'Cafe',
-    'Bar',
-    'Supermarket',
-    'Grocery',
     'Fashion & Clothing',
     'Beauty & Salon',
-    'Barbershop',
+    'Electronics & Tech',
+    'Auto Repair',
+    'Supermarket & Grocery',
     'Fitness & Gym',
     'Pharmacy & Health',
-    'Auto Repair',
-    'Electronics & Tech',
     'Home & Furniture',
     'Real Estate',
+    'Hotel & Travel',
     'Education & Tutoring',
-    'Legal Services',
-    'Financial Services',
-    'Travel & Hotel',
-    'Entertainment',
     'Other',
   ]
 }
