@@ -1442,97 +1442,242 @@ a:hover {
   display: block;
 }
 
-/* ---------- Comprehensive Breakpoints & Responsiveness ---------- */
+/* ---------- Comprehensive Mobile & Tablet Adaptations ---------- */
 
-/* Tablet & Mobile Layout Adaptations */
 @media (max-width: 768px) {
   .main {
-    padding: 16px 14px 80px;
+    padding: 12px 12px 90px;
+    max-width: 100%;
+  }
+
+  .navbar-inner {
+    padding: 10px 14px;
+  }
+
+  .brand-name {
+    font-size: 18px;
+  }
+
+  .brand-logo-img {
+    width: 30px;
+    height: 30px;
   }
 
   .hero-section {
-    padding: 24px 8px 28px;
+    padding: 16px 4px 24px;
+  }
+
+  .hero-brand-badge {
+    margin-bottom: 12px;
+  }
+
+  .hero-full-logo {
+    height: 52px;
+    border-radius: 12px;
+  }
+
+  .live-stat-pill {
+    font-size: 11px;
+    padding: 4px 10px;
+    margin-bottom: 14px;
   }
 
   .hero-headline {
-    font-size: clamp(24px, 6.5vw, 36px);
+    font-size: clamp(24px, 7vw, 34px);
+    margin-bottom: 10px;
   }
 
   .hero-subhead {
-    font-size: 15px;
-    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.45;
+    margin-bottom: 20px;
+    padding: 0 6px;
   }
 
-  .results-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  /* Mobile Search Bar - Clean single or stacked layout */
+  .search-container {
+    width: 100%;
   }
 
-  .result-card {
-    padding: 16px;
-  }
-
-  .profile-detail {
-    padding-bottom: 140px; /* Space for mobile sticky contact bar + bottom nav */
-  }
-}
-
-/* Small Mobile Screens (375px - 600px) */
-@media (max-width: 600px) {
   .search-box {
     flex-direction: column;
     align-items: stretch;
-    padding: 10px 12px;
-    gap: 10px;
+    padding: 8px 10px;
+    gap: 8px;
     border-radius: var(--radius-md);
+  }
+
+  .search-input-wrap {
+    padding: 4px 6px;
+  }
+
+  .search-input {
+    font-size: 15px;
   }
 
   .search-box-actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
     gap: 8px;
+    width: 100%;
   }
 
   .location-pill-btn {
     flex: 1;
     justify-content: center;
-    padding: 8px 10px;
-    font-size: 12px;
+    padding: 9px 12px;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
   }
 
   .search-submit-btn {
     flex: 1;
+    min-height: 40px;
+    font-size: 14px;
+    border-radius: var(--radius-sm);
   }
 
-  .location-grid {
-    grid-template-columns: 1fr 1fr;
+  /* Category Cards & Grids on Mobile */
+  .category-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 
-  .modal-content {
-    padding: 18px 14px;
-    max-height: 90vh;
+  .curated-category-card {
+    padding: 14px 12px;
+    border-radius: var(--radius-sm);
+  }
+
+  .cat-icon-wrap {
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+
+  .cat-card-title {
+    font-size: 13.5px;
+  }
+
+  .cat-card-desc {
+    font-size: 11.5px;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .cat-card-link {
+    font-size: 11.5px;
+  }
+
+  /* Results Grid & Cards */
+  .results-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .result-card {
+    padding: 14px;
+    border-radius: var(--radius-sm);
+  }
+
+  .result-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .result-title {
+    font-size: 16px;
+  }
+
+  .result-desc {
+    font-size: 13px;
+    margin: 4px 0;
   }
 
   .result-actions {
+    display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
 
-  .btn-sm {
-    padding: 8px 10px;
+  .result-actions .btn {
+    padding: 8px;
     font-size: 12px;
+    min-height: 38px;
+    width: 100%;
+  }
+
+  /* Vendor Spotlight Banner */
+  .vendor-spotlight-banner {
+    padding: 24px 16px;
+    margin-top: 40px;
+    border-radius: var(--radius-md);
+  }
+
+  .vendor-banner-title {
+    font-size: 20px;
+  }
+
+  .vendor-banner-text {
+    font-size: 13px;
+  }
+
+  .vendor-banner-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .vendor-banner-actions .btn {
+    width: 100%;
+  }
+
+  /* Pricing Plans on Mobile */
+  .plans-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .plan-highlight {
+    transform: none;
+  }
+
+  .plan-highlight:hover {
+    transform: none;
+  }
+
+  .plan-card {
+    padding: 24px 18px;
+  }
+
+  /* Modals on Mobile */
+  .modal-content {
+    width: 95%;
+    max-width: 95%;
+    padding: 16px 14px;
+    max-height: 88vh;
+    border-radius: var(--radius-md);
+  }
+
+  .location-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .location-chip {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .profile-detail {
+    padding-bottom: 140px;
   }
 }
 
-/* Extra Small Screens (< 380px e.g. iPhone SE / Galaxy Fold) */
+/* Extra Small Devices (< 380px) */
 @media (max-width: 380px) {
-  .main {
-    padding: 10px 10px 80px;
-  }
-
-  .result-actions {
+  .category-cards-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1540,18 +1685,8 @@ a:hover {
     grid-template-columns: 1fr;
   }
 
-  .brand {
-    font-size: 16px;
-  }
-
-  .brand-symbol {
-    width: 32px;
-    height: 32px;
-    font-size: 15px;
-  }
-
-  .search-input {
-    font-size: 14px;
+  .result-actions {
+    grid-template-columns: 1fr;
   }
 }
 
