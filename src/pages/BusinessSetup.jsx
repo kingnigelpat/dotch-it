@@ -118,7 +118,7 @@ export default function BusinessSetup() {
       navigate('/business')
     } catch (err) {
       console.error(err)
-      setError('Could not save. Check Cloudinary settings or try again.')
+      setError(err.message || 'Could not save business listing. Please check Cloudinary settings or try again.')
     } finally {
       setUploading(false)
       setSaving(false)
