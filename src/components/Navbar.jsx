@@ -71,10 +71,16 @@ export default function Navbar() {
             /* ===== EXPLORER VIEW ===== */
             <>
               <Link
+                to="/"
+                className={`nav-link ${location.pathname === '/' ? 'nav-link-active' : ''}`}
+              >
+                🏠 Home
+              </Link>
+              <Link
                 to="/dashboard"
                 className={`nav-link ${location.pathname === '/dashboard' ? 'nav-link-active' : ''}`}
               >
-                🔍 Search Engine
+                🔍 Search & Filter
               </Link>
               <Link
                 to="/dashboard?cat=Restaurants"

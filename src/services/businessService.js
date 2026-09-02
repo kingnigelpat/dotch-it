@@ -423,20 +423,19 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
 
   if (location && location !== 'Near me' && location !== 'Everywhere') {
     const locLower = location.toLowerCase()
-    const knownCities = ['abuja', 'port harcourt', 'ibadan', 'asaba', 'enugu', 'kano', 'calabar', 'lagos', 'warri', 'benin']
-    const kwMentionsOtherCity = keyword && knownCities.some((city) => keyword.toLowerCase().includes(city) && city !== locLower)
 
-    if (!kwMentionsOtherCity) {
-      const locMatch = filtered.filter(
-        (b) =>
-          (b.location && b.location.toLowerCase().includes(locLower)) ||
-          (b.city && b.city.toLowerCase().includes(locLower))
-      )
-      // Use location match if available, otherwise fall back to all if user searched for specific keyword
-      if (locMatch.length > 0) {
-        filtered = locMatch
-      }
-    }
+    filtered = filtered.filter((b) => {
+      const bLoc = (b.location || '').toLowerCase()
+      const bCity = (b.city || '').toLowerCase()
+      const bState = (b.state || '').toLowerCase()
+
+      // Exact or substring match
+      if (bLoc.includes(locLower) || locLower.includes(bLoc)) return true
+      if (bCity.includes(locLower) || locLower.includes(bCity)) return true
+      if (bState && (bState.includes(locLower) || locLower.includes(bState))) return true
+
+      return false
+    })
   }
 
   if (keyword) {

@@ -124,13 +124,13 @@ export default function FinderDashboard() {
         )}
       </div>
 
-      {/* Categories Bar */}
+      {/* Categories & Filter Bar */}
       <div className="category-bar">
         <button
           className={`chip-tag ${activeCategory === '' ? 'chip-tag-active' : ''}`}
           onClick={() => handleCategorySelect('')}
         >
-          All Categories
+          🌐 All Categories
         </button>
         {categories.map((c) => (
           <button
@@ -143,19 +143,21 @@ export default function FinderDashboard() {
         ))}
       </div>
 
-      {/* Results Header */}
+      {/* Results Header with City/Region summary and Active Filters */}
       <div className="results-header">
         <div>
           <h2 style={{ fontSize: '20px' }}>
-            {searched ? (query ? `Results for “${query}”` : `${activeCategory} Businesses`) : 'Discover Local Businesses'}
+            {searched ? (query ? `Results for “${query}”` : `${activeCategory || 'Top'} Listings`) : 'Discover Local Businesses'}
           </h2>
           <p className="results-meta">
-            {location ? `Showing verified businesses in ${location}` : 'Local business listings'}
+            Showing verified sellers in <strong style={{ color: 'var(--brand-primary)' }}>{location || 'Everywhere'}</strong>
           </p>
         </div>
-        <span className="results-meta" style={{ fontWeight: 600 }}>
-          {results.length} {results.length === 1 ? 'business' : 'businesses'} found
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span className="results-meta" style={{ fontWeight: 600 }}>
+            {results.length} {results.length === 1 ? 'place' : 'places'} found
+          </span>
+        </div>
       </div>
 
       {/* Loading indicator */}
