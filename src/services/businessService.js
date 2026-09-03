@@ -469,8 +469,8 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
     }
   }
 
-  // Sort by subscription tier first (growth_vip > pro_monthly > starter)
-  const tierWeight = { growth_vip: 3, pro_monthly: 2, starter: 1 }
+  // Sort by subscription tier first (enterprise_monthly / growth_vip > pro_monthly > starter)
+  const tierWeight = { enterprise_monthly: 4, growth_vip: 4, pro_monthly: 2, starter: 1 }
   filtered.sort((a, b) => {
     const weightA = tierWeight[a.subscriptionTier] || 0
     const weightB = tierWeight[b.subscriptionTier] || 0

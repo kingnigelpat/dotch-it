@@ -68,27 +68,29 @@ export default function BusinessDashboard() {
       <div className="subscription-dashboard-card">
         <div className="sub-dash-left">
           <div className="sub-dash-badge">
-            {business.subscriptionTier === 'growth_vip'
-              ? '👑 VIP Growth Partner'
+            {business.subscriptionTier === 'enterprise_monthly'
+              ? '👑 Corporate & Hotel Tier'
               : business.subscriptionTier === 'pro_monthly'
-              ? '⚡ Pro Verified Vendor'
-              : '🌱 Free Starter Tier'}
+              ? '⚡ Standard Business Tier'
+              : '🌱 Free Basic (Name Only)'}
           </div>
           <h2 style={{ fontSize: '18px', margin: '6px 0 4px' }}>
-            {business.subscriptionTier === 'growth_vip'
-              ? 'Maximum Search Priority Active'
+            {business.subscriptionTier === 'enterprise_monthly'
+              ? 'Maximum Hotel / Corporate Spotlight Active'
               : business.subscriptionTier === 'pro_monthly'
-              ? '3x Local Search Boost Active'
-              : 'Standard Search Visibility'}
+              ? '3x Local Search Boost & Location Active'
+              : 'Unlisted Location / Basic Name Index'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-            {business.subscriptionTier
-              ? `Plan expires / renews in ~30 days. WhatsApp direct link active.`
-              : `Upgrade to Pro Vendor or VIP to get priority AI recommendations and 3x more customer inquiries.`}
+            {business.subscriptionTier === 'enterprise_monthly'
+              ? 'Enterprise plan active: #1 Spotlight, multi-line phone booking & HD gallery enabled.'
+              : business.subscriptionTier === 'pro_monthly'
+              ? 'Standard business plan active: Location discovery, photo uploads & direct WhatsApp contact enabled.'
+              : 'Free basic plan: No photos, phone numbers or location listing permitted. Upgrade to ₦5k/mo to list location and enable WhatsApp.'}
           </p>
         </div>
-        <Link to="/subscription" className="btn btn-outline btn-sm">
-          {business.subscriptionTier ? 'Manage Subscription →' : '⚡ Upgrade to Pro (₦5k/mo) →'}
+        <Link to="/subscription" className="btn btn-primary btn-sm">
+          {business.subscriptionTier ? 'Manage Subscription →' : '⚡ Upgrade to Standard (₦5k/mo) →'}
         </Link>
       </div>
 
