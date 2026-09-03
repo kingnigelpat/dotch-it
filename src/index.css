@@ -74,6 +74,33 @@ body {
   }
 }
 
+/* ---------- Setup Notice Banner ---------- */
+.setup-notice {
+  background: #fffbeb;
+  border-bottom: 1px solid #fcd34d;
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 20px;
+  text-align: center;
+  line-height: 1.5;
+  z-index: 99;
+  width: 100%;
+}
+
+.setup-notice code {
+  background: rgba(0,0,0,0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* ---------- Landing Page ---------- */
+.landing-page {
+  position: relative;
+  overflow-x: hidden;
+}
+
 .main {
   flex: 1;
   width: 100%;
@@ -1464,7 +1491,7 @@ a:hover {
   }
 
   .hero-section {
-    padding: 16px 4px 24px;
+    padding: 16px 12px 24px;
   }
 
   .hero-brand-badge {
@@ -1494,53 +1521,58 @@ a:hover {
     padding: 0 6px;
   }
 
-  /* Mobile Search Bar - Clean single or stacked layout */
+  /* Mobile Search Bar - stays in one row, never stacks */
   .search-container {
     width: 100%;
   }
 
   .search-box {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 8px 10px;
-    gap: 8px;
+    flex-direction: row;
+    align-items: center;
+    padding: 6px 8px;
+    gap: 6px;
     border-radius: var(--radius-md);
+    flex-wrap: nowrap;
   }
 
   .search-input-wrap {
-    padding: 4px 6px;
+    flex: 1;
+    min-width: 0;
+    padding: 2px 4px;
   }
 
   .search-input {
     font-size: 15px;
+    width: 100%;
   }
 
   .search-box-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
-    width: 100%;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   .location-pill-btn {
-    flex: 1;
-    justify-content: center;
-    padding: 9px 12px;
-    font-size: 13px;
+    padding: 7px 10px;
+    font-size: 12px;
     border-radius: var(--radius-sm);
+    white-space: nowrap;
   }
 
   .search-submit-btn {
-    flex: 1;
-    min-height: 40px;
-    font-size: 14px;
+    min-height: 36px;
+    padding: 7px 12px;
+    font-size: 13px;
     border-radius: var(--radius-sm);
+    white-space: nowrap;
   }
 
   /* Category Cards & Grids on Mobile */
   .category-cards-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+    width: 100%;
   }
 
   .curated-category-card {
@@ -2056,7 +2088,7 @@ a:hover {
 
 .category-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
   gap: 16px;
 }
 
