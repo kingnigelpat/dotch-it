@@ -394,13 +394,15 @@ export async function deleteBusiness(id) {
 
 export async function searchBusinesses({ category, keyword, location, max = 50 }) {
   let dbResults = []
-  try {
-    const col = collection(db, BUSINESS_COLLECTION)
-    let q = category ? query(col, where('category', '==', category)) : query(col)
-    const snap = await getDocs(q)
-    dbResults = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-  } catch (err) {
-    console.warn('Firestore fetch fallback:', err)
+  if (db) {
+    try {
+      const col = collection(db, BUSINESS_COLLECTION)
+      let q = category ? query(col, where('category', '==', category)) : query(col)
+      const snap = await getDocs(q)
+      dbResults = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    } catch (err) {
+      console.warn('Firestore fetch fallback:', err)
+    }
   }
 
   // Merge DB results with demo results
@@ -482,19 +484,21 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
 
 export async function getAllBusinesses(max = 50) {
   let dbResults = []
-  try {
-    const q = query(collection(db, BUSINESS_COLLECTION), limit(max))
-    const snap = await getDocs(q)
-    dbResults = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-  } catch {
-    // ignore
+  if (db) {
+    try {
+      const q = query(collection(db, BUSINESS_COLLECTION), limit(max))
+      const snap = await getDocs(q)
+      dbResults = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    } catch {
+      // ignore
+    }
   }
 
   const existingIds = new Set(dbResults.map((b) => b.id))
   const combined = [...dbResults, ...DEMO_BUSINESSES.filter((d) => !existingIds.has(d.id))]
   
-  // Sort priority tiers first
-  const tierWeight = { growth_vip: 3, pro_monthly: 2, starter: 1 }
+  // Sort priority tiers first (enterprise_monthly / growth_vip > pro_monthly > starter)
+  const tierWeight = { enterprise_monthly: 4, growth_vip: 4, pro_monthly: 2, starter: 1 }
   combined.sort((a, b) => {
     const weightA = tierWeight[a.subscriptionTier] || 0
     const weightB = tierWeight[b.subscriptionTier] || 0

@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore'
 
 export async function registerUser({ email, password, name, role }) {
+  if (!auth || !db) throw new Error('Firebase Authentication is not configured.')
   const userCred = await createUserWithEmailAndPassword(auth, email, password)
   await updateProfile(userCred.user, { displayName: name })
   await setDoc(doc(db, 'users', userCred.user.uid), {
@@ -27,18 +28,30 @@ export async function registerUser({ email, password, name, role }) {
 }
 
 export async function loginUser(email, password) {
+  if (!auth) throw new Error('Firebase Authentication is not configured.')
   return signInWithEmailAndPassword(auth, email, password)
 }
 
 export async function logoutUser() {
+  if (!auth) return
   return signOut(auth)
 }
 
 export function watchAuth(onChange) {
+  if (!auth) {
+    onChange(null)
+    return () => {}
+  }
   return onAuthStateChanged(auth, onChange)
 }
 
 export async function getUserProfile(uid) {
-  const snap = await getDoc(doc(db, 'users', uid))
-  return snap.exists() ? snap.data() : null
+  if (!db || !uid) return null
+  try {
+    const snap = await getDoc(doc(db, 'users', uid))
+    return snap.exists() ? snap.data() : null
+  } catch (err) {
+    console.warn('Could not fetch user profile:', err)
+    return null
+  }
 }
