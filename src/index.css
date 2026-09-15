@@ -81,9 +81,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+body {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: clip;
 }
 
 body {
@@ -1195,20 +1202,31 @@ a:hover {
 
 @media (max-width: 768px) {
   .mobile-bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 64px;
-    background: var(--bg-surface-glass);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-top: 1px solid var(--border-subtle);
     display: flex;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 64px;
+    background: var(--bg-surface) !important;
+    background: var(--bg-surface-glass) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid var(--border-subtle);
     align-items: center;
     justify-content: space-around;
-    z-index: 999;
-    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+    z-index: 99999 !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+
+    /* HARDWARE ACCELERATION: Locks navbar to GPU layer so it never jitters or moves on scroll */
+    transform: translateZ(0) !important;
+    -webkit-transform: translateZ(0) !important;
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    touch-action: none;
+    overscroll-behavior: contain;
   }
 
   .nav-tab-item {
@@ -1223,6 +1241,7 @@ a:hover {
     text-decoration: none;
     flex: 1;
     height: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .nav-tab-icon {
@@ -1762,58 +1781,7 @@ a:hover {
   }
 }
 
-/* ---------- Mobile Bottom Navigation Bar ---------- */
-.mobile-bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 64px;
-  background: var(--bg-surface-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  z-index: 100;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
-}
-
-@media (min-width: 769px) {
-  .mobile-bottom-nav {
-    display: none;
-  }
-}
-
-.nav-tab-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 11px;
-  font-weight: 600;
-  flex: 1;
-  height: 100%;
-  transition: color 0.15s ease;
-}
-
-.nav-tab-icon {
-  font-size: 18px;
-  line-height: 1;
-}
-
-.nav-tab-item.active {
-  color: var(--brand-primary);
-  font-weight: 700;
-}
-
-.nav-tab-item.active .nav-tab-icon {
-  transform: translateY(-1px);
-}
+/* ---------- Business Detail Page ---------- */
 
 /* ---------- Account Page (Mobile & Web) ---------- */
 .account-page {
