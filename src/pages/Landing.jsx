@@ -5,17 +5,6 @@ import SearchBar from '../components/SearchBar'
 import BusinessCard from '../components/BusinessCard'
 import { getAllBusinesses } from '../services/businessService'
 
-const LIVE_ACTIVITIES = [
-  { icon: '🟢', city: 'Lagos', text: 'Someone in Lekki contacted Kicks Hub on WhatsApp for Nike Dunks' },
-  { icon: '🏨', city: 'Abuja', text: 'Tourist booked executive suite at Transcorp Hilton Maitama' },
-  { icon: '🔬', city: 'Ibadan', text: 'University researcher located specialized electronic components in Dugbe' },
-  { icon: '🍔', city: 'Lagos', text: 'Foodie discovered Yellow Chilli Restaurant & Bar in Victoria Island' },
-  { icon: '📱', city: 'Port Harcourt', text: 'Buyer ordered iPhone 15 Pro Max from verified tech hub in Choba' },
-  { icon: '🚗', city: 'Enugu', text: 'Driver found genuine Toyota spare parts in Ogbete Market' },
-]
-
-
-
 const CATEGORY_CARDS = [
   { name: 'Hotels & Luxury Suites', icon: '🏨', count: '120+ Verified Stays', desc: '5-star suites, boutique resorts, serviced apartments & lodges', query: 'Hotel' },
   { name: 'Food & Fine Dining', icon: '🍔', count: '350+ Kitchens & Cafes', desc: 'Authentic African cuisines, gourmet seafood, grills & fast eats', query: 'Restaurant' },
@@ -53,19 +42,10 @@ export default function Landing() {
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('Lagos')
   const [featured, setFeatured] = useState([])
-  const [activeActivityIndex, setActiveActivityIndex] = useState(0)
   const [selectedCategoryTab, setSelectedCategoryTab] = useState('all')
 
   useEffect(() => {
     getAllBusinesses(12).then(setFeatured)
-  }, [])
-
-  // Rotate live activity ticker
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveActivityIndex((prev) => (prev + 1) % LIVE_ACTIVITIES.length)
-    }, 4000)
-    return () => clearInterval(timer)
   }, [])
 
   const handleSearch = (customQuery) => {
@@ -88,21 +68,6 @@ export default function Landing() {
 
   return (
     <div className="landing-page">
-      {/* Top Real-Time Activity Ticker */}
-      <div className="live-activity-bar">
-        <div className="live-activity-inner">
-          <span className="live-badge-pulse">
-            <span className="pulse-dot" />
-            LIVE ACTIVITY
-          </span>
-          <div className="live-ticker-message" key={activeActivityIndex}>
-            <span className="ticker-icon">{LIVE_ACTIVITIES[activeActivityIndex].icon}</span>
-            <span className="ticker-city">{LIVE_ACTIVITIES[activeActivityIndex].city}:</span>
-            <span className="ticker-text">{LIVE_ACTIVITIES[activeActivityIndex].text}</span>
-          </div>
-        </div>
-      </div>
-
       {/* Hero Section */}
       <section className="hero-section">
         {/* Brand Logo & Search Engine Header */}
