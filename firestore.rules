@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    // Business document rules
+    match /businesses/{businessId} {
+      // 1. Anyone (buyers, tourists, researchers, public) can read listings
+      allow read: if true;
+
+      // 2. Creation: Owner or Admin
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        request.resource.data.ownerId == request.auth.uid
+      );
+
+      // 3. Updates: Owner or Admin
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.ownerId == request.auth.uid
+      );
+
+      // 4. Delete: Owner or Admin
+      allow delete: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.ownerId == request.auth.uid
+      );
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+  }
+}
