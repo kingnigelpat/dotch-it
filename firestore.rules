@@ -23,29 +23,39 @@ service cloud.firestore {
       // 1. Anyone (buyers, tourists, researchers, public) can read listings
       allow read: if true;
 
-      // 2. Creation: Owner or Admin
+      // 2. Creation: Owner or Admin (normal users cannot self-approve active listing)
       allow create: if isAuthenticated() && (
         isAdmin() ||
-        request.resource.data.ownerId == request.auth.uid
+        (request.resource.data.ownerUid == request.auth.uid && request.resource.data.status != 'active')
       );
 
-      // 3. Updates: Owner or Admin
+      // 3. Updates: Owner or Admin (normal users cannot change approval status directly)
       allow update: if isAuthenticated() && (
         isAdmin() ||
-        resource.data.ownerId == request.auth.uid
+        (resource.data.ownerUid == request.auth.uid &&
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'paymentApproved']))
       );
 
       // 4. Delete: Owner or Admin
       allow delete: if isAuthenticated() && (
         isAdmin() ||
-        resource.data.ownerId == request.auth.uid
+        resource.data.ownerUid == request.auth.uid
       );
     }
 
     // User profiles
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isOwner(userId) || isAdmin();
+      // Normal users cannot grant themselves admin role or approve payments
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        (isOwner(userId) && request.resource.data.role != 'admin' && request.resource.data.paymentApproved != true)
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['paymentApproved', 'role']))
+      );
+      allow delete: if isAdmin();
     }
   }
 }

@@ -5,6 +5,7 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  sendEmailVerification,
 } from 'firebase/auth'
 import {
   doc,
@@ -18,7 +19,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 
-export async function registerUser({ email, password, name, role, plan }) {
+export async function registerUser({ email, password, name, phone = '', role, plan }) {
   if (!auth || !db) throw new Error('Firebase Authentication is not configured.')
   const userCred = await createUserWithEmailAndPassword(auth, email, password)
   await updateProfile(userCred.user, { displayName: name })
@@ -28,14 +29,39 @@ export async function registerUser({ email, password, name, role, plan }) {
     uid: userCred.user.uid,
     name,
     email,
+    phone: phone.trim(),
     role,
     paymentStatus: isVendor ? 'pending' : 'none',
     paymentApproved: false,
     selectedPlan: plan || (isVendor ? 'pro_1m' : 'free'),
     createdAt: serverTimestamp(),
   })
+
+  // Trigger Firebase email verification in background
+  try {
+    await sendEmailVerification(userCred.user)
+  } catch (verifyErr) {
+    console.warn('Initial email verification request error:', verifyErr)
+  }
+
   return userCred.user
 }
+
+export async function sendVerificationEmail(targetUser) {
+  const u = targetUser || auth?.currentUser
+  if (!u) throw new Error('No authenticated user found.')
+  return sendEmailVerification(u)
+}
+
+export async function updateUserProfile(uid, data) {
+  if (!db || !uid) return
+  const userRef = doc(db, 'users', uid)
+  await updateDoc(userRef, {
+    ...data,
+    updatedAt: serverTimestamp(),
+  })
+}
+
 
 export async function getAllVendors() {
   if (!db) return []

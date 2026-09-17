@@ -14,6 +14,31 @@ import {
 } from '../services/authService'
 import { getSuggestedCategories } from '../services/openrouterService'
 import { BANK_DETAILS } from '../config/bankDetails'
+import {
+  getAllAdsAdmin,
+  createAd,
+  updateAd,
+  deleteAd,
+} from '../services/adService'
+
+const EMPTY_AD_FORM = {
+  title: '',
+  businessName: '',
+  businessId: '',
+  category: '',
+  badge: 'Admin Spotlight',
+  placement: 'hero_banner',
+  imageUrl: '',
+  flyerUrl: '',
+  tagline: '',
+  phone: '',
+  targetReach: 'Nationwide Delivery',
+  pricePromo: '',
+  ctaText: 'Chat on WhatsApp',
+  startDate: new Date().toISOString().split('T')[0],
+  endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  status: 'active',
+}
 
 const EMPTY_FORM = {
   name: '',
@@ -103,6 +128,14 @@ export default function AdminPanel() {
   const [success, setSuccess] = useState('')
   const [showForm, setShowForm] = useState(false)
 
+  // Advert & Sponsorship states
+  const [ads, setAds] = useState([])
+  const [loadingAds, setLoadingAds] = useState(true)
+  const [adForm, setAdForm] = useState(EMPTY_AD_FORM)
+  const [editingAdId, setEditingAdId] = useState(null)
+  const [showAdForm, setShowAdForm] = useState(false)
+  const [savingAd, setSavingAd] = useState(false)
+
   const loadVendors = async () => {
     setLoadingVendors(true)
     try {
@@ -113,6 +146,16 @@ export default function AdminPanel() {
     }
   }
 
+  const loadAds = async () => {
+    setLoadingAds(true)
+    try {
+      const list = await getAllAdsAdmin()
+      setAds(list || [])
+    } finally {
+      setLoadingAds(false)
+    }
+  }
+
   useEffect(() => {
     if (profile?.role === 'admin') {
       getAllBusinesses(100).then((list) => {
@@ -120,6 +163,7 @@ export default function AdminPanel() {
         setLoadingBiz(false)
       })
       loadVendors()
+      loadAds()
     }
   }, [profile])
 
@@ -186,8 +230,105 @@ export default function AdminPanel() {
     setForm(EMPTY_FORM)
     setEditingId(null)
     setShowForm(false)
+  }
+
+  // --- Advert Management Handlers ---
+  const handleAdFormChange = (e) => {
+    const { name, value } = e.target
+    setAdForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSaveAd = async (e) => {
+    e.preventDefault()
+    if (!adForm.title.trim() || !adForm.businessName.trim()) {
+      setError('Please provide at least an advert title and business name.')
+      return
+    }
+    setSavingAd(true)
     setError('')
     setSuccess('')
+    try {
+      if (editingAdId) {
+        await updateAd(editingAdId, adForm)
+        setSuccess('✅ Advert updated successfully!')
+      } else {
+        await createAd(adForm, user?.uid)
+        setSuccess('✅ New advert created and published to homepage!')
+      }
+      setShowAdForm(false)
+      setEditingAdId(null)
+      setAdForm(EMPTY_AD_FORM)
+      await loadAds()
+    } catch (err) {
+      setError('Could not save advert: ' + err.message)
+    } finally {
+      setSavingAd(false)
+    }
+  }
+
+  const handleEditAd = (ad) => {
+    setAdForm({
+      title: ad.title || '',
+      businessName: ad.businessName || '',
+      businessId: ad.businessId || '',
+      category: ad.category || '',
+      badge: ad.badge || 'Admin Spotlight',
+      placement: ad.placement || 'hero_banner',
+      imageUrl: ad.imageUrl || '',
+      flyerUrl: ad.flyerUrl || '',
+      tagline: ad.tagline || '',
+      phone: ad.phone || '',
+      targetReach: ad.targetReach || 'Nationwide Delivery',
+      pricePromo: ad.pricePromo || '',
+      ctaText: ad.ctaText || 'Chat on WhatsApp',
+      startDate: ad.startDate ? ad.startDate.split('T')[0] : '',
+      endDate: ad.endDate ? ad.endDate.split('T')[0] : '',
+      status: ad.status || 'active',
+    })
+    setEditingAdId(ad.id)
+    setShowAdForm(true)
+    setError('')
+  }
+
+  const handleDeleteAd = async (ad) => {
+    if (!window.confirm(`Delete advert "${ad.title}"?`)) return
+    setError('')
+    setSuccess('')
+    try {
+      await deleteAd(ad.id)
+      setSuccess(`🗑️ Advert "${ad.title}" deleted.`)
+      await loadAds()
+    } catch (err) {
+      setError('Could not delete advert: ' + err.message)
+    }
+  }
+
+  const handleToggleAdStatus = async (ad) => {
+    const nextStatus = ad.status === 'active' ? 'paused' : 'active'
+    setError('')
+    setSuccess('')
+    try {
+      await updateAd(ad.id, { status: nextStatus })
+      setSuccess(`Status for "${ad.title}" changed to ${nextStatus}.`)
+      await loadAds()
+    } catch (err) {
+      setError('Could not toggle status: ' + err.message)
+    }
+  }
+
+  const handleAutoFillAdFromBusiness = (bizId) => {
+    const biz = businesses.find((b) => b.id === bizId)
+    if (!biz) return
+    setAdForm((prev) => ({
+      ...prev,
+      businessId: biz.id,
+      businessName: biz.name || prev.businessName,
+      category: biz.category || prev.category,
+      phone: biz.phone || prev.phone,
+      targetReach: biz.city ? `${biz.city} & Nationwide` : prev.targetReach,
+      imageUrl: biz.image1Url || biz.image2Url || biz.logoUrl || prev.imageUrl,
+      flyerUrl: biz.image1Url || prev.flyerUrl,
+    }))
   }
 
   const handleSubmit = async (e) => {
@@ -294,7 +435,15 @@ export default function AdminPanel() {
           onClick={() => setActiveTab('vendors')}
           style={{ fontWeight: 700 }}
         >
-          💳 Vendor Payment Approvals ({vendors.filter(v => v.paymentStatus !== 'approved' && !v.paymentApproved).length} Pending)
+          💳 Vendor Approvals ({vendors.filter(v => v.paymentStatus !== 'approved' && !v.paymentApproved).length} Pending)
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm ${activeTab === 'adverts' ? 'btn-primary' : 'btn-outline'}`}
+          onClick={() => setActiveTab('adverts')}
+          style={{ fontWeight: 700 }}
+        >
+          📢 Adverts & Spotlights ({ads.length})
         </button>
         <button
           type="button"
@@ -302,7 +451,7 @@ export default function AdminPanel() {
           onClick={() => setActiveTab('businesses')}
           style={{ fontWeight: 700 }}
         >
-          🏢 Manage Directory Listings ({businesses.length})
+          🏢 Directory Listings ({businesses.length})
         </button>
       </div>
 
@@ -613,6 +762,330 @@ export default function AdminPanel() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: ADVERTS & HOMEPAGE SPOTLIGHTS */}
+      {activeTab === 'adverts' && (
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <h2 className="admin-section-title" style={{ margin: 0 }}>
+                Homepage Adverts & Admin Spotlights
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', marginTop: '4px' }}>
+                Curate banners, promotional flyers, and featured campaigns displayed prominently on the explorer homepage.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => {
+                if (showAdForm) {
+                  setShowAdForm(false)
+                  setEditingAdId(null)
+                  setAdForm(EMPTY_AD_FORM)
+                } else {
+                  setEditingAdId(null)
+                  setAdForm(EMPTY_AD_FORM)
+                  setShowAdForm(true)
+                }
+              }}
+            >
+              {showAdForm ? '✕ Close Form' : '+ Create New Advert / Flyer'}
+            </button>
+          </div>
+
+          {/* ADVERT FORM */}
+          {showAdForm && (
+            <div className="admin-form-box" style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '16px' }}>
+                {editingAdId ? '✏️ Edit Advert' : '📢 Create New Homepage Advert'}
+              </h3>
+
+              <form onSubmit={handleSaveAd}>
+                {/* Auto-fill from existing businesses */}
+                {businesses.length > 0 && !editingAdId && (
+                  <div className="form-group" style={{ marginBottom: '16px', background: 'var(--bg-elevated)', padding: '12px', borderRadius: 'var(--radius-sm)' }}>
+                    <label className="form-label" style={{ fontWeight: 700 }}>
+                      ⚡ Quick Link to Registered Business:
+                    </label>
+                    <select
+                      className="form-input"
+                      onChange={(e) => handleAutoFillAdFromBusiness(e.target.value)}
+                      defaultValue=""
+                    >
+                      <option value="" disabled>-- Select a registered business to auto-fill details --</option>
+                      {businesses.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name} ({b.category || 'General'} - {b.city || 'Nigeria'})
+                        </option>
+                      ))}
+                    </select>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                      Auto-populates business name, WhatsApp phone, category, and images.
+                    </span>
+                  </div>
+                )}
+
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Advert Title / Main Headline *</label>
+                    <input
+                      type="text"
+                      name="title"
+                      className="form-input"
+                      value={adForm.title}
+                      onChange={handleAdFormChange}
+                      placeholder="e.g. Luxury Weekend Getaway - 25% Off"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Business Name *</label>
+                    <input
+                      type="text"
+                      name="businessName"
+                      className="form-input"
+                      value={adForm.businessName}
+                      onChange={handleAdFormChange}
+                      placeholder="e.g. Transcorp Hilton Abuja"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Badge Label</label>
+                    <select
+                      name="badge"
+                      className="form-input"
+                      value={adForm.badge}
+                      onChange={handleAdFormChange}
+                    >
+                      <option value="Admin Spotlight">🌟 Admin Spotlight</option>
+                      <option value="Sponsored">📢 Sponsored</option>
+                      <option value="Featured Deal">🔥 Featured Deal</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Homepage Placement</label>
+                    <select
+                      name="placement"
+                      className="form-input"
+                      value={adForm.placement}
+                      onChange={handleAdFormChange}
+                    >
+                      <option value="hero_banner">Top Hero Carousel (High Impact)</option>
+                      <option value="flyer_card">Flyer Card (Promotional Grid)</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">WhatsApp Contact Phone Number *</label>
+                    <input
+                      type="text"
+                      name="phone"
+                      className="form-input"
+                      value={adForm.phone}
+                      onChange={handleAdFormChange}
+                      placeholder="+2348012345678"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Target Reach / Coverage</label>
+                    <input
+                      type="text"
+                      name="targetReach"
+                      className="form-input"
+                      value={adForm.targetReach}
+                      onChange={handleAdFormChange}
+                      placeholder="e.g. Nationwide Delivery, Lagos Only, Abuja & Environs"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Promo Price / Offer Tag</label>
+                    <input
+                      type="text"
+                      name="pricePromo"
+                      className="form-input"
+                      value={adForm.pricePromo}
+                      onChange={handleAdFormChange}
+                      placeholder="e.g. From ₦85,000 or Save 20%"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">WhatsApp Button Text</label>
+                    <input
+                      type="text"
+                      name="ctaText"
+                      className="form-input"
+                      value={adForm.ctaText}
+                      onChange={handleAdFormChange}
+                      placeholder="e.g. Chat on WhatsApp / Order Now"
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label className="form-label">Banner Image URL (Landscape - for Hero Carousel)</label>
+                    <input
+                      type="url"
+                      name="imageUrl"
+                      className="form-input"
+                      value={adForm.imageUrl}
+                      onChange={handleAdFormChange}
+                      placeholder="https://images.unsplash.com/... (high-res landscape banner)"
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label className="form-label">Flyer / Poster Graphic URL (Portrait or Square)</label>
+                    <input
+                      type="url"
+                      name="flyerUrl"
+                      className="form-input"
+                      value={adForm.flyerUrl}
+                      onChange={handleAdFormChange}
+                      placeholder="https://... (flyer or promotional graphic)"
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label className="form-label">Promotional Tagline / Description</label>
+                    <textarea
+                      name="tagline"
+                      className="form-input"
+                      rows={2}
+                      value={adForm.tagline}
+                      onChange={handleAdFormChange}
+                      placeholder="Short catchy hook describing the offer or product drop..."
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Start Date</label>
+                    <input
+                      type="date"
+                      name="startDate"
+                      className="form-input"
+                      value={adForm.startDate}
+                      onChange={handleAdFormChange}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Expiry Date</label>
+                    <input
+                      type="date"
+                      name="endDate"
+                      className="form-input"
+                      value={adForm.endDate}
+                      onChange={handleAdFormChange}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                  <button type="submit" className="btn btn-primary" disabled={savingAd}>
+                    {savingAd ? 'Saving Advert…' : editingAdId ? 'Update Advert' : 'Publish Advert'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => {
+                      setShowAdForm(false)
+                      setEditingAdId(null)
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ADVERTS TABLE & PREVIEW */}
+          {loadingAds ? (
+            <div className="center-loading">Loading adverts…</div>
+          ) : ads.length === 0 ? (
+            <div className="empty-state-box">
+              <div className="empty-state-icon">📢</div>
+              <h3>No Adverts Published Yet</h3>
+              <p>Click "+ Create New Advert / Flyer" above to publish your first spotlight campaign.</p>
+            </div>
+          ) : (
+            <div className="admin-business-list">
+              {ads.map((ad) => {
+                const isExpired = ad.endDate && ad.endDate < new Date().toISOString()
+                const isActive = ad.status === 'active' && !isExpired
+
+                return (
+                  <div key={ad.id} className="admin-biz-row">
+                    <img
+                      src={ad.flyerUrl || ad.imageUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=200&auto=format&fit=crop'}
+                      alt={ad.title}
+                      style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=200&auto=format&fit=crop'
+                      }}
+                    />
+
+                    <div className="admin-biz-info">
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '4px' }}>
+                        <span style={{ fontWeight: 800, fontSize: '15px' }}>{ad.title}</span>
+                        <span className={`badge-pill ${isActive ? 'vendor-badge' : 'explorer-badge'}`} style={{ fontSize: '11px' }}>
+                          {isActive ? '🟢 Active' : isExpired ? '🔴 Expired' : '⏸️ Paused'}
+                        </span>
+                        <span className="badge-sparkle" style={{ fontSize: '11px' }}>
+                          {ad.badge || 'Admin Spotlight'}
+                        </span>
+                        <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                          [{ad.placement === 'hero_banner' ? 'Hero Banner' : 'Flyer Card'}]
+                        </span>
+                      </div>
+
+                      <div className="admin-biz-meta">
+                        🏢 <strong>{ad.businessName}</strong>
+                        {ad.targetReach && ` • 📍 ${ad.targetReach}`}
+                        {ad.phone && ` • 💬 ${ad.phone}`}
+                        {ad.pricePromo && ` • 🏷️ ${ad.pricePromo}`}
+                        {ad.endDate && ` • Expiry: ${ad.endDate.split('T')[0]}`}
+                      </div>
+                    </div>
+
+                    <div className="admin-biz-actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => handleToggleAdStatus(ad)}
+                        title={ad.status === 'active' ? 'Pause advert' : 'Activate advert'}
+                      >
+                        {ad.status === 'active' ? '⏸️ Pause' : '▶️ Resume'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => handleEditAd(ad)}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDeleteAd(ad)}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

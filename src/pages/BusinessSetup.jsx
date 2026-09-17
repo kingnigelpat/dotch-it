@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   createBusiness,
   updateBusiness,
   getBusinessByOwner,
 } from '../services/businessService'
+import { updateUserProfile } from '../services/authService'
 import { uploadImage } from '../services/cloudinaryService'
 import { getSuggestedCategories } from '../services/openrouterService'
 
-function ImagePicker({ label, file, url, onChange }) {
+function ImagePicker({ label, file, url, onChange, disabled }) {
   return (
     <div className="form-group">
       <label>{label}</label>
@@ -17,33 +18,48 @@ function ImagePicker({ label, file, url, onChange }) {
         type="file"
         accept="image/*"
         className="form-control"
-        onChange={(e) => onChange(e.target.files[0])}
+        disabled={disabled}
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            onChange(e.target.files[0])
+          }
+        }}
       />
       {url && (
-        <img
-          src={url}
-          alt={label}
-          style={{ width: '80px', height: '80px', borderRadius: '10px', objectFit: 'cover', marginTop: '8px' }}
-        />
+        <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img
+            src={url}
+            alt={label}
+            style={{ width: '80px', height: '80px', borderRadius: '10px', objectFit: 'cover', border: '1px solid var(--border-subtle)' }}
+          />
+          <small style={{ color: 'var(--text-muted)', fontSize: '11px' }}>Current photo</small>
+        </div>
       )}
-      {!url && file && <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Selected: {file.name}</p>}
+      {!url && file && (
+        <p style={{ fontSize: '12px', color: 'var(--brand-primary)', marginTop: '4px' }}>
+          Selected: {file.name} (Ready to upload)
+        </p>
+      )}
     </div>
   )
 }
 
 export default function BusinessSetup() {
-  const { user, profile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const categories = getSuggestedCategories()
 
+  const planFromQuery = searchParams.get('plan')
   const isApproved = profile?.paymentStatus === 'approved' || profile?.paymentApproved === true || profile?.role === 'admin'
+
   const [editingId, setEditingId] = useState(null)
-  const [currentTier, setCurrentTier] = useState(profile?.subscriptionTier || profile?.selectedPlan || 'pro_1m')
+  const [currentTier, setCurrentTier] = useState(planFromQuery || profile?.subscriptionTier || profile?.selectedPlan || 'pro_1m')
   const [isBlocked, setIsBlocked] = useState(false)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
   const [location, setLocation] = useState('')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(profile?.phone || '')
   const [price, setPrice] = useState('')
   const [description, setDescription] = useState('')
   const [logo, setLogo] = useState(null)
@@ -53,21 +69,21 @@ export default function BusinessSetup() {
   const [img2, setImg2] = useState(null)
   const [img2Url, setImg2Url] = useState('')
   const [error, setError] = useState('')
+  const [uploadWarning, setUploadWarning] = useState('')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const isFreePlan = currentTier === 'starter' || !currentTier
-
   useEffect(() => {
+    if (!user?.uid) return
     getBusinessByOwner(user.uid).then((b) => {
       if (b) {
         setEditingId(b.id)
-        setCurrentTier(b.subscriptionTier || 'starter')
+        setCurrentTier(b.subscriptionTier || currentTier)
         setIsBlocked(Boolean(b.isBlocked))
         setName(b.name || '')
         setCategory(b.category || '')
         setLocation(b.location || b.city || '')
-        setPhone(b.phone || '')
+        setPhone(b.phone || profile?.phone || '')
         setPrice(b.price || '')
         setDescription(b.description || '')
         setLogoUrl(b.logoUrl || '')
@@ -75,106 +91,104 @@ export default function BusinessSetup() {
         setImg2Url(b.image2Url || '')
       }
     })
-  }, [user.uid])
+  }, [user?.uid])
 
-  // GATE: Business posting is unavailable until admin approves payment
-  if (!isApproved && !editingId) {
-    return (
-      <div style={{ maxWidth: '600px', margin: '40px auto', padding: '0 16px', textAlign: 'center' }}>
-        <div className="empty-state-box" style={{ padding: '36px 24px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔒</div>
-          <span className="badge-pill vendor-badge" style={{ marginBottom: '12px', display: 'inline-flex' }}>
-            Payment Verification Required
-          </span>
-          <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
-            Business Listing Locked
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto 20px' }}>
-            Posting a business listing is unavailable until our admin verifies your payment. Please visit your vendor dashboard to submit proof of payment.
-          </p>
-          <Link to="/business" className="btn btn-primary btn-lg">
-            Go to Vendor Dashboard →
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  const upload = async (file) => {
+  const safeUpload = async (file, fieldName) => {
     if (!file) return ''
-    const res = await uploadImage(file)
-    return res.url
+    try {
+      const res = await uploadImage(file)
+      return res.url || ''
+    } catch (err) {
+      console.warn(`Upload warning for ${fieldName}:`, err)
+      setUploadWarning((prev) =>
+        prev
+          ? `${prev}. Note: ${fieldName} could not be uploaded (${err.message}).`
+          : `Note: ${fieldName} could not be uploaded (${err.message}). Listing will save with existing photos.`
+      )
+      return ''
+    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setUploadWarning('')
 
     if (isBlocked) {
-      return setError('⛔ Your business account is currently blocked for policy violation. Please contact support or upgrade to a paid tier.')
+      return setError('⛔ Your business account is currently blocked. Please contact support.')
     }
 
     if (!name.trim()) return setError('Business name is required.')
-
-    // FREE TIER RESTRICTION ENFORCEMENT
-    if (isFreePlan) {
-      if (logo || img1 || img2) {
-        return setError('❌ Photo uploads of your place/product are disabled on the unpaid tier. Upgrade to the ₦5,000 (1 Mo) or ₦7,999 (2 Mos) plan to add photos.')
-      }
-      if (phone.trim()) {
-        return setError('❌ Phone / WhatsApp contact numbers are disabled on the unpaid tier. Upgrade to the ₦5,000 (1 Mo) or ₦7,999 (2 Mos) plan so buyers, tourists, and researchers can call or message you.')
-      }
-      if (location.trim()) {
-        setError('⚠️ Location listing is not permitted on the unpaid tier. Upgrade to ₦5,000 for 1 month or ₦7,999 for 2 months to list your place and location.')
-        return
-      }
-    }
+    if (!category) return setError('Please select a business category.')
+    if (!location.trim()) return setError('Please enter your business location (city/neighborhood).')
+    if (!phone.trim()) return setError('Please enter your WhatsApp/phone contact number.')
 
     setUploading(true)
     setSaving(true)
+
     try {
-      let l = logoUrl, i1 = img1Url, i2 = img2Url
-      if (!isFreePlan) {
-        const [upLogo, upImg1, upImg2] = await Promise.all([
-          upload(logo),
-          upload(img1),
-          upload(img2),
-        ])
-        l = upLogo || logoUrl
-        i1 = upImg1 || img1Url
-        i2 = upImg2 || img2Url
+      // Safe non-crashing Cloudinary uploads for logo and product images
+      let uploadedLogo = logoUrl
+      let uploadedImg1 = img1Url
+      let uploadedImg2 = img2Url
+
+      if (logo) {
+        const url = await safeUpload(logo, 'Logo')
+        if (url) uploadedLogo = url
+      }
+      if (img1) {
+        const url = await safeUpload(img1, 'Product Photo 1')
+        if (url) uploadedImg1 = url
+      }
+      if (img2) {
+        const url = await safeUpload(img2, 'Product Photo 2')
+        if (url) uploadedImg2 = url
       }
 
-      const data = {
+      const businessData = {
         name: name.trim(),
         category,
-        location: isFreePlan ? 'Unspecified (Free Tier)' : location.trim() || 'Lagos',
-        city: isFreePlan ? 'Unspecified' : location.trim() || 'Lagos',
-        phone: isFreePlan ? '' : phone.trim(),
+        location: location.trim(),
+        city: location.trim(),
+        phone: phone.trim(),
         price: price.trim(),
         description: description.trim(),
-        logoUrl: isFreePlan ? '' : l,
-        image1Url: isFreePlan ? '' : i1,
-        image2Url: isFreePlan ? '' : i2,
-        verified: !isFreePlan,
+        logoUrl: uploadedLogo,
+        image1Url: uploadedImg1,
+        image2Url: uploadedImg2,
+        verified: Boolean(isApproved),
+        status: isApproved ? 'active' : 'pending',
+        paymentStatus: isApproved ? 'approved' : 'pending',
         subscriptionTier: currentTier,
         isBlocked: false,
         keywords: [
           name.trim().toLowerCase(),
           category.toLowerCase(),
-          !isFreePlan ? location.trim().toLowerCase() : '',
+          location.trim().toLowerCase(),
         ].filter(Boolean),
       }
 
       if (editingId) {
-        await updateBusiness(editingId, data)
+        await updateBusiness(editingId, businessData)
       } else {
-        await createBusiness({ uid: user.uid, data })
+        await createBusiness({ uid: user.uid, data: businessData })
       }
+
+      // Update user profile to reflect business role and selected plan
+      await updateUserProfile(user.uid, {
+        role: 'business',
+        selectedPlan: currentTier,
+        phone: phone.trim(),
+        paymentStatus: isApproved ? 'approved' : (profile?.paymentStatus || 'pending'),
+      })
+
+      if (refreshProfile) await refreshProfile()
+
+      // Direct to business portal / payment flow
       navigate('/business')
     } catch (err) {
-      console.error(err)
-      setError(err.message || 'Could not save business listing.')
+      console.error('Error saving business listing:', err)
+      setError(err.message || 'Could not save business listing. Please try again.')
     } finally {
       setUploading(false)
       setSaving(false)
@@ -187,11 +201,10 @@ export default function BusinessSetup() {
         <div style={{ fontSize: '48px', marginBottom: '12px' }}>⛔</div>
         <h1 style={{ fontSize: '22px', color: '#ef4444', marginBottom: '8px' }}>Account Suspended / Blocked</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
-          This business listing was flagged because a location was registered on the unverified Free tier.
-          Free tier allows business name indexing only.
+          This business listing was flagged for a policy review. Please contact support.
         </p>
         <Link to="/subscription" className="btn btn-primary btn-lg">
-          ⚡ Upgrade to 1 Month (₦5,000) or 2 Months (₦7,999) to Unblock →
+          View Subscription Plans →
         </Link>
       </div>
     )
@@ -199,53 +212,31 @@ export default function BusinessSetup() {
 
   return (
     <div className="setup-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h1 style={{ fontSize: '24px' }}>
-          {editingId ? 'Edit Business Listing' : 'List your business on Dotch'}
-        </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+        <div>
+          <h1 style={{ fontSize: '24px', margin: 0 }}>
+            {editingId ? 'Edit Business Listing' : 'Set Up Your Business Profile'}
+          </h1>
+          <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+            Provide your business information and photos so local customers can discover you on Dotch.
+          </p>
+        </div>
         <span
           className={`badge-pill ${
             currentTier === 'pro_2m'
               ? 'badge-vip'
-              : currentTier === 'pro_1m'
-              ? 'badge-pro'
-              : 'badge-pill'
+              : 'badge-pro'
           }`}
         >
           {currentTier === 'pro_2m'
-            ? '🔥 2 Months Active (₦7,999)'
-            : currentTier === 'pro_1m'
-            ? '⚡ 1 Month Active (₦5,000)'
-            : '🌱 Free Tier (Name Only)'}
+            ? '🔥 2 Months Plan (₦7,999)'
+            : '⚡ 1 Month Plan (₦5,000)'}
         </span>
       </div>
 
-      {isFreePlan && (
-        <div
-          style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: 'var(--radius-md)',
-            padding: '14px 16px',
-            marginBottom: '20px',
-            fontSize: '13px',
-            color: '#fca5a5',
-          }}
-        >
-          <strong>⚠️ Unpaid Tier Restrictions (Firebase Enforced):</strong>
-          <ul style={{ paddingLeft: '18px', marginTop: '6px', lineHeight: 1.5 }}>
-            <li>Photos of your place or product are <strong>locked</strong>.</li>
-            <li>Phone and WhatsApp numbers are <strong>locked</strong>.</li>
-            <li>Location and city discovery are <strong>locked</strong>.</li>
-          </ul>
-          <Link to="/subscription" style={{ color: 'var(--brand-primary)', fontWeight: 700, display: 'inline-block', marginTop: '6px' }}>
-            ⚡ Upgrade: ₦5,000 (1 Month) or ₦7,999 (2 Months) to unlock photos, location & phone →
-          </Link>
-        </div>
-      )}
-
       <form onSubmit={handleSubmit}>
         {error && <div className="alert alert-error">{error}</div>}
+        {uploadWarning && <div className="alert alert-warning" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--accent-amber)', border: '1px solid rgba(245, 158, 11, 0.25)' }}>{uploadWarning}</div>}
 
         <div className="form-group">
           <label>Business Name *</label>
@@ -276,48 +267,37 @@ export default function BusinessSetup() {
         </div>
 
         <div className="form-group">
-          <label>
-            City / Location {isFreePlan && <span style={{ color: '#ef4444' }}>(Locked on Free Tier)</span>}
-          </label>
+          <label>City & Neighborhood *</label>
           <input
             className="form-control"
-            value={isFreePlan ? '' : location}
+            value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder={isFreePlan ? 'Upgrade to add location (Lekki, Abuja, etc.)' : 'e.g. Lekki Phase 1, Lagos'}
-            disabled={isFreePlan}
+            placeholder="e.g. Lekki Phase 1, Lagos or Maitama, Abuja"
+            required
           />
-          {isFreePlan && (
-            <small style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '3px', display: 'block' }}>
-              Requires ₦5,000 Standard or ₦10,000 Corporate plan.
-            </small>
-          )}
         </div>
 
         <div className="form-group">
-          <label>
-            WhatsApp / Phone Number {isFreePlan && <span style={{ color: '#ef4444' }}>(Locked on Free Tier)</span>}
-          </label>
+          <label>WhatsApp / Phone Contact Number *</label>
           <input
             className="form-control"
-            value={isFreePlan ? '' : phone}
+            value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder={isFreePlan ? 'Upgrade to add phone & WhatsApp link' : 'e.g. +2348012345678'}
-            disabled={isFreePlan}
+            placeholder="e.g. 08012345678 or +2348012345678"
+            required
           />
-          {isFreePlan && (
-            <small style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '3px', display: 'block' }}>
-              Requires ₦5,000 Standard or ₦10,000 Corporate plan.
-            </small>
-          )}
+          <small style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '3px', display: 'block' }}>
+            Customers will tap to chat directly with you on WhatsApp using this number.
+          </small>
         </div>
 
         <div className="form-group">
-          <label>Price Range (Optional)</label>
+          <label>Price Range or Typical Pricing (Optional)</label>
           <input
             className="form-control"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
-            placeholder="e.g. ₦10,000 - ₦50,000"
+            placeholder="e.g. ₦10,000 - ₦50,000 or ₦150,000 / night"
           />
         </div>
 
@@ -327,41 +307,35 @@ export default function BusinessSetup() {
             className="form-control"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe what products/services you sell. This helps AI find your business."
+            placeholder="Describe what products or services you offer, brand highlights, and working hours."
             rows={3}
           />
         </div>
 
-        {/* Image upload controls - only accessible on paid tiers */}
-        {!isFreePlan ? (
-          <>
-            <ImagePicker label="Business Logo" file={logo} url={logoUrl} onChange={setLogo} />
-            <ImagePicker label="Product / Facility Photo 1" file={img1} url={img1Url} onChange={setImg1} />
-            <ImagePicker label="Product / Facility Photo 2" file={img2} url={img2Url} onChange={setImg2} />
-          </>
-        ) : (
-          <div
-            style={{
-              padding: '16px',
-              background: 'var(--bg-muted)',
-              border: '1px dashed var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              textAlign: 'center',
-              marginBottom: '16px',
-            }}
-          >
-            <div style={{ fontSize: '24px', marginBottom: '6px' }}>🖼️ 🔒</div>
-            <strong style={{ fontSize: '13px', display: 'block', color: 'var(--text-primary)' }}>
-              Photo Uploads Locked on Free Tier
-            </strong>
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Upgrade to Standard (₦5k/mo) or Corporate (₦10k/mo) to showcase your logo, menu, rooms, and products.
-            </p>
-          </div>
-        )}
+        {/* Cloudinary Image Upload Controls */}
+        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', marginTop: '16px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>
+            Photos & Brand Media (Cloudinary Upload)
+          </h3>
+          <ImagePicker label="Business Logo" file={logo} url={logoUrl} onChange={setLogo} disabled={uploading || saving} />
+          <ImagePicker label="Product / Place Photo 1" file={img1} url={img1Url} onChange={setImg1} disabled={uploading || saving} />
+          <ImagePicker label="Product / Place Photo 2" file={img2} url={img2Url} onChange={setImg2} disabled={uploading || saving} />
+        </div>
 
-        <button className="btn btn-primary btn-block" disabled={uploading || saving} style={{ marginTop: '16px' }}>
-          {uploading ? 'Uploading images…' : saving ? 'Saving…' : editingId ? 'Save listing' : 'Publish listing'}
+        <button
+          className="btn btn-primary btn-block btn-lg"
+          disabled={uploading || saving}
+          style={{ marginTop: '20px' }}
+        >
+          {uploading
+            ? 'Uploading photos to Cloudinary…'
+            : saving
+            ? 'Saving business profile…'
+            : editingId
+            ? 'Save Changes'
+            : isApproved
+            ? 'Publish Business Listing'
+            : 'Save & Continue to Payment →'}
         </button>
       </form>
     </div>

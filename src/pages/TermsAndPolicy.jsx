@@ -44,7 +44,16 @@ export default function TermsAndPolicy() {
           <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
             All vendor subscription fees must be paid only to: <strong>{BANK_DETAILS.bankName}</strong> •{' '}
             <strong style={{ fontFamily: 'monospace', color: 'var(--brand-primary)' }}>{BANK_DETAILS.accountNumber}</strong> •{' '}
-            {BANK_DETAILS.accountName}. Direct support and payment receipts line: <strong>+{BANK_DETAILS.adminWhatsApp}</strong>.
+            {BANK_DETAILS.accountName}. For support and receipts:{' '}
+            <a
+              href={`https://wa.me/${(BANK_DETAILS.adminWhatsApp || '').replace(/[^0-9]/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline btn-sm"
+              style={{ display: 'inline-flex', padding: '2px 8px', fontSize: '12px', marginLeft: '4px' }}
+            >
+              Chat on WhatsApp
+            </a>
           </span>
         </div>
 

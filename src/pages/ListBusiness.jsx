@@ -64,61 +64,61 @@ export default function ListBusiness() {
         <div className="list-biz-benefits-grid">
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: 'var(--brand-light)', color: 'var(--brand-primary)' }}>
-              💬
+              🔎
             </div>
-            <h3>100% Direct WhatsApp Deals</h3>
+            <h3>Get Discovered by Ready Buyers</h3>
             <p>
-              Zero commission fees. When customers find you, they tap one button to chat or call you directly on WhatsApp. You negotiate and keep 100% of your money.
+              Appear instantly in searches when customers, tourists, and researchers look for what you sell across Nigerian cities.
             </p>
           </div>
 
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
-              📸
+              🏪
             </div>
-            <h3>Verified Place & Product Photos</h3>
+            <h3>Create a Public Business Profile</h3>
             <p>
-              Customers don't trust text-only listings. Post high quality photos of your storefront, hotel rooms, food dishes, or gadgets to prove you are real.
+              Get an official, search-indexed business profile on Dotch showcasing your authentic brand name, description, and verified credentials.
             </p>
           </div>
 
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)' }}>
-              📍
+              📸
             </div>
-            <h3>Exact Neighborhood Visibility</h3>
+            <h3>Display Your Products or Services</h3>
             <p>
-              Customers in Lekki, Ikeja, Maitama, Dugbe, Choba, or Ogbete can see you are nearby and walk into your store or order on the spot.
+              Upload real photos of your storefront, dishes, rooms, gadgets, or workshop so buyers can see and trust your quality before contacting you.
             </p>
           </div>
 
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-rose)' }}>
-              ⭐
+              📍
             </div>
-            <h3>Official Verified Gold Badge</h3>
+            <h3>Reach Customers in Your Location</h3>
             <p>
-              Separate your genuine business from online impersonators and scammers with Dotch's official verified business checkmark.
+              Connect with nearby buyers in your exact city and neighborhood (Lekki, Ikeja, Maitama, Wuse, Bodija, Choba, and more).
             </p>
           </div>
 
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: 'var(--brand-light)', color: 'var(--brand-primary)' }}>
-              🔎
+              📈
             </div>
-            <h3>10,000+ Daily Searches</h3>
+            <h3>Track Useful Business Growth</h3>
             <p>
-              Thousands of tourists, business travelers, and ready buyers search Dotch every day looking for places to stay, eat, and buy.
+              Monitor your listing status and discover how customers search and reach out to your business on Dotch.
             </p>
           </div>
 
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
-              ⚡
+              💬
             </div>
-            <h3>Instant 5-Minute Setup</h3>
+            <h3>Direct WhatsApp Contact</h3>
             <p>
-              No lengthy paperwork. Just register, paste your business details and photos, and your listing goes live across Nigeria immediately.
+              Buyers chat directly on your personal WhatsApp line. Keep 100% of your customer relationships and profits with zero platform commission.
             </p>
           </div>
         </div>
@@ -173,11 +173,11 @@ export default function ListBusiness() {
             </ul>
 
             <Link
-              to={user ? '/business/setup' : '/register?role=vendor'}
+              to={user ? '/business/setup?plan=pro_1m' : '/register?role=vendor&plan=pro_1m'}
               className="btn btn-outline btn-block"
               style={{ textAlign: 'center', marginTop: 'auto' }}
             >
-              {user ? 'Set Up Listing →' : 'Sign Up for ₦5,000 Plan →'}
+              {user ? 'Set Up 1-Month Listing →' : 'Sign Up for ₦5,000 Plan →'}
             </Link>
           </div>
 
@@ -222,11 +222,11 @@ export default function ListBusiness() {
             </ul>
 
             <Link
-              to={user ? '/business/setup' : '/register?role=vendor'}
+              to={user ? '/business/setup?plan=pro_2m' : '/register?role=vendor&plan=pro_2m'}
               className="btn btn-primary btn-block"
               style={{ textAlign: 'center', marginTop: 'auto' }}
             >
-              {user ? 'Get 2 Months Plan →' : 'Sign Up for ₦7,999 Plan →'}
+              {user ? 'Set Up 2-Month Listing →' : 'Sign Up for ₦7,999 Plan →'}
             </Link>
           </div>
         </div>

@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { auth } from '../firebase'
 import {
   watchAuth,
   getUserProfile,
   logoutUser,
+  sendVerificationEmail,
 } from '../services/authService'
 
 const AuthContext = createContext(null)
@@ -71,6 +73,22 @@ export function AuthProvider({ children }) {
     switchViewMode('explorer')
   }
 
+  const reloadUser = async () => {
+    if (auth?.currentUser) {
+      await auth.currentUser.reload()
+      setUser({ ...auth.currentUser })
+      if (auth.currentUser.uid) {
+        setProfile(await getUserProfile(auth.currentUser.uid))
+      }
+    }
+  }
+
+  const sendVerification = async () => {
+    if (auth?.currentUser) {
+      await sendVerificationEmail(auth.currentUser)
+    }
+  }
+
   const refreshProfile = async () => {
     if (user) setProfile(await getUserProfile(user.uid))
   }
@@ -83,6 +101,8 @@ export function AuthProvider({ children }) {
         loading,
         logout,
         refreshProfile,
+        reloadUser,
+        sendVerification,
         viewMode: viewMode || (profile?.role === 'vendor' || profile?.role === 'business' ? 'business' : 'explorer'),
         switchViewMode,
         theme,

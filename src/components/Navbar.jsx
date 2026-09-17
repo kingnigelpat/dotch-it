@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -6,16 +5,13 @@ export default function Navbar() {
   const { user, profile, logout, theme, toggleTheme } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const handleLogout = async () => {
-    setMobileMenuOpen(false)
     await logout()
     navigate('/')
   }
 
-  const closeMenu = () => setMobileMenuOpen(false)
-  const isVendor = profile?.role === 'vendor' || profile?.role === 'business'
+  const isBusiness = profile?.role === 'vendor' || profile?.role === 'business'
   const isAdmin = profile?.role === 'admin'
 
   return (
@@ -23,7 +19,7 @@ export default function Navbar() {
       <div className="navbar-inner">
         {/* Brand Logo */}
         <div className="navbar-brand-group">
-          <Link to="/" className="brand" onClick={closeMenu}>
+          <Link to="/" className="brand">
             <img src="/icon-logo.png" alt="Dotch" className="brand-logo-img" />
             <span className="brand-name">
               Dotch<span className="brand-dot">.</span>
@@ -43,22 +39,15 @@ export default function Navbar() {
             to="/dashboard"
             className={`nav-link ${location.pathname === '/dashboard' ? 'nav-link-active' : ''}`}
           >
-            🔍 Explore
+            🔍 Search
           </Link>
 
-          {isVendor ? (
+          {isBusiness && (
             <Link
               to="/business"
               className={`nav-link ${location.pathname.startsWith('/business') ? 'nav-link-active' : ''}`}
             >
-              🏪 Vendor Dashboard
-            </Link>
-          ) : (
-            <Link
-              to="/list-business"
-              className={`nav-link ${location.pathname === '/list-business' ? 'nav-link-active' : ''}`}
-            >
-              🏪 List Business
+              📊 Business
             </Link>
           )}
 
@@ -68,11 +57,18 @@ export default function Navbar() {
               className={`nav-link ${location.pathname === '/admin' ? 'nav-link-active' : ''}`}
               style={{ color: 'var(--brand-primary)', fontWeight: 800 }}
             >
-              🛡️ Admin Panel
+              🛡️ Admin
             </Link>
           )}
 
-          {/* Single Theme Toggle Button */}
+          <Link
+            to="/account"
+            className={`nav-link ${location.pathname === '/account' ? 'nav-link-active' : ''}`}
+          >
+            ⚙️ Settings
+          </Link>
+
+          {/* Theme Toggle Button */}
           <button
             type="button"
             id="navbar-theme-toggle"
@@ -89,23 +85,23 @@ export default function Navbar() {
               <Link to="/login" className="nav-link" style={{ fontWeight: 600 }}>
                 Log in
               </Link>
-              <Link to="/list-business" className="nav-cta">
-                ✨ List Your Business
+              <Link to="/register" className="nav-cta">
+                Sign Up
               </Link>
             </div>
           ) : (
             <div className="nav-user-dropdown">
-              <div className="nav-user-badge">
-                <span className={`avatar-circle ${isVendor ? 'vendor-avatar' : ''}`}>
+              <Link to="/account" className="nav-user-badge" style={{ textDecoration: 'none' }}>
+                <span className={`avatar-circle ${isBusiness ? 'vendor-avatar' : ''}`}>
                   {(profile?.name?.[0] || user.email?.[0] || 'U').toUpperCase()}
                 </span>
                 <span className="user-name-text">
                   {profile?.name?.split(' ')[0] || user.email?.split('@')[0]}
                 </span>
-                <span className={`badge-pill ${isAdmin ? 'admin-badge' : isVendor ? 'vendor-badge' : 'explorer-badge'}`}>
-                  {isAdmin ? 'Admin' : isVendor ? 'Vendor' : 'Explorer'}
+                <span className={`badge-pill ${isAdmin ? 'admin-badge' : isBusiness ? 'vendor-badge' : 'explorer-badge'}`}>
+                  {isAdmin ? 'Admin' : isBusiness ? 'Business' : 'Explorer'}
                 </span>
-              </div>
+              </Link>
               <button className="btn btn-ghost btn-sm" onClick={handleLogout} title="Sign out">
                 Sign out
               </button>
@@ -113,17 +109,8 @@ export default function Navbar() {
           )}
         </nav>
 
-        {/* Mobile Right Controls */}
+        {/* Mobile Right Controls: Minimal & Clean (No duplicate menu drawer) */}
         <div className="mobile-right-controls mobile-only">
-          {!user && (
-            <Link
-              to="/login"
-              className="btn btn-outline btn-sm"
-              style={{ padding: '5px 12px', fontSize: '13px', borderRadius: 'var(--radius-pill)', fontWeight: 700 }}
-            >
-              Log in
-            </Link>
-          )}
           <button
             type="button"
             className="theme-toggle-btn"
@@ -133,61 +120,29 @@ export default function Navbar() {
           >
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
-          <button
-            className="mobile-menu-toggle"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle Navigation Menu"
-          >
-            {mobileMenuOpen ? '✕' : '☰'}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu Dropdown Drawer */}
-      {mobileMenuOpen && (
-        <div className="mobile-menu-dropdown mobile-only">
-          <Link to="/" className="mobile-menu-item" onClick={closeMenu}>
-            🏠 Home
-          </Link>
-          <Link to="/dashboard" className="mobile-menu-item" onClick={closeMenu}>
-            🔍 Explore
-          </Link>
-          <Link
-            to={isVendor ? '/business' : '/list-business'}
-            className="mobile-menu-item"
-            onClick={closeMenu}
-          >
-            🏪 {isVendor ? 'Vendor Dashboard' : 'List Business'}
-          </Link>
-
-          {isAdmin && (
-            <Link to="/admin" className="mobile-menu-item" style={{ color: 'var(--brand-primary)', fontWeight: 800 }} onClick={closeMenu}>
-              🛡️ Admin Panel
-            </Link>
-          )}
 
           {!user ? (
-            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '10px', marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <Link to="/login" className="mobile-menu-item" onClick={closeMenu}>
-                👤 Log in
-              </Link>
-              <Link to="/register" className="mobile-menu-item mobile-menu-cta" onClick={closeMenu}>
-                ✨ Create Account
-              </Link>
-            </div>
+            <Link
+              to="/login"
+              className="btn btn-outline btn-sm"
+              style={{ padding: '5px 12px', fontSize: '13px', borderRadius: 'var(--radius-pill)', fontWeight: 700 }}
+            >
+              Log in
+            </Link>
           ) : (
-            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '10px', marginTop: '6px' }}>
-              <button
-                className="mobile-menu-item"
-                style={{ color: 'var(--accent-rose)', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '15px' }}
-                onClick={handleLogout}
-              >
-                🚪 Sign out ({profile?.name?.split(' ')[0] || user.email})
-              </button>
-            </div>
+            <Link
+              to="/account"
+              className="nav-user-badge"
+              style={{ textDecoration: 'none', padding: '4px 8px' }}
+              title="Profile & Settings"
+            >
+              <span className={`avatar-circle ${isBusiness ? 'vendor-avatar' : ''}`} style={{ width: '28px', height: '28px', fontSize: '12px' }}>
+                {(profile?.name?.[0] || user.email?.[0] || 'U').toUpperCase()}
+              </span>
+            </Link>
           )}
         </div>
-      )}
+      </div>
     </header>
   )
 }

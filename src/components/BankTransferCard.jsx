@@ -289,7 +289,7 @@ export default function BankTransferCard({
             style={{ textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
             <span>💬</span>
-            <span>Send Payment Proof to Admin on WhatsApp</span>
+            <span>Chat on WhatsApp</span>
           </a>
         ) : (
           <button

@@ -13,6 +13,7 @@ import {
   limit,
 } from 'firebase/firestore'
 import { fetchOsmBusinesses } from './osmService'
+import { cacheService } from '../utils/cacheService'
 
 export const BUSINESS_COLLECTION = 'businesses'
 
@@ -355,12 +356,16 @@ export async function createBusiness({ uid, data }) {
     createdAt: new Date().toISOString(),
   }
   await setDoc(ref, payload)
+  cacheService.clear('all_businesses_')
+  cacheService.clear('search_')
   return { id: ref.id, ...payload }
 }
 
 export async function updateBusiness(id, data) {
   const ref = doc(db, BUSINESS_COLLECTION, id)
   await updateDoc(ref, data)
+  cacheService.clear('all_businesses_')
+  cacheService.clear('search_')
 }
 
 export async function getBusiness(id) {
@@ -392,19 +397,28 @@ export async function getBusinessByOwner(uid) {
 export async function deleteBusiness(id) {
   try {
     await deleteDoc(doc(db, BUSINESS_COLLECTION, id))
+    cacheService.clear('all_businesses_')
+    cacheService.clear('search_')
   } catch (err) {
     console.warn('Could not delete firestore business:', err)
   }
 }
 
 export async function searchBusinesses({ category, keyword, location, max = 50 }) {
+  const cacheKey = `search_${category || ''}_${keyword || ''}_${location || ''}_${max}`
+  const cached = cacheService.get(cacheKey)
+  if (cached) return cached
+
   let dbResults = []
   if (db) {
     try {
       const col = collection(db, BUSINESS_COLLECTION)
       let q = category ? query(col, where('category', '==', category)) : query(col)
       const snap = await getDocs(q)
-      dbResults = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      dbResults = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        // REQUIREMENT 16: Only approved / active businesses are publicly listed in search
+        .filter((b) => b.status === 'active' || b.paymentStatus === 'approved' || b.verified === true)
     } catch (err) {
       console.warn('Firestore fetch fallback:', err)
     }
@@ -493,7 +507,7 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
     }
   }
 
-  // Sort by subscription tier first (enterprise_monthly / growth_vip > pro_monthly > starter)
+  // Sort by subscription tier first (pro_2m > pro_1m > enterprise_monthly / growth_vip > pro_monthly > starter)
   const tierWeight = { pro_2m: 4, pro_1m: 3, enterprise_monthly: 3, pro_monthly: 2, starter: 1 }
   filtered.sort((a, b) => {
     const weightA = tierWeight[a.subscriptionTier] || 0
@@ -501,16 +515,25 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
     return weightB - weightA
   })
 
-  return filtered.slice(0, max)
+  const finalResults = filtered.slice(0, max)
+  cacheService.set(cacheKey, finalResults, 180) // Cache search results for 3 minutes
+  return finalResults
 }
 
 export async function getAllBusinesses(max = 50) {
+  const cacheKey = `all_businesses_${max}`
+  const cached = cacheService.get(cacheKey)
+  if (cached) return cached
+
   let dbResults = []
   if (db) {
     try {
       const q = query(collection(db, BUSINESS_COLLECTION), limit(max))
       const snap = await getDocs(q)
-      dbResults = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      dbResults = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        // REQUIREMENT 16: Only approved / active businesses are publicly listed
+        .filter((b) => b.status === 'active' || b.paymentStatus === 'approved' || b.verified === true)
     } catch {
       // ignore
     }
@@ -519,7 +542,7 @@ export async function getAllBusinesses(max = 50) {
   const existingIds = new Set(dbResults.map((b) => b.id))
   const combined = [...dbResults, ...DEMO_BUSINESSES.filter((d) => !existingIds.has(d.id))]
   
-  // Sort priority tiers first (enterprise_monthly / growth_vip > pro_monthly > starter)
+  // Sort priority tiers first
   const tierWeight = { pro_2m: 4, pro_1m: 3, enterprise_monthly: 3, pro_monthly: 2, starter: 1 }
   combined.sort((a, b) => {
     const weightA = tierWeight[a.subscriptionTier] || 0
@@ -527,7 +550,9 @@ export async function getAllBusinesses(max = 50) {
     return weightB - weightA
   })
 
-  return combined.slice(0, max)
+  const results = combined.slice(0, max)
+  cacheService.set(cacheKey, results, 300) // Cache listings for 5 minutes
+  return results
 }
 
 export async function updateBusinessSubscription(businessId, { planId, reference, amount }) {

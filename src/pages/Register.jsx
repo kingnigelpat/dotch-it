@@ -16,13 +16,13 @@ export default function Register() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const onSubmit = async ({ name, email, password }) => {
+  const onSubmit = async ({ name, email, password, phone }) => {
     setError('')
     setLoading(true)
     try {
-      await registerUser({ name, email, password, role, plan })
+      await registerUser({ name, email, password, phone, role, plan })
       if (refreshProfile) await refreshProfile()
-      navigate(role === 'vendor' || role === 'business' ? '/business' : (redirectUrl || '/dashboard'), {
+      navigate(role === 'vendor' || role === 'business' ? '/business' : (redirectUrl || '/'), {
         replace: true,
       })
     } catch (e) {
@@ -45,6 +45,7 @@ export default function Register() {
       fields={[
         { name: 'name', label: isVendor ? 'Business Owner / Contact Name' : 'Full Name', placeholder: 'Enter your name' },
         { name: 'email', label: 'Email Address', type: 'email', placeholder: 'name@example.com' },
+        { name: 'phone', label: 'Phone Number / WhatsApp', type: 'tel', placeholder: 'e.g. 08012345678 or +234...' },
         { name: 'password', label: 'Password', type: 'password', placeholder: 'At least 6 characters' },
       ]}
     >

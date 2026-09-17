@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
 import MobileBottomNav from './components/MobileBottomNav'
 import Landing from './pages/Landing'
+import AuthenticatedHome from './pages/AuthenticatedHome'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import FinderDashboard from './pages/FinderDashboard'
@@ -49,7 +50,7 @@ function AdminOnly({ children }) {
 }
 
 export default function App() {
-  const { profile } = useAuth()
+  const { user, profile } = useAuth()
 
   return (
     <div className="app">
@@ -57,7 +58,7 @@ export default function App() {
       <SetupNotice />
       <main className="main">
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={user ? <AuthenticatedHome /> : <Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
