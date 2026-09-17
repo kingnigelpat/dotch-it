@@ -14,6 +14,8 @@ import {
 } from 'firebase/firestore'
 import { fetchOsmBusinesses } from './osmService'
 import { cacheService } from '../utils/cacheService'
+import { NIGERIA_LOCATIONS } from '../data/nigeriaLocations'
+import { calculateDistanceKm, getCoordsForLocationString } from './geolocationService'
 
 export const BUSINESS_COLLECTION = 'businesses'
 
@@ -404,8 +406,55 @@ export async function deleteBusiness(id) {
   }
 }
 
-export async function searchBusinesses({ category, keyword, location, max = 50 }) {
-  const cacheKey = `search_${category || ''}_${keyword || ''}_${location || ''}_${max}`
+/**
+ * Smart location matching function supporting City & State hierarchy in Nigeria
+ */
+function isLocationMatch(b, targetLocStr) {
+  if (!targetLocStr) return true
+  const target = targetLocStr.toLowerCase().trim()
+  if (['everywhere', 'all of nigeria', 'all locations', 'all', 'near me'].includes(target)) return true
+
+  const bLoc = (b.location || '').toLowerCase()
+  const bCity = (b.city || '').toLowerCase()
+  const bState = (b.state || '').toLowerCase()
+  const combined = `${bLoc} ${bCity} ${bState}`
+
+  // 1. Direct substring match
+  if (combined.includes(target)) return true
+  if (bCity && bCity.length > 3 && target.includes(bCity)) return true
+
+  // 2. State-to-Cities matching (e.g. Target = "Lagos" or "Lagos State")
+  const stateObj = NIGERIA_LOCATIONS.find((stItem) => {
+    const sName = stItem.state.toLowerCase()
+    return target.includes(sName) || sName.includes(target)
+  })
+
+  if (stateObj) {
+    const stateName = stateObj.state.toLowerCase()
+    if (combined.includes(stateName)) return true
+    for (const city of stateObj.cities) {
+      const cClean = city.toLowerCase().replace(/\(.*\)/g, '').trim()
+      if (cClean && cClean.length > 3 && combined.includes(cClean)) return true
+    }
+  }
+
+  // 3. City-to-State matching (e.g. Target = "Ikeja")
+  for (const stItem of NIGERIA_LOCATIONS) {
+    for (const city of stItem.cities) {
+      const cClean = city.toLowerCase().replace(/\(.*\)/g, '').trim()
+      if (cClean && (target.includes(cClean) || cClean.includes(target))) {
+        if (combined.includes(cClean) || combined.includes(stItem.state.toLowerCase())) {
+          return true
+        }
+      }
+    }
+  }
+
+  return false
+}
+
+export async function searchBusinesses({ category, keyword, location, userCoords, max = 50 }) {
+  const cacheKey = `search_${category || ''}_${keyword || ''}_${location || ''}_${userCoords?.lat || ''}_${max}`
   const cached = cacheService.get(cacheKey)
   if (cached) return cached
 
@@ -444,25 +493,11 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
 
   if (
     location &&
-    location !== 'Near me' &&
     location !== 'Everywhere' &&
     location !== 'All of Nigeria' &&
     location !== 'All Locations'
   ) {
-    const locLower = location.toLowerCase().trim()
-
-    filtered = filtered.filter((b) => {
-      const bLoc = (b.location || '').toLowerCase()
-      const bCity = (b.city || '').toLowerCase()
-      const bState = (b.state || '').toLowerCase()
-
-      // Match city, state, or address/location field
-      if (bLoc.includes(locLower) || locLower.includes(bLoc)) return true
-      if (bCity.includes(locLower) || locLower.includes(bCity)) return true
-      if (bState && (bState.includes(locLower) || locLower.includes(bState))) return true
-
-      return false
-    })
+    filtered = filtered.filter((b) => isLocationMatch(b, location))
   }
 
   if (keyword) {
@@ -481,7 +516,6 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
   }
 
   // If local results are few, attempt to find real Overpass OpenStreetMap POIs ONLY for the requested location.
-  // Never default to 'Lagos' if the user requested a different location!
   if (
     filtered.length < 5 &&
     location &&
@@ -496,14 +530,7 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
         category: category || keyword || 'all',
         limit: 15,
       })
-      // Only include OSM places that actually belong to the target location!
-      const validOsm = (osmPlaces || []).filter((o) => {
-        const oLoc = (o.location || '').toLowerCase()
-        const oCity = (o.city || '').toLowerCase()
-        const target = targetCity.toLowerCase()
-        return oLoc.includes(target) || oCity.includes(target) || target.includes(oCity)
-      })
-
+      const validOsm = (osmPlaces || []).filter((o) => isLocationMatch(o, targetCity))
       const existingNames = new Set(filtered.map((b) => b.name.toLowerCase()))
       const newOsm = validOsm.filter((o) => !existingNames.has(o.name.toLowerCase()))
       filtered = [...filtered, ...newOsm]
@@ -512,16 +539,42 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
     }
   }
 
-  // Sort by subscription tier first (pro_2m > pro_1m > enterprise_monthly / growth_vip > pro_monthly > starter)
+  // Calculate distance if user GPS coordinates or location is available
+  const originCoords = userCoords || (location ? getCoordsForLocationString(location) : null)
+  if (originCoords) {
+    filtered = filtered.map((b) => {
+      let bLat = b.lat
+      let bLng = b.lng
+      if (!bLat || !bLng) {
+        const c = getCoordsForLocationString(b.location || b.city)
+        if (c) {
+          bLat = c.lat
+          bLng = c.lng
+        }
+      }
+      if (bLat && bLng) {
+        const d = calculateDistanceKm(originCoords.lat, originCoords.lng, bLat, bLng)
+        if (d !== null) {
+          return { ...b, distanceKm: d, distance: `${d} km away` }
+        }
+      }
+      return b
+    })
+  }
+
+  // Sort by distance if GPS/location active, else sort by subscription tier
   const tierWeight = { pro_2m: 4, pro_1m: 3, enterprise_monthly: 3, pro_monthly: 2, starter: 1 }
   filtered.sort((a, b) => {
+    if (a.distanceKm !== undefined && b.distanceKm !== undefined) {
+      return a.distanceKm - b.distanceKm
+    }
     const weightA = tierWeight[a.subscriptionTier] || 0
     const weightB = tierWeight[b.subscriptionTier] || 0
     return weightB - weightA
   })
 
   const finalResults = filtered.slice(0, max)
-  cacheService.set(cacheKey, finalResults, 180) // Cache search results for 3 minutes
+  cacheService.set(cacheKey, finalResults, 180)
   return finalResults
 }
 

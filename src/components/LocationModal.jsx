@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { NIGERIA_LOCATIONS, ALL_STATES, POPULAR_STATES } from '../data/nigeriaLocations'
+import { getBrowserCurrentPosition } from '../services/geolocationService'
 
 export default function LocationModal({ isOpen, onClose, currentLocation = 'Lagos', onSelectLocation }) {
   // Sanitize location: if hyphenated from legacy data, take the first part
@@ -76,49 +77,18 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
     if (onClose) onClose()
   }
 
-  const handleDetect = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.')
-      return
-    }
-
+  const handleDetect = async () => {
     setDetecting(true)
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude, longitude } = pos.coords
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-          )
-          const data = await res.json()
-          const detectedCity =
-            data.address?.city ||
-            data.address?.city_district ||
-            data.address?.town ||
-            data.address?.suburb
-          const detectedState = data.address?.state
-
-          // Clean state match
-          const matchState = NIGERIA_LOCATIONS.find((s) =>
-            detectedState && detectedState.toLowerCase().includes((s.state || '').toLowerCase())
-          )
-
-          const finalLocation = detectedCity || (matchState ? matchState.state : 'Lagos')
-          if (onSelectLocation) onSelectLocation(finalLocation)
-          if (onClose) onClose()
-        } catch {
-          if (onSelectLocation) onSelectLocation('Lagos')
-          if (onClose) onClose()
-        } finally {
-          setDetecting(false)
-        }
-      },
-      () => {
-        alert('Location permission denied or unavailable.')
-        setDetecting(false)
-      },
-      { timeout: 8000 }
-    )
+    try {
+      const pos = await getBrowserCurrentPosition()
+      const locationName = pos.city || pos.state || pos.locationName || 'Lagos'
+      if (onSelectLocation) onSelectLocation(locationName)
+      if (onClose) onClose()
+    } catch (err) {
+      alert(err.message || 'Could not detect your current location. Please select your city or state from the list.')
+    } finally {
+      setDetecting(false)
+    }
   }
 
   if (!isOpen) return null

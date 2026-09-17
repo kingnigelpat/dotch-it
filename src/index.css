@@ -1580,51 +1580,74 @@ a:hover {
     padding: 0 6px;
   }
 
-  /* Mobile Search Bar - stays in one row, never stacks */
+  /* Mobile Search Bar — stacked 2-row layout for spacious typing & location selection */
   .search-container {
     width: 100%;
+    margin: 0 auto;
   }
 
   .search-box {
-    flex-direction: row;
-    align-items: center;
-    padding: 6px 8px;
-    gap: 6px;
-    border-radius: var(--radius-md);
-    flex-wrap: nowrap;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 12px;
+    gap: 10px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   }
 
   .search-input-wrap {
-    flex: 1;
-    min-width: 0;
-    padding: 2px 4px;
+    width: 100%;
+    padding: 4px 2px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 8px;
   }
 
   .search-input {
     font-size: 16px; /* Must be >= 16px to prevent iOS Safari & Android mobile browser auto-zoom */
     width: 100%;
+    font-weight: 600;
   }
 
   .search-box-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
   }
 
   .location-pill-btn {
-    padding: 7px 10px;
-    font-size: 12px;
-    border-radius: var(--radius-sm);
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    background: var(--bg-muted);
+    border: 1px solid var(--border-subtle);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .location-pill-text {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .search-submit-btn {
-    min-height: 36px;
-    padding: 7px 12px;
-    font-size: 13px;
-    border-radius: var(--radius-sm);
+    min-height: 40px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: var(--radius-md);
     white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
   }
 
   /* Category Cards & Grids on Mobile */
