@@ -265,7 +265,25 @@ export default function AuthenticatedHome() {
             </div>
           </div>
         </section>
-      ) : null}
+      ) : (
+        <section className="ad-hero-section" aria-label="DOTCH Spotlight">
+          <div style={{
+            background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #4f46e5 100%)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '48px 24px',
+            textAlign: 'center',
+            color: '#fff',
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📢</div>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px' }}>
+              DOTCH Spotlight — Coming Soon
+            </h2>
+            <p style={{ fontSize: '15px', opacity: 0.85, maxWidth: '480px', margin: '0 auto' }}>
+              Admin-curated business campaigns and featured promotions will appear here. Check back soon!
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* SECTION 2: DOTCH SPOTLIGHT FLYERS & CAMPAIGNS */}
       {activeFlyerAds.length > 0 && (

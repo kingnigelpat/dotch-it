@@ -86,10 +86,15 @@ export default function BusinessDetail() {
     <div className="business-detail-page" style={{ paddingBottom: '90px' }}>
       {/* Top Breadcrumb & Clear Back Navigation */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-        <Link to="/dashboard" className="btn btn-outline btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={() => navigate(-1)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
           <span>←</span>
-          <span>Back to Search</span>
-        </Link>
+          <span>Go Back</span>
+        </button>
         <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
           Directory ID: {business.id?.slice(0, 12)}
         </span>
@@ -251,7 +256,9 @@ export default function BusinessDetail() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px' }}>
               <span>⭐</span>
               <strong style={{ color: 'var(--text-primary)' }}>Rating:</strong>
-              <span style={{ color: 'var(--text-secondary)' }}>{business.rating || '4.9'} (Verified Directory Score)</span>
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {business.rating ? `${business.rating} / 5.0` : 'Not yet rated'}
+              </span>
             </div>
 
             {business.price && (

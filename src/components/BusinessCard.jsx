@@ -86,9 +86,9 @@ export default function BusinessCard({ business }) {
           📍 {business.location || business.city || 'Lagos'}
           {business.distance && ` · ${business.distance}`}
         </span>
-        <span className="result-meta-item">
-          ⭐ {business.rating || '4.9'}
-        </span>
+        {business.rating && (
+          <span className="result-meta-item">⭐ {business.rating}</span>
+        )}
       </div>
 
       {(business.image1Url || business.image2Url) && (

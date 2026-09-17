@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function AuthForm({ title, subtitle, fields, onSubmit, submitLabel, error, loading, children }) {
+export default function AuthForm({ title, subtitle, fields, onSubmit, submitLabel, error, loading, children, onValuesChange }) {
   const [values, setValues] = useState(() =>
     fields.reduce((acc, f) => ({ ...acc, [f.name]: '' }), {}),
   )
@@ -41,9 +41,14 @@ export default function AuthForm({ title, subtitle, fields, onSubmit, submitLabe
                   required={f.required !== false}
                   value={values[f.name]}
                   style={isPassword ? { paddingRight: '46px' } : undefined}
-                  onChange={(e) =>
-                    setValues((v) => ({ ...v, [f.name]: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setValues((v) => {
+                      const next = { ...v, [f.name]: val }
+                      if (onValuesChange) onValuesChange(next)
+                      return next
+                    })
+                  }}
                 />
                 {isPassword && (
                   <button

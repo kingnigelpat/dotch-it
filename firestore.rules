@@ -43,6 +43,14 @@ service cloud.firestore {
       );
     }
 
+    // Advertisements collection
+    match /advertisements/{adId} {
+      // Anyone can read active ads
+      allow read: if true;
+      // Only admin can create, update, or delete ads
+      allow create, update, delete: if isAdmin();
+    }
+
     // User profiles
     match /users/{userId} {
       allow read: if isAuthenticated();

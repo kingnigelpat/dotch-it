@@ -9,6 +9,7 @@ import {
   query,
   where,
 } from 'firebase/firestore'
+import { cacheService } from '../utils/cacheService'
 
 export const AD_COLLECTION = 'advertisements'
 
@@ -95,8 +96,6 @@ export const SAMPLE_ADVERTS = [
     createdAt: new Date().toISOString(),
   },
 ]
-
-import { cacheService } from '../utils/cacheService'
 
 const CACHE_KEY_ACTIVE_ADS = 'active_ads'
 

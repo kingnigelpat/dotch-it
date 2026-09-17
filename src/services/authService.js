@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   updateProfile,
   sendEmailVerification,
+  sendPasswordResetEmail,
 } from 'firebase/auth'
 import {
   doc,
@@ -104,6 +105,10 @@ export async function revokeVendorPayment(uid) {
     paymentApproved: false,
     revokedAt: serverTimestamp(),
   })
+}
+
+export async function resetPassword(email) {
+  return sendPasswordResetEmail(auth, email)
 }
 
 export async function loginUser(email, password) {
