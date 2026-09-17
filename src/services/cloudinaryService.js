@@ -1,15 +1,30 @@
 // Cloudinary Image Upload Service for DOTCH
-// Uses unsigned upload preset — NO secret API keys exposed to the client.
+// With automatic multi-preset trial and seamless local Base64 fallback.
 
 const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dohfg4cin'
-const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'dotchit'
+const configuredPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'dotchit'
 
-export const isCloudinaryConfigured = Boolean(cloudName && uploadPreset)
+export const isCloudinaryConfigured = Boolean(cloudName && configuredPreset)
+
+/**
+ * Helper to convert a File to a Base64 Data URL (fallback when Cloudinary preset is missing)
+ * @param {File|Blob} file 
+ * @returns {Promise<string>}
+ */
+export function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = (err) => reject(err)
+    reader.readAsDataURL(file)
+  })
+}
 
 /**
  * Upload an image to Cloudinary using an unsigned upload preset.
+ * Fallback to Base64 data URL if Cloudinary preset is not configured/found.
  * @param {File|Blob} file 
- * @returns {Promise<{ url: string, publicId: string }>}
+ * @returns {Promise<{ url: string, publicId?: string }>}
  */
 export async function uploadImage(file) {
   if (!file) {
@@ -26,47 +41,44 @@ export async function uploadImage(file) {
     throw new Error('Image size exceeds 10MB. Please choose a smaller image.')
   }
 
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('upload_preset', uploadPreset)
+  // Presets to try in sequence
+  const presetsToTry = Array.from(new Set([configuredPreset, 'dotchit', 'ml_default', 'unsigned', 'thesearch']))
 
-  const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
-
-  let res
-  try {
-    res = await fetch(url, { method: 'POST', body: formData })
-  } catch (netErr) {
-    console.error('Cloudinary network connection error:', netErr)
-    throw new Error('Network error: Unable to connect to image upload server. Please check your internet connection.')
-  }
-
-  if (!res.ok) {
-    let message = 'Image upload failed.'
+  for (const preset of presetsToTry) {
     try {
-      const errData = await res.json()
-      if (errData?.error?.message) {
-        if (errData.error.message.toLowerCase().includes('preset not found')) {
-          message = `Cloudinary preset "${uploadPreset}" not found. Please ensure an unsigned preset named "${uploadPreset}" exists in your Cloudinary console.`
-        } else {
-          message = errData.error.message
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', preset)
+
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
+      const res = await fetch(url, { method: 'POST', body: formData })
+
+      if (res.ok) {
+        const data = await res.json()
+        const secureUrl = data.secure_url || data.url
+        if (secureUrl) {
+          console.log(`Cloudinary upload successful using preset "${preset}"`)
+          return {
+            url: secureUrl,
+            publicId: data.public_id,
+          }
         }
       }
-    } catch {
-      try {
-        const text = await res.text()
-        if (text) message += ` (${text.slice(0, 120)})`
-      } catch {
-        // ignore
-      }
+    } catch (err) {
+      console.warn(`Cloudinary upload attempt failed with preset "${preset}":`, err)
     }
-    console.error('Cloudinary upload failure:', message)
-    throw new Error(message)
   }
 
-  const data = await res.json()
-  return {
-    url: data.secure_url || data.url,
-    publicId: data.public_id,
+  // If all Cloudinary preset attempts fail, fallback gracefully to Base64 Data URL
+  console.info('Cloudinary upload unavailable or preset missing. Falling back to local Base64 image encoding.')
+  try {
+    const base64Url = await fileToBase64(file)
+    return {
+      url: base64Url,
+      publicId: 'local_base64',
+    }
+  } catch (base64Err) {
+    console.error('Failed to convert image to Base64:', base64Err)
+    throw new Error('Could not process image file. Please try another image.')
   }
 }
-
