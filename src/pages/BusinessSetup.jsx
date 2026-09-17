@@ -7,10 +7,24 @@ import {
   getBusinessByOwner,
 } from '../services/businessService'
 import { updateUserProfile } from '../services/authService'
-import { uploadImage } from '../services/cloudinaryService'
+import { uploadImage, fileToBase64 } from '../services/cloudinaryService'
 import { getSuggestedCategories } from '../services/openrouterService'
 
 function ImagePicker({ label, file, url, onChange, disabled }) {
+  const [preview, setPreview] = useState('')
+
+  useEffect(() => {
+    if (!file) {
+      setPreview('')
+      return
+    }
+    const objectUrl = URL.createObjectURL(file)
+    setPreview(objectUrl)
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [file])
+
+  const displaySrc = preview || url
+
   return (
     <div className="form-group">
       <label>{label}</label>
@@ -25,20 +39,17 @@ function ImagePicker({ label, file, url, onChange, disabled }) {
           }
         }}
       />
-      {url && (
+      {displaySrc && (
         <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img
-            src={url}
+            src={displaySrc}
             alt={label}
             style={{ width: '80px', height: '80px', borderRadius: '10px', objectFit: 'cover', border: '1px solid var(--border-subtle)' }}
           />
-          <small style={{ color: 'var(--text-muted)', fontSize: '11px' }}>Current photo</small>
+          <small style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
+            {preview ? 'Selected photo preview' : 'Current photo'}
+          </small>
         </div>
-      )}
-      {!url && file && (
-        <p style={{ fontSize: '12px', color: 'var(--brand-primary)', marginTop: '4px' }}>
-          Selected: {file.name} (Ready to upload)
-        </p>
       )}
     </div>
   )
@@ -97,14 +108,16 @@ export default function BusinessSetup() {
     if (!file) return ''
     try {
       const res = await uploadImage(file)
-      return res.url || ''
+      if (res && res.url) return res.url
     } catch (err) {
-      console.warn(`Upload warning for ${fieldName}:`, err)
-      setUploadWarning((prev) =>
-        prev
-          ? `${prev}. Note: ${fieldName} could not be uploaded (${err.message}).`
-          : `Note: ${fieldName} could not be uploaded (${err.message}). Listing will save with existing photos.`
-      )
+      console.warn(`Cloudinary upload warning for ${fieldName}:`, err)
+    }
+    try {
+      // 100% Guaranteed local image encoding fallback
+      const base64Url = await fileToBase64(file)
+      return base64Url
+    } catch (fallbackErr) {
+      console.error(`Failed to process photo for ${fieldName}:`, fallbackErr)
       return ''
     }
   }

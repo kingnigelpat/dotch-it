@@ -20,6 +20,7 @@ import {
   updateAd,
   deleteAd,
 } from '../services/adService'
+import { uploadImage, fileToBase64 } from '../services/cloudinaryService'
 
 const EMPTY_AD_FORM = {
   title: '',
@@ -169,6 +170,26 @@ export default function AdminPanel() {
       loadAds()
     }
   }, [profile])
+
+  const handleFileUpload = async (e, fieldName) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const res = await uploadImage(file)
+      if (res?.url) {
+        setForm(prev => ({ ...prev, [fieldName]: res.url }))
+        return
+      }
+    } catch (err) {
+      console.warn('Upload error:', err)
+    }
+    try {
+      const b64 = await fileToBase64(file)
+      setForm(prev => ({ ...prev, [fieldName]: b64 }))
+    } catch (fallbackErr) {
+      console.error('Failed to convert file:', fallbackErr)
+    }
+  }
 
   const handleApproveVendor = async (v) => {
     setActionLoadingId(v.uid)
@@ -758,20 +779,23 @@ export default function AdminPanel() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginTop: '4px' }}>
                   <div className="form-group">
-                    <label>Logo Image URL</label>
-                    <input className="form-control" name="logoUrl" value={form.logoUrl} onChange={handleChange} placeholder="https://…" />
+                    <label>Logo Photo</label>
+                    <input type="file" accept="image/*" className="form-control" style={{ marginBottom: '6px' }} onChange={(e) => handleFileUpload(e, 'logoUrl')} />
+                    <input className="form-control" name="logoUrl" value={form.logoUrl} onChange={handleChange} placeholder="Or enter image URL https://…" />
                     {form.logoUrl && <img src={form.logoUrl} alt="logo" style={{ width: 60, height: 60, borderRadius: 8, marginTop: 6, objectFit: 'cover' }} />}
                   </div>
 
                   <div className="form-group">
-                    <label>Photo 1 URL</label>
-                    <input className="form-control" name="image1Url" value={form.image1Url} onChange={handleChange} placeholder="https://…" />
+                    <label>Photo 1</label>
+                    <input type="file" accept="image/*" className="form-control" style={{ marginBottom: '6px' }} onChange={(e) => handleFileUpload(e, 'image1Url')} />
+                    <input className="form-control" name="image1Url" value={form.image1Url} onChange={handleChange} placeholder="Or enter image URL https://…" />
                     {form.image1Url && <img src={form.image1Url} alt="photo1" style={{ width: 100, height: 60, borderRadius: 8, marginTop: 6, objectFit: 'cover' }} />}
                   </div>
 
                   <div className="form-group">
-                    <label>Photo 2 URL</label>
-                    <input className="form-control" name="image2Url" value={form.image2Url} onChange={handleChange} placeholder="https://…" />
+                    <label>Photo 2</label>
+                    <input type="file" accept="image/*" className="form-control" style={{ marginBottom: '6px' }} onChange={(e) => handleFileUpload(e, 'image2Url')} />
+                    <input className="form-control" name="image2Url" value={form.image2Url} onChange={handleChange} placeholder="Or enter image URL https://…" />
                     {form.image2Url && <img src={form.image2Url} alt="photo2" style={{ width: 100, height: 60, borderRadius: 8, marginTop: 6, objectFit: 'cover' }} />}
                   </div>
                 </div>
