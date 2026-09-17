@@ -33,13 +33,13 @@ export default function Navbar() {
             to="/"
             className={`nav-link ${location.pathname === '/' ? 'nav-link-active' : ''}`}
           >
-            🏠 Home
+            <i className="fa-solid fa-house" /> Home
           </Link>
           <Link
             to="/dashboard"
             className={`nav-link ${location.pathname === '/dashboard' ? 'nav-link-active' : ''}`}
           >
-            🔍 Search
+            <i className="fa-solid fa-magnifying-glass" /> Search
           </Link>
 
           {isBusiness && (
@@ -47,7 +47,7 @@ export default function Navbar() {
               to="/business"
               className={`nav-link ${location.pathname.startsWith('/business') ? 'nav-link-active' : ''}`}
             >
-              📊 Business
+              <i className="fa-solid fa-chart-line" /> Business
             </Link>
           )}
 
@@ -57,7 +57,7 @@ export default function Navbar() {
               className={`nav-link ${location.pathname === '/admin' ? 'nav-link-active' : ''}`}
               style={{ color: 'var(--brand-primary)', fontWeight: 800 }}
             >
-              🛡️ Admin
+              <i className="fa-solid fa-shield-halved" /> Admin
             </Link>
           )}
 
@@ -65,7 +65,7 @@ export default function Navbar() {
             to="/account"
             className={`nav-link ${location.pathname === '/account' ? 'nav-link-active' : ''}`}
           >
-            ⚙️ Settings
+            <i className="fa-solid fa-gear" /> Settings
           </Link>
 
           {/* Theme Toggle Button */}
@@ -77,7 +77,7 @@ export default function Navbar() {
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             aria-label="Toggle theme"
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {theme === 'dark' ? <i className="fa-solid fa-sun" /> : <i className="fa-solid fa-moon" />}
           </button>
 
           {!user ? (
@@ -118,7 +118,7 @@ export default function Navbar() {
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             aria-label="Toggle theme"
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {theme === 'dark' ? <i className="fa-solid fa-sun" /> : <i className="fa-solid fa-moon" />}
           </button>
 
           {!user ? (

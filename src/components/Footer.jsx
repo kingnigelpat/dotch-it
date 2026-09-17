@@ -18,7 +18,7 @@ export default function Footer() {
         {/* Col 1: Brand */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '24px' }}>🏪</span>
+            <i className="fa-solid fa-store" style={{ fontSize: '20px', color: 'var(--brand-primary)' }} />
             <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
               Dotch
             </span>
@@ -36,22 +36,22 @@ export default function Footer() {
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <li>
               <Link to="/dashboard" style={{ fontSize: '13.5px', color: 'var(--text-secondary)', transition: 'color 0.15s' }}>
-                🔍 Explore Nearby Stores
+                <i className="fa-solid fa-magnifying-glass" style={{ width: '16px', marginRight: '6px', opacity: 0.7 }} /> Explore Nearby Stores
               </Link>
             </li>
             <li>
               <Link to="/dashboard?category=Restaurant" style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-                🍽️ Restaurants & Dining
+                <i className="fa-solid fa-utensils" style={{ width: '16px', marginRight: '6px', opacity: 0.7 }} /> Restaurants & Dining
               </Link>
             </li>
             <li>
               <Link to="/dashboard?category=Hotel+%26+Travel" style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-                🏨 Hotels & Stays
+                <i className="fa-solid fa-hotel" style={{ width: '16px', marginRight: '6px', opacity: 0.7 }} /> Hotels & Stays
               </Link>
             </li>
             <li>
               <Link to="/dashboard?category=Fashion+%26+Clothing" style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-                👟 Fashion & Boutiques
+                <i className="fa-solid fa-shirt" style={{ width: '16px', marginRight: '6px', opacity: 0.7 }} /> Fashion & Boutiques
               </Link>
             </li>
           </ul>
@@ -65,22 +65,22 @@ export default function Footer() {
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <li>
               <Link to="/list-business" style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-                ✨ List Your Business
+                <i className="fa-solid fa-rocket" style={{ width: '16px', marginRight: '6px', opacity: 0.7 }} /> List Your Business
               </Link>
             </li>
             <li>
               <Link to="/subscription" style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-                💼 Plans & Pricing
+                <i className="fa-solid fa-briefcase" style={{ width: '16px', marginRight: '6px', opacity: 0.7 }} /> Plans & Pricing
               </Link>
             </li>
             <li>
               <Link to="/business" style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-                📊 Vendor Dashboard
+                <i className="fa-solid fa-chart-line" style={{ width: '16px', marginRight: '6px', opacity: 0.7 }} /> Vendor Dashboard
               </Link>
             </li>
             <li>
               <Link to="/terms" style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-                📜 Terms & Policy
+                <i className="fa-solid fa-file-lines" style={{ width: '16px', marginRight: '6px', opacity: 0.7 }} /> Terms & Policy
               </Link>
             </li>
           </ul>
@@ -101,7 +101,7 @@ export default function Footer() {
             className="btn btn-whatsapp btn-sm"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            <span>💬</span>
+            <i className="fa-brands fa-whatsapp" />
             <span>+234 707 354 4811</span>
           </a>
         </div>
@@ -158,7 +158,7 @@ export default function Footer() {
             }}
           >
             <span>RAE</span>
-            <span style={{ fontSize: '11px' }}>↗</span>
+            <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '10px' }} />
           </a>
         </div>
       </div>

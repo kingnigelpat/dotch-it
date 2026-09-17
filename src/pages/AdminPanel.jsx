@@ -57,7 +57,8 @@ const EMPTY_FORM = {
 
 const POPULAR_SAMPLES = [
   {
-    label: '🏨 Sample 5-Star Hotel',
+    label: 'Sample 5-Star Hotel',
+    icon: 'fa-solid fa-hotel',
     data: {
       name: 'Radisson Blu Anchorage Hotel',
       category: 'Hotel & Travel',
@@ -74,7 +75,8 @@ const POPULAR_SAMPLES = [
     },
   },
   {
-    label: '🍽️ Sample Restaurant',
+    label: 'Sample Restaurant',
+    icon: 'fa-solid fa-utensils',
     data: {
       name: 'Terra Kulture Restaurant',
       category: 'Restaurant',
@@ -91,7 +93,8 @@ const POPULAR_SAMPLES = [
     },
   },
   {
-    label: '📱 Sample Tech Store',
+    label: 'Sample Tech Store',
+    icon: 'fa-solid fa-mobile-screen',
     data: {
       name: 'Slot Systems Ikeja',
       category: 'Phones & Tech Gadgets',
@@ -174,7 +177,7 @@ export default function AdminPanel() {
     try {
       const planToSet = v.selectedPlan || 'pro_1m'
       await approveVendorPayment(v.uid, planToSet)
-      setSuccess(`✅ Payment approved for ${v.name || v.email}! Their listing creation is now unlocked.`)
+      setSuccess(`Payment approved for ${v.name || v.email}! Their listing creation is now unlocked.`)
       await loadVendors()
     } catch (err) {
       setError('Could not approve payment: ' + err.message)
@@ -190,7 +193,7 @@ export default function AdminPanel() {
     setSuccess('')
     try {
       await revokeVendorPayment(v.uid)
-      setSuccess(`🔒 Listing creation locked for ${v.name || v.email}.`)
+      setSuccess(`Listing creation locked for ${v.name || v.email}.`)
       await loadVendors()
     } catch (err) {
       setError('Could not revoke payment: ' + err.message)
@@ -250,10 +253,10 @@ export default function AdminPanel() {
     try {
       if (editingAdId) {
         await updateAd(editingAdId, adForm)
-        setSuccess('✅ Advert updated successfully!')
+        setSuccess('Advert updated successfully!')
       } else {
         await createAd(adForm, user?.uid)
-        setSuccess('✅ New advert created and published to homepage!')
+        setSuccess('New advert created and published to homepage!')
       }
       setShowAdForm(false)
       setEditingAdId(null)
@@ -296,7 +299,7 @@ export default function AdminPanel() {
     setSuccess('')
     try {
       await deleteAd(ad.id)
-      setSuccess(`🗑️ Advert "${ad.title}" deleted.`)
+      setSuccess(`Advert "${ad.title}" deleted.`)
       await loadAds()
     } catch (err) {
       setError('Could not delete advert: ' + err.message)
@@ -365,11 +368,11 @@ export default function AdminPanel() {
       if (editingId) {
         await updateBusiness(editingId, data)
         setBusinesses((prev) => prev.map((b) => b.id === editingId ? { ...b, ...data } : b))
-        setSuccess(`✅ "${data.name}" updated successfully.`)
+        setSuccess(`"${data.name}" updated successfully.`)
       } else {
         const created = await createBusiness({ uid: user.uid, data })
         setBusinesses((prev) => [created, ...prev])
-        setSuccess(`✅ "${data.name}" added and published successfully.`)
+        setSuccess(`"${data.name}" added and published successfully.`)
       }
       handleReset()
       setShowForm(false)
@@ -391,8 +394,22 @@ export default function AdminPanel() {
     }
   }
 
+  // Quick Post to Homepage — switches to adverts tab with form open
+  const handleQuickPostToHomepage = () => {
+    setActiveTab('adverts')
+    setEditingAdId(null)
+    setAdForm(EMPTY_AD_FORM)
+    setShowAdForm(true)
+    setError('')
+    setSuccess('')
+    window.scrollTo({ top: 300, behavior: 'smooth' })
+  }
+
   if (loading) return <div className="center-loading">Loading…</div>
   if (!user || profile?.role !== 'admin') return null
+
+  const pendingVendors = vendors.filter(v => v.paymentStatus !== 'approved' && !v.paymentApproved)
+  const activeAdsCount = ads.filter(a => a.status === 'active').length
 
   return (
     <div className="admin-panel">
@@ -400,31 +417,98 @@ export default function AdminPanel() {
       <div className="admin-header">
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
-            🛡️ Admin Panel
+            <i className="fa-solid fa-shield-halved" style={{ marginRight: '8px', color: 'var(--brand-primary)' }} /> Admin Panel
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-            Manage all business listings. Changes reflect immediately on the search engine.
+            Full control over business listings, vendor approvals, and homepage ads.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span className="admin-badge">Admin Only</span>
+          <button
+            className="btn btn-primary"
+            onClick={handleQuickPostToHomepage}
+            title="Create a new homepage ad/spotlight"
+          >
+            <i className="fa-solid fa-plus" style={{ marginRight: '5px' }} /> Post to Homepage
+          </button>
           {activeTab === 'businesses' && (
             <button
-              className="btn btn-primary"
+              className="btn btn-outline"
               onClick={() => { setShowForm(!showForm); if (showForm) handleReset() }}
             >
-              {showForm ? '✕ Cancel' : '+ Add Business'}
+              {showForm ? (<><i className="fa-solid fa-xmark" style={{ marginRight: '5px' }} /> Cancel</>) : (<><i className="fa-solid fa-plus" style={{ marginRight: '5px' }} /> Add Business</>)}
             </button>
           )}
         </div>
       </div>
 
+      {/* Quick Stats Dashboard */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: '12px',
+        marginBottom: '24px',
+      }}>
+        <div style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)',
+          padding: '16px 20px',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--brand-primary)' }}>{businesses.length}</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            <i className="fa-solid fa-building" style={{ marginRight: '4px' }} /> Total Businesses
+          </div>
+        </div>
+        <div style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)',
+          padding: '16px 20px',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent-amber, #f59e0b)' }}>{pendingVendors.length}</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            <i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> Pending Approvals
+          </div>
+        </div>
+        <div style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)',
+          padding: '16px 20px',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent-emerald, #10b981)' }}>{activeAdsCount}</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            <i className="fa-solid fa-bullhorn" style={{ marginRight: '4px' }} /> Active Ads
+          </div>
+        </div>
+        <div style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)',
+          padding: '16px 20px',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>{vendors.length}</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            <i className="fa-solid fa-users" style={{ marginRight: '4px' }} /> Total Vendors
+          </div>
+        </div>
+      </div>
+
       {/* Success / Error Messages */}
       {success && (
-        <div className="alert alert-success" style={{ marginBottom: '20px' }}>{success}</div>
+        <div className="alert alert-success" style={{ marginBottom: '20px' }}>
+          <i className="fa-solid fa-circle-check" style={{ marginRight: '6px' }} />{success}
+        </div>
       )}
       {error && (
-        <div className="alert alert-error" style={{ marginBottom: '20px' }}>{error}</div>
+        <div className="alert alert-error" style={{ marginBottom: '20px' }}>
+          <i className="fa-solid fa-circle-exclamation" style={{ marginRight: '6px' }} />{error}
+        </div>
       )}
 
       {/* Admin Navigation Tabs */}
@@ -435,7 +519,7 @@ export default function AdminPanel() {
           onClick={() => setActiveTab('vendors')}
           style={{ fontWeight: 700 }}
         >
-          💳 Vendor Approvals ({vendors.filter(v => v.paymentStatus !== 'approved' && !v.paymentApproved).length} Pending)
+          <i className="fa-solid fa-credit-card" style={{ marginRight: '5px' }} /> Vendor Approvals ({pendingVendors.length} Pending)
         </button>
         <button
           type="button"
@@ -443,7 +527,7 @@ export default function AdminPanel() {
           onClick={() => setActiveTab('adverts')}
           style={{ fontWeight: 700 }}
         >
-          📢 Adverts & Spotlights ({ads.length})
+          <i className="fa-solid fa-bullhorn" style={{ marginRight: '5px' }} /> Homepage Ads ({ads.length})
         </button>
         <button
           type="button"
@@ -451,7 +535,7 @@ export default function AdminPanel() {
           onClick={() => setActiveTab('businesses')}
           style={{ fontWeight: 700 }}
         >
-          🏢 Directory Listings ({businesses.length})
+          <i className="fa-solid fa-building" style={{ marginRight: '5px' }} /> Directory Listings ({businesses.length})
         </button>
       </div>
 
@@ -473,7 +557,7 @@ export default function AdminPanel() {
               onClick={loadVendors}
               disabled={loadingVendors}
             >
-              {loadingVendors ? 'Refreshing…' : '🔄 Refresh Vendors'}
+              {loadingVendors ? 'Refreshing…' : (<><i className="fa-solid fa-arrows-rotate" style={{ marginRight: '5px' }} /> Refresh Vendors</>)}
             </button>
           </div>
 
@@ -494,7 +578,7 @@ export default function AdminPanel() {
           >
             <div>
               <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                🏦 Active Bank Account for Vendor Payments:
+                <i className="fa-solid fa-building-columns" style={{ marginRight: '5px' }} /> Active Bank Account for Vendor Payments:
               </span>{' '}
               <span style={{ color: 'var(--text-secondary)' }}>
                 {BANK_DETAILS.bankName} • <strong style={{ color: 'var(--brand-primary)', fontFamily: 'monospace' }}>{BANK_DETAILS.accountNumber}</strong> • {BANK_DETAILS.accountName}
@@ -542,12 +626,12 @@ export default function AdminPanel() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <strong style={{ fontSize: '16px', color: 'var(--text-primary)' }}>{v.name || 'Unnamed Vendor'}</strong>
                           <span className={`badge-pill ${isAppr ? 'explorer-badge' : 'vendor-badge'}`}>
-                            {isAppr ? '✓ Approved (Can List)' : '⏳ Pending Payment (Locked)'}
+                            {isAppr ? (<><i className="fa-solid fa-circle-check" style={{ marginRight: '4px' }} /> Approved</>) : (<><i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> Pending</>)}
                           </span>
                         </div>
                         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                          📧 {v.email} • 🏷️ {planName}
-                          {v.createdAt?.seconds && ` • 📅 ${new Date(v.createdAt.seconds * 1000).toLocaleDateString()}`}
+                          <i className="fa-solid fa-envelope" style={{ marginRight: '4px', opacity: 0.6 }} /> {v.email} • <i className="fa-solid fa-tag" style={{ marginRight: '4px', opacity: 0.6 }} /> {planName}
+                          {v.createdAt?.seconds && (<> • <i className="fa-solid fa-calendar" style={{ marginRight: '4px', opacity: 0.6 }} /> {new Date(v.createdAt.seconds * 1000).toLocaleDateString()}</>)}
                         </div>
                       </div>
                     </div>
@@ -560,7 +644,7 @@ export default function AdminPanel() {
                           onClick={() => handleApproveVendor(v)}
                           disabled={isBusy}
                         >
-                          {isBusy ? 'Processing…' : '✅ Approve Payment & Unlock'}
+                          {isBusy ? 'Processing…' : (<><i className="fa-solid fa-circle-check" style={{ marginRight: '5px' }} /> Approve & Unlock</>)}
                         </button>
                       ) : (
                         <button
@@ -570,7 +654,7 @@ export default function AdminPanel() {
                           onClick={() => handleRevokeVendor(v)}
                           disabled={isBusy}
                         >
-                          {isBusy ? 'Processing…' : '🔒 Revoke Approval'}
+                          {isBusy ? 'Processing…' : (<><i className="fa-solid fa-lock" style={{ marginRight: '5px' }} /> Revoke Approval</>)}
                         </button>
                       )}
                     </div>
@@ -596,12 +680,12 @@ export default function AdminPanel() {
               boxShadow: 'var(--shadow-md)',
             }}>
               <h2 className="admin-section-title">
-                {editingId ? '✏️ Edit Business' : '➕ Add New Business'}
+                {editingId ? (<><i className="fa-solid fa-pen-to-square" style={{ marginRight: '6px' }} /> Edit Business</>) : (<><i className="fa-solid fa-plus" style={{ marginRight: '6px' }} /> Add New Business</>)}
               </h2>
 
               <div style={{ marginBottom: '20px', padding: '14px 18px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
                 <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
-                  💡 Quick-fill popular business templates:
+                  <i className="fa-solid fa-wand-magic-sparkles" style={{ marginRight: '5px' }} /> Quick-fill popular business templates:
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {POPULAR_SAMPLES.map((sample) => (
@@ -616,7 +700,7 @@ export default function AdminPanel() {
                         setSuccess('')
                       }}
                     >
-                      {sample.label}
+                      <i className={sample.icon} style={{ marginRight: '5px' }} /> {sample.label}
                     </button>
                   ))}
                 </div>
@@ -695,17 +779,17 @@ export default function AdminPanel() {
                 <div style={{ display: 'flex', gap: '24px', marginTop: '16px', flexWrap: 'wrap' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}>
                     <input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} />
-                    ⭐ Featured (shows at top)
+                    <i className="fa-solid fa-star" style={{ color: '#f59e0b' }} /> Featured (shows at top)
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}>
                     <input type="checkbox" name="verified" checked={form.verified} onChange={handleChange} />
-                    ✅ Verified Badge
+                    <i className="fa-solid fa-circle-check" style={{ color: 'var(--accent-emerald)' }} /> Verified Badge
                   </label>
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' }}>
                   <button className="btn btn-primary btn-lg" type="submit" disabled={saving}>
-                    {saving ? 'Saving…' : editingId ? '💾 Save Changes' : '🚀 Publish Business'}
+                    {saving ? 'Saving…' : editingId ? (<><i className="fa-solid fa-floppy-disk" style={{ marginRight: '5px' }} /> Save Changes</>) : (<><i className="fa-solid fa-rocket" style={{ marginRight: '5px' }} /> Publish Business</>)}
                   </button>
                   <button className="btn btn-outline" type="button" onClick={handleReset}>
                     Cancel
@@ -741,9 +825,9 @@ export default function AdminPanel() {
                     <div className="admin-biz-name">{biz.name}</div>
                     <div className="admin-biz-meta">
                       {biz.category} • {biz.city || biz.location || '—'}
-                      {biz.verified && ' • ✅ Verified'}
-                      {biz.featured && ' • ⭐ Featured'}
-                      {biz.adminAdded && ' • 🛡️ Admin Added'}
+                      {biz.verified && (<> • <i className="fa-solid fa-circle-check" style={{ color: 'var(--accent-emerald)', marginRight: '2px' }} /> Verified</>)}
+                      {biz.featured && (<> • <i className="fa-solid fa-star" style={{ color: '#f59e0b', marginRight: '2px' }} /> Featured</>)}
+                      {biz.adminAdded && (<> • <i className="fa-solid fa-shield-halved" style={{ color: 'var(--brand-primary)', marginRight: '2px' }} /> Admin</>)}
                     </div>
                   </div>
                   <div className="admin-biz-actions">
@@ -751,13 +835,13 @@ export default function AdminPanel() {
                       className="btn btn-outline btn-sm"
                       onClick={() => handleEdit(biz)}
                     >
-                      ✏️ Edit
+                      <i className="fa-solid fa-pen-to-square" style={{ marginRight: '4px' }} /> Edit
                     </button>
                     <button
                       className="btn btn-danger btn-sm"
                       onClick={() => handleDelete(biz)}
                     >
-                      🗑️ Delete
+                      <i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }} /> Delete
                     </button>
                   </div>
                 </div>
@@ -773,10 +857,10 @@ export default function AdminPanel() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <h2 className="admin-section-title" style={{ margin: 0 }}>
-                Homepage Adverts & Admin Spotlights
+                Homepage Ads & Spotlights
               </h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', marginTop: '4px' }}>
-                Curate banners, promotional flyers, and featured campaigns displayed prominently on the explorer homepage.
+                Create banners, promotional flyers, and featured campaigns displayed on the explorer homepage.
               </p>
             </div>
             <button
@@ -794,7 +878,7 @@ export default function AdminPanel() {
                 }
               }}
             >
-              {showAdForm ? '✕ Close Form' : '+ Create New Advert / Flyer'}
+              {showAdForm ? (<><i className="fa-solid fa-xmark" style={{ marginRight: '5px' }} /> Close Form</>) : (<><i className="fa-solid fa-plus" style={{ marginRight: '5px' }} /> Create New Ad</>)}
             </button>
           </div>
 
@@ -802,7 +886,7 @@ export default function AdminPanel() {
           {showAdForm && (
             <div className="admin-form-box" style={{ marginBottom: '32px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '16px' }}>
-                {editingAdId ? '✏️ Edit Advert' : '📢 Create New Homepage Advert'}
+                {editingAdId ? (<><i className="fa-solid fa-pen-to-square" style={{ marginRight: '6px' }} /> Edit Advert</>) : (<><i className="fa-solid fa-bullhorn" style={{ marginRight: '6px' }} /> Create New Homepage Advert</>)}
               </h3>
 
               <form onSubmit={handleSaveAd}>
@@ -810,7 +894,7 @@ export default function AdminPanel() {
                 {businesses.length > 0 && !editingAdId && (
                   <div className="form-group" style={{ marginBottom: '16px', background: 'var(--bg-elevated)', padding: '12px', borderRadius: 'var(--radius-sm)' }}>
                     <label className="form-label" style={{ fontWeight: 700 }}>
-                      ⚡ Quick Link to Registered Business:
+                      <i className="fa-solid fa-bolt" style={{ marginRight: '5px' }} /> Quick Link to Registered Business:
                     </label>
                     <select
                       className="form-input"
@@ -865,9 +949,9 @@ export default function AdminPanel() {
                       value={adForm.badge}
                       onChange={handleAdFormChange}
                     >
-                      <option value="Admin Spotlight">🌟 Admin Spotlight</option>
-                      <option value="Sponsored">📢 Sponsored</option>
-                      <option value="Featured Deal">🔥 Featured Deal</option>
+                      <option value="Admin Spotlight">Admin Spotlight</option>
+                      <option value="Sponsored">Sponsored</option>
+                      <option value="Featured Deal">Featured Deal</option>
                     </select>
                   </div>
 
@@ -904,7 +988,7 @@ export default function AdminPanel() {
                       className="form-input"
                       value={adForm.targetReach}
                       onChange={handleAdFormChange}
-                      placeholder="e.g. Nationwide Delivery, Lagos Only, Abuja & Environs"
+                      placeholder="e.g. Nationwide Delivery, Lagos Only"
                     />
                   </div>
 
@@ -993,7 +1077,7 @@ export default function AdminPanel() {
 
                 <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                   <button type="submit" className="btn btn-primary" disabled={savingAd}>
-                    {savingAd ? 'Saving Advert…' : editingAdId ? 'Update Advert' : 'Publish Advert'}
+                    {savingAd ? 'Saving Advert…' : editingAdId ? 'Update Advert' : (<><i className="fa-solid fa-rocket" style={{ marginRight: '5px' }} /> Publish Advert</>)}
                   </button>
                   <button
                     type="button"
@@ -1015,9 +1099,9 @@ export default function AdminPanel() {
             <div className="center-loading">Loading adverts…</div>
           ) : ads.length === 0 ? (
             <div className="empty-state-box">
-              <div className="empty-state-icon">📢</div>
+              <div className="empty-state-icon"><i className="fa-solid fa-bullhorn" style={{ fontSize: '32px', color: 'var(--brand-primary)' }} /></div>
               <h3>No Adverts Published Yet</h3>
-              <p>Click "+ Create New Advert / Flyer" above to publish your first spotlight campaign.</p>
+              <p>Click "Create New Ad" above to publish your first spotlight campaign to the homepage.</p>
             </div>
           ) : (
             <div className="admin-business-list">
@@ -1040,7 +1124,7 @@ export default function AdminPanel() {
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '4px' }}>
                         <span style={{ fontWeight: 800, fontSize: '15px' }}>{ad.title}</span>
                         <span className={`badge-pill ${isActive ? 'vendor-badge' : 'explorer-badge'}`} style={{ fontSize: '11px' }}>
-                          {isActive ? '🟢 Active' : isExpired ? '🔴 Expired' : '⏸️ Paused'}
+                          {isActive ? (<><i className="fa-solid fa-circle" style={{ fontSize: '8px', marginRight: '4px', color: '#22c55e' }} /> Active</>) : isExpired ? (<><i className="fa-solid fa-circle" style={{ fontSize: '8px', marginRight: '4px', color: '#ef4444' }} /> Expired</>) : (<><i className="fa-solid fa-pause" style={{ fontSize: '8px', marginRight: '4px' }} /> Paused</>)}
                         </span>
                         <span className="badge-sparkle" style={{ fontSize: '11px' }}>
                           {ad.badge || 'Admin Spotlight'}
@@ -1051,10 +1135,10 @@ export default function AdminPanel() {
                       </div>
 
                       <div className="admin-biz-meta">
-                        🏢 <strong>{ad.businessName}</strong>
-                        {ad.targetReach && ` • 📍 ${ad.targetReach}`}
-                        {ad.phone && ` • 💬 ${ad.phone}`}
-                        {ad.pricePromo && ` • 🏷️ ${ad.pricePromo}`}
+                        <i className="fa-solid fa-building" style={{ marginRight: '4px', opacity: 0.6 }} /> <strong>{ad.businessName}</strong>
+                        {ad.targetReach && (<> • <i className="fa-solid fa-location-dot" style={{ marginRight: '3px', opacity: 0.6 }} /> {ad.targetReach}</>)}
+                        {ad.phone && (<> • <i className="fa-brands fa-whatsapp" style={{ marginRight: '3px', opacity: 0.6 }} /> {ad.phone}</>)}
+                        {ad.pricePromo && (<> • <i className="fa-solid fa-tag" style={{ marginRight: '3px', opacity: 0.6 }} /> {ad.pricePromo}</>)}
                         {ad.endDate && ` • Expiry: ${ad.endDate.split('T')[0]}`}
                       </div>
                     </div>
@@ -1066,21 +1150,21 @@ export default function AdminPanel() {
                         onClick={() => handleToggleAdStatus(ad)}
                         title={ad.status === 'active' ? 'Pause advert' : 'Activate advert'}
                       >
-                        {ad.status === 'active' ? '⏸️ Pause' : '▶️ Resume'}
+                        {ad.status === 'active' ? (<><i className="fa-solid fa-pause" style={{ marginRight: '4px' }} /> Pause</>) : (<><i className="fa-solid fa-play" style={{ marginRight: '4px' }} /> Resume</>)}
                       </button>
                       <button
                         type="button"
                         className="btn btn-outline btn-sm"
                         onClick={() => handleEditAd(ad)}
                       >
-                        ✏️ Edit
+                        <i className="fa-solid fa-pen-to-square" style={{ marginRight: '4px' }} /> Edit
                       </button>
                       <button
                         type="button"
                         className="btn btn-danger btn-sm"
                         onClick={() => handleDeleteAd(ad)}
                       >
-                        🗑️ Delete
+                        <i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }} /> Delete
                       </button>
                     </div>
                   </div>

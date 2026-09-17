@@ -13,7 +13,7 @@ export default function BusinessCard({ business }) {
     return (
       <div className="result-card result-card-ai">
         <div>
-          <span className="ai-card-badge">🤖 AI Recommendation</span>
+          <span className="ai-card-badge"><i className="fa-solid fa-robot" style={{ marginRight: '5px' }} /> AI Recommendation</span>
           <h3 className="result-title" style={{ fontSize: '18px', marginTop: '4px' }}>
             {business.name}
           </h3>
@@ -23,7 +23,7 @@ export default function BusinessCard({ business }) {
         <p className="result-desc">{business.description || business.reason}</p>
 
         <div className="result-meta-row">
-          <span className="result-meta-item">📍 Nearby match suggestion</span>
+          <span className="result-meta-item"><i className="fa-solid fa-location-dot" style={{ marginRight: '4px' }} /> Nearby match suggestion</span>
         </div>
 
         <div style={{ marginTop: 'auto', paddingTop: '8px' }}>
@@ -61,11 +61,11 @@ export default function BusinessCard({ business }) {
           <div className="result-title-row">
             <h3 className="result-title">{business.name}</h3>
             {business.subscriptionTier === 'enterprise_monthly' || business.subscriptionTier === 'growth_vip' ? (
-              <span className="badge-vip" title="Corporate / Hotel VIP Spotlight">👑 Corporate / Hotel</span>
+              <span className="badge-vip" title="Corporate / Hotel VIP Spotlight"><i className="fa-solid fa-crown" style={{ marginRight: '4px' }} /> Corporate / Hotel</span>
             ) : business.subscriptionTier === 'pro_monthly' ? (
-              <span className="badge-pro" title="Standard Verified Business">⚡ Standard Business</span>
+              <span className="badge-pro" title="Standard Verified Business"><i className="fa-solid fa-bolt" style={{ marginRight: '4px' }} /> Standard Business</span>
             ) : business.verified ? (
-              <span className="badge-verified">✓ Verified</span>
+              <span className="badge-verified"><i className="fa-solid fa-circle-check" style={{ marginRight: '3px' }} /> Verified</span>
             ) : null}
           </div>
           <span className="result-category">{business.category || 'Local Business'}</span>
@@ -83,11 +83,11 @@ export default function BusinessCard({ business }) {
 
       <div className="result-meta-row">
         <span className="result-meta-item">
-          📍 {business.location || business.city || 'Lagos'}
+          <i className="fa-solid fa-location-dot" style={{ marginRight: '4px' }} /> {business.location || business.city || 'Lagos'}
           {business.distance && ` · ${business.distance}`}
         </span>
         {business.rating && (
-          <span className="result-meta-item">⭐ {business.rating}</span>
+          <span className="result-meta-item"><i className="fa-solid fa-star" style={{ marginRight: '3px', color: '#f59e0b' }} /> {business.rating}</span>
         )}
       </div>
 
@@ -117,11 +117,15 @@ export default function BusinessCard({ business }) {
           }}
           title={user ? 'Chat on WhatsApp' : 'Log in to chat on WhatsApp'}
         >
-          {user ? '💬 Chat on WhatsApp' : '🔒 Log in to WhatsApp'}
+          {user ? (
+            <><i className="fa-brands fa-whatsapp" style={{ marginRight: '5px' }} /> Chat on WhatsApp</>
+          ) : (
+            <><i className="fa-solid fa-lock" style={{ marginRight: '5px' }} /> Log in to WhatsApp</>
+          )}
         </button>
 
         <Link to={`/business/${business.id}`} className="btn btn-primary btn-sm">
-          View details →
+          View details <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} />
         </Link>
       </div>
     </div>

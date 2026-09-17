@@ -198,7 +198,7 @@ export default function BusinessSetup() {
   if (isBlocked) {
     return (
       <div className="setup-card" style={{ textAlign: 'center', borderColor: '#ef4444' }}>
-        <div style={{ fontSize: '48px', marginBottom: '12px' }}>⛔</div>
+        <div style={{ fontSize: '36px', marginBottom: '12px' }}><i className="fa-solid fa-ban" style={{ color: '#ef4444' }} /></div>
         <h1 style={{ fontSize: '22px', color: '#ef4444', marginBottom: '8px' }}>Account Suspended / Blocked</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
           This business listing was flagged for a policy review. Please contact support.
@@ -229,8 +229,8 @@ export default function BusinessSetup() {
           }`}
         >
           {currentTier === 'pro_2m'
-            ? '🔥 2 Months Plan (₦7,999)'
-            : '⚡ 1 Month Plan (₦5,000)'}
+            ? (<><i className="fa-solid fa-fire" style={{ marginRight: '4px' }} /> 2 Months Plan (₦7,999)</>)
+            : (<><i className="fa-solid fa-bolt" style={{ marginRight: '4px' }} /> 1 Month Plan (₦5,000)</>)}
         </span>
       </div>
 
@@ -315,7 +315,7 @@ export default function BusinessSetup() {
         {/* Cloudinary Image Upload Controls */}
         <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', marginTop: '16px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>
-            Photos & Brand Media (Cloudinary Upload)
+            <i className="fa-solid fa-images" style={{ marginRight: '6px' }} /> Photos & Brand Media
           </h3>
           <ImagePicker label="Business Logo" file={logo} url={logoUrl} onChange={setLogo} disabled={uploading || saving} />
           <ImagePicker label="Product / Place Photo 1" file={img1} url={img1Url} onChange={setImg1} disabled={uploading || saving} />

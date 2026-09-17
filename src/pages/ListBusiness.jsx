@@ -10,7 +10,7 @@ export default function ListBusiness() {
       {/* Hero Section */}
       <div className="list-biz-hero">
         <span className="badge-pill vendor-badge" style={{ display: 'inline-flex', marginBottom: '12px' }}>
-          🏪 For Nigerian Business Owners & Vendors
+          <i className="fa-solid fa-store" style={{ marginRight: '5px' }} /> For Nigerian Business Owners & Vendors
         </span>
         <h1 className="list-biz-title">
           List Your Business On Dotch &<br />
@@ -64,7 +64,7 @@ export default function ListBusiness() {
         <div className="list-biz-benefits-grid">
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: 'var(--brand-light)', color: 'var(--brand-primary)' }}>
-              🔎
+              <i className="fa-solid fa-magnifying-glass" />
             </div>
             <h3>Get Discovered by Ready Buyers</h3>
             <p>
@@ -74,7 +74,7 @@ export default function ListBusiness() {
 
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
-              🏪
+              <i className="fa-solid fa-store" />
             </div>
             <h3>Create a Public Business Profile</h3>
             <p>
@@ -84,7 +84,7 @@ export default function ListBusiness() {
 
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)' }}>
-              📸
+              <i className="fa-solid fa-camera" />
             </div>
             <h3>Display Your Products or Services</h3>
             <p>
@@ -94,7 +94,7 @@ export default function ListBusiness() {
 
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-rose)' }}>
-              📍
+              <i className="fa-solid fa-location-dot" />
             </div>
             <h3>Reach Customers in Your Location</h3>
             <p>
@@ -104,7 +104,7 @@ export default function ListBusiness() {
 
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: 'var(--brand-light)', color: 'var(--brand-primary)' }}>
-              📈
+              <i className="fa-solid fa-chart-line" />
             </div>
             <h3>Track Useful Business Growth</h3>
             <p>
@@ -114,7 +114,7 @@ export default function ListBusiness() {
 
           <div className="benefit-card">
             <div className="benefit-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
-              💬
+              <i className="fa-brands fa-whatsapp" />
             </div>
             <h3>Direct WhatsApp Contact</h3>
             <p>
@@ -151,7 +151,7 @@ export default function ListBusiness() {
 
             <ul className="plan-features">
               <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
+                <span className="feature-check"><i className="fa-solid fa-check" /></span>
                 <span>Full 30-day active search listing</span>
               </li>
               <li className="plan-feature-item">
@@ -183,7 +183,7 @@ export default function ListBusiness() {
 
           {/* 2 Months Plan — Highlighted */}
           <div className="plan-card plan-highlight">
-            <div className="plan-badge">🔥 BEST VALUE • SAVE ₦2,001</div>
+            <div className="plan-badge"><i className="fa-solid fa-fire" style={{ marginRight: '4px' }} /> BEST VALUE • SAVE ₦2,001</div>
             <div className="plan-head">
               <h3 className="plan-name">2 Months Vendor Plan</h3>
               <div className="plan-price-wrap">
@@ -243,11 +243,11 @@ export default function ListBusiness() {
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
           <Link to={user ? '/business/setup' : '/register?role=vendor'} className="btn btn-primary btn-lg">
-            ✨ Register & List Your Business
+            <i className="fa-solid fa-rocket" style={{ marginRight: '5px' }} /> Register & List Your Business
           </Link>
           {!user && (
             <Link to="/login?redirect=/business" className="btn btn-outline btn-lg">
-              👤 Already have an account? Log in
+              <i className="fa-solid fa-user" style={{ marginRight: '5px' }} /> Already have an account? Log in
             </Link>
           )}
         </div>

@@ -20,7 +20,7 @@ export default function MobileBottomNav() {
         to="/"
         className={`nav-tab-item ${isActive('/') ? 'active' : ''}`}
       >
-        <span className="nav-tab-icon">🏠</span>
+        <span className="nav-tab-icon"><i className="fa-solid fa-house" /></span>
         <span className="nav-tab-label">Home</span>
       </Link>
 
@@ -28,7 +28,7 @@ export default function MobileBottomNav() {
         to="/dashboard"
         className={`nav-tab-item ${isActive('/dashboard') ? 'active' : ''}`}
       >
-        <span className="nav-tab-icon">🔍</span>
+        <span className="nav-tab-icon"><i className="fa-solid fa-magnifying-glass" /></span>
         <span className="nav-tab-label">Search</span>
       </Link>
 
@@ -37,7 +37,7 @@ export default function MobileBottomNav() {
           to="/business"
           className={`nav-tab-item ${isActive('/business') ? 'active' : ''}`}
         >
-          <span className="nav-tab-icon">📊</span>
+          <span className="nav-tab-icon"><i className="fa-solid fa-chart-line" /></span>
           <span className="nav-tab-label">Business</span>
         </Link>
       )}
@@ -47,7 +47,7 @@ export default function MobileBottomNav() {
           to="/admin"
           className={`nav-tab-item ${isActive('/admin') ? 'active' : ''}`}
         >
-          <span className="nav-tab-icon">🛡️</span>
+          <span className="nav-tab-icon"><i className="fa-solid fa-shield-halved" /></span>
           <span className="nav-tab-label">Admin</span>
         </Link>
       )}
@@ -56,7 +56,7 @@ export default function MobileBottomNav() {
         to="/account"
         className={`nav-tab-item ${isActive('/account') ? 'active' : ''}`}
       >
-        <span className="nav-tab-icon">⚙️</span>
+        <span className="nav-tab-icon"><i className="fa-solid fa-gear" /></span>
         <span className="nav-tab-label">Settings</span>
       </Link>
     </nav>

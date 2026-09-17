@@ -6,6 +6,26 @@ import { getActiveAds } from '../services/adService'
 import { getAllBusinesses } from '../services/businessService'
 import { getSuggestedCategories } from '../services/openrouterService'
 
+const CATEGORY_ICONS = {
+  'Hotel': 'fa-solid fa-hotel',
+  'Restaurant': 'fa-solid fa-utensils',
+  'Tech': 'fa-solid fa-microchip',
+  'Electronic': 'fa-solid fa-mobile-screen',
+  'Fashion': 'fa-solid fa-shirt',
+  'Beauty': 'fa-solid fa-scissors',
+  'Salon': 'fa-solid fa-scissors',
+  'Food': 'fa-solid fa-bowl-food',
+  'Drink': 'fa-solid fa-mug-hot',
+  'Auto': 'fa-solid fa-car',
+}
+
+function getCategoryIcon(cat) {
+  for (const [key, icon] of Object.entries(CATEGORY_ICONS)) {
+    if (cat.includes(key)) return icon
+  }
+  return 'fa-solid fa-store'
+}
+
 export default function AuthenticatedHome() {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
@@ -111,34 +131,28 @@ export default function AuthenticatedHome() {
 
   return (
     <div className="authenticated-home ad-showcase-page">
-      {/* Top Header Bar */}
+      {/* Top Header Bar — Clean & Minimal */}
       <div className="home-top-header">
         <div className="home-top-greeting-wrap">
-          <div className="home-badge-row">
-            <span className={`badge-pill ${isBusiness ? 'vendor-badge' : 'explorer-badge'}`}>
-              {isBusiness ? '💼 Business Partner' : '🔎 Explorer'}
-            </span>
-            <span className="badge-sparkle">📢 Curated Showcase</span>
-          </div>
           <h1 className="home-welcome-title">Welcome back, {userName}!</h1>
           <p className="home-welcome-subtitle">
-            Explore promotional campaigns, admin spotlights, and verified businesses across Nigeria.
+            Explore promotional campaigns and verified businesses across Nigeria.
           </p>
         </div>
 
         <div className="home-top-actions">
           {isAdmin && (
             <Link to="/admin" className="btn btn-outline btn-sm admin-portal-cta">
-              🛡️ Admin Ad Manager
+              <i className="fa-solid fa-shield-halved" style={{ marginRight: '5px' }} /> Admin Panel
             </Link>
           )}
           {isBusiness ? (
             <Link to="/business" className="btn btn-primary btn-sm">
-              📊 Business Portal →
+              <i className="fa-solid fa-chart-line" style={{ marginRight: '5px' }} /> Business Portal
             </Link>
           ) : (
             <Link to="/list-business" className="btn btn-outline btn-sm">
-              🚀 Feature Your Business
+              <i className="fa-solid fa-rocket" style={{ marginRight: '5px' }} /> Feature Your Business
             </Link>
           )}
         </div>
@@ -155,9 +169,9 @@ export default function AuthenticatedHome() {
         }}
       >
         <div className="search-bridge-left">
-          <span className="search-bridge-icon">🔍</span>
+          <span className="search-bridge-icon"><i className="fa-solid fa-magnifying-glass" /></span>
           <span className="search-bridge-placeholder">
-            Looking for something specific? Search 5,000+ Nigerian businesses, hotels & services...
+            Search 5,000+ Nigerian businesses, hotels & services...
           </span>
         </div>
         <button
@@ -168,7 +182,7 @@ export default function AuthenticatedHome() {
             navigate('/dashboard')
           }}
         >
-          Open Search →
+          Open Search <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} />
         </button>
       </div>
 
@@ -185,11 +199,15 @@ export default function AuthenticatedHome() {
                 {/* Labels */}
                 <div className="ad-badge-group">
                   <span className="ad-sponsored-pill">
-                    {currentHero.badge === 'Sponsored' ? '📢 Sponsored' : '🌟 DOTCH Spotlight'}
+                    {currentHero.badge === 'Sponsored' ? (
+                      <><i className="fa-solid fa-bullhorn" style={{ marginRight: '5px' }} /> Sponsored</>
+                    ) : (
+                      <><i className="fa-solid fa-star" style={{ marginRight: '5px' }} /> DOTCH Spotlight</>
+                    )}
                   </span>
                   {currentHero.targetReach && (
                     <span className="ad-reach-pill">
-                      📍 {currentHero.targetReach}
+                      <i className="fa-solid fa-location-dot" style={{ marginRight: '4px' }} /> {currentHero.targetReach}
                     </span>
                   )}
                   {currentHero.pricePromo && (
@@ -211,14 +229,14 @@ export default function AuthenticatedHome() {
                     rel="noopener noreferrer"
                     className="btn btn-whatsapp ad-cta-btn"
                   >
-                    💬 {currentHero.ctaText || 'Chat on WhatsApp'}
+                    <i className="fa-brands fa-whatsapp" style={{ marginRight: '5px' }} /> {currentHero.ctaText || 'Chat on WhatsApp'}
                   </a>
                   {currentHero.businessId && (
                     <Link
                       to={`/business/${currentHero.businessId}`}
                       className="btn btn-elevated-outline ad-view-btn"
                     >
-                      🏪 View Business Profile
+                      <i className="fa-solid fa-store" style={{ marginRight: '5px' }} /> View Business Profile
                     </Link>
                   )}
                 </div>
@@ -234,7 +252,7 @@ export default function AuthenticatedHome() {
                       onClick={handlePrevHero}
                       aria-label="Previous Spotlight"
                     >
-                      ‹
+                      <i className="fa-solid fa-chevron-left" />
                     </button>
                     <button
                       type="button"
@@ -242,7 +260,7 @@ export default function AuthenticatedHome() {
                       onClick={handleNextHero}
                       aria-label="Next Spotlight"
                     >
-                      ›
+                      <i className="fa-solid fa-chevron-right" />
                     </button>
                   </div>
 
@@ -274,7 +292,7 @@ export default function AuthenticatedHome() {
             textAlign: 'center',
             color: '#fff',
           }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📢</div>
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}><i className="fa-solid fa-bullhorn" /></div>
             <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px' }}>
               DOTCH Spotlight — Coming Soon
             </h2>
@@ -291,13 +309,13 @@ export default function AuthenticatedHome() {
           <div className="section-header-row">
             <div>
               <div className="section-pretitle">Curated Promotions</div>
-              <h2 className="section-title">DOTCH Spotlight: Featured Campaigns & Offers</h2>
+              <h2 className="section-title">Featured Campaigns & Offers</h2>
               <p className="section-subtitle">
-                Exclusive business campaigns, product drops, and verified promotions curated by the DOTCH team
+                Exclusive business campaigns and verified promotions curated by the DOTCH team
               </p>
             </div>
             <span className="sponsored-disclaimer-pill">
-              🛡️ Admin-Curated Ads
+              <i className="fa-solid fa-shield-halved" style={{ marginRight: '5px' }} /> Admin-Curated
             </span>
           </div>
 
@@ -334,7 +352,7 @@ export default function AuthenticatedHome() {
                   </div>
 
                   <h3 className="ad-flyer-title">{item.title}</h3>
-                  <p className="ad-flyer-vendor">🏢 {item.businessName}</p>
+                  <p className="ad-flyer-vendor"><i className="fa-solid fa-building" style={{ marginRight: '5px', opacity: 0.6 }} /> {item.businessName}</p>
                   <p className="ad-flyer-desc">{item.tagline}</p>
 
                   <div className="ad-flyer-action-row">
@@ -344,7 +362,7 @@ export default function AuthenticatedHome() {
                       rel="noopener noreferrer"
                       className="btn btn-whatsapp btn-sm btn-block"
                     >
-                      💬 {item.ctaText || 'Connect on WhatsApp'}
+                      <i className="fa-brands fa-whatsapp" style={{ marginRight: '5px' }} /> {item.ctaText || 'Connect on WhatsApp'}
                     </a>
                     {item.businessId && (
                       <Link
@@ -352,7 +370,7 @@ export default function AuthenticatedHome() {
                         className="btn btn-ghost btn-sm"
                         title="View Full Profile"
                       >
-                        Profile →
+                        Profile <i className="fa-solid fa-arrow-right" style={{ marginLeft: '3px', fontSize: '10px' }} />
                       </Link>
                     )}
                   </div>
@@ -374,7 +392,7 @@ export default function AuthenticatedHome() {
             </p>
           </div>
           <Link to="/dashboard" className="section-link">
-            Open Full Search Experience →
+            Open Full Search <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} />
           </Link>
         </div>
 
@@ -388,7 +406,7 @@ export default function AuthenticatedHome() {
           </div>
         ) : (
           <div className="empty-state-box">
-            <div className="empty-state-icon">🏪</div>
+            <div className="empty-state-icon"><i className="fa-solid fa-store" style={{ fontSize: '32px', color: 'var(--brand-primary)' }} /></div>
             <h3>Explore Verified Businesses</h3>
             <p>Use our dedicated search engine to find businesses by keyword, category, or city.</p>
             <Link to="/dashboard" className="btn btn-primary btn-sm">
@@ -407,7 +425,7 @@ export default function AuthenticatedHome() {
             <p className="section-subtitle">Jump straight into search filtered by your preferred industry</p>
           </div>
           <Link to="/dashboard" className="section-link">
-            All Categories →
+            All Categories <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} />
           </Link>
         </div>
 
@@ -420,13 +438,7 @@ export default function AuthenticatedHome() {
               onClick={() => navigate(`/dashboard?cat=${encodeURIComponent(cat)}`)}
             >
               <span className="category-card-icon">
-                {cat.includes('Hotel') ? '🏨' :
-                 cat.includes('Restaurant') ? '🍽️' :
-                 cat.includes('Tech') || cat.includes('Electronic') ? '📱' :
-                 cat.includes('Fashion') ? '👟' :
-                 cat.includes('Beauty') || cat.includes('Salon') ? '✂️' :
-                 cat.includes('Food') || cat.includes('Drink') ? '🍰' :
-                 cat.includes('Auto') ? '🚗' : '🏪'}
+                <i className={getCategoryIcon(cat)} />
               </span>
               <span className="category-card-name">{cat}</span>
             </button>
@@ -436,7 +448,7 @@ export default function AuthenticatedHome() {
 
       {/* SECTION 5: TRUST & DIRECT CONNECTION STRIP */}
       <section className="auth-home-notice-strip">
-        <div className="notice-icon">🛡️</div>
+        <div className="notice-icon"><i className="fa-solid fa-shield-halved" /></div>
         <div className="notice-content">
           <strong>Promotional & Direct Connection Policy:</strong>
           <span>

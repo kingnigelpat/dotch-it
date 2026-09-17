@@ -64,7 +64,7 @@ export default function Register() {
               onChange={() => setRole('explorer')}
             />
             <div className="role-card-content">
-              <strong>🔎 Search & Explore</strong>
+              <strong><i className="fa-solid fa-magnifying-glass" style={{ marginRight: '5px' }} /> Search & Explore</strong>
               <span>Find hotels, restaurants, shops & services near you across Nigerian cities</span>
             </div>
           </label>
@@ -81,7 +81,7 @@ export default function Register() {
               onChange={() => setRole('vendor')}
             />
             <div className="role-card-content">
-              <strong>🏪 List My Business</strong>
+              <strong><i className="fa-solid fa-store" style={{ marginRight: '5px' }} /> List My Business</strong>
               <span>Register your hotel, restaurant, shop or service (1 account = 1 business)</span>
             </div>
           </label>
@@ -114,7 +114,7 @@ export default function Register() {
                 />
                 <strong style={{ fontSize: '13px' }}>1 Month Plan</strong>
               </div>
-              <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>₦5,000</span>
+                <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>₦5,000</span>
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>30-day listing & WhatsApp</span>
             </label>
 
@@ -140,13 +140,13 @@ export default function Register() {
                 />
                 <strong style={{ fontSize: '13px' }}>2 Months Plan</strong>
               </div>
-              <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>₦7,999 🔥</span>
+                <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>₦7,999 <i className="fa-solid fa-fire" style={{ color: '#ef4444' }} /></span>
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>60 days + 5x boost & gold badge</span>
             </label>
           </div>
 
           <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.4 }}>
-            🔒 <strong>Verification Policy:</strong> Business posting is unlocked immediately upon admin payment verification.
+            <i className="fa-solid fa-lock" style={{ marginRight: '4px' }} /> <strong>Verification Policy:</strong> Business posting is unlocked immediately upon admin payment verification.
           </p>
         </div>
       )}

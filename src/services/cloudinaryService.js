@@ -2,7 +2,7 @@
 // Uses unsigned upload preset — NO secret API keys exposed to the client.
 
 const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dohfg4cin'
-const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'thesearch'
+const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'dotchit'
 
 export const isCloudinaryConfigured = Boolean(cloudName && uploadPreset)
 
