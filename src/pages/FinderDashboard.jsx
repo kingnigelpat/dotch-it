@@ -13,7 +13,7 @@ export default function FinderDashboard() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const initialQ = searchParams.get('q') || ''
-  const initialLoc = searchParams.get('loc') || 'Lagos'
+  const initialLoc = searchParams.get('loc') || 'Everywhere'
 
   const [query, setQuery] = useState(initialQ)
   const [location, setLocation] = useState(initialLoc)
@@ -30,28 +30,23 @@ export default function FinderDashboard() {
       const loc = overrideLocation !== undefined ? overrideLocation : location
       const cat = overrideCat !== undefined ? overrideCat : activeCategory
 
-      if (!q.trim() && !cat) {
-        setLoading(true)
-        try {
-          const all = await getAllBusinesses()
-          setResults(all)
-          setSearched(false)
-        } finally {
-          setLoading(false)
-        }
-        return
-      }
+      const isEverywhere =
+        !loc || loc === 'Everywhere' || loc === 'All Locations' || loc === 'All of Nigeria'
 
       setLoading(true)
       setSearched(true)
-      setSearchParams({ q, loc, cat })
+      setSearchParams({
+        ...(q.trim() ? { q: q.trim() } : {}),
+        loc: isEverywhere ? 'Everywhere' : loc,
+        ...(cat ? { cat } : {}),
+      })
 
       try {
         // AI query understanding
         let parsedIntent = ''
         let aiOutside = []
         if (q.trim()) {
-          const ai = await understandSearch(q.trim(), loc)
+          const ai = await understandSearch(q.trim(), isEverywhere ? 'Nigeria' : loc)
           parsedIntent = ai.intent
           setAiIntent(parsedIntent)
           aiOutside = ai.aiSuggestions || []
@@ -59,14 +54,22 @@ export default function FinderDashboard() {
           setAiIntent('')
         }
 
-        // Local Firestore search matching keywords, location, and category
-        const local = await searchBusinesses({
-          category: cat,
-          keyword: q.trim(),
-          location: loc,
-        })
+        // Location-aware search
+        let local = []
+        if (!q.trim() && !cat && isEverywhere) {
+          // No query, no category, and Everywhere: show all listings
+          local = await getAllBusinesses()
+        } else {
+          // If a specific location (e.g. 'Delta'), keyword, or category is selected,
+          // filter strictly by that location!
+          local = await searchBusinesses({
+            category: cat,
+            keyword: q.trim(),
+            location: isEverywhere ? '' : loc,
+          })
+        }
 
-        // Merge AI suggestions if not present in local
+        // Merge AI suggestions if query was entered
         const existingNames = new Set(local.map((b) => b.name?.toLowerCase()))
         const formattedAI = aiOutside
           .filter((s) => !existingNames.has(s.name?.toLowerCase()))
@@ -221,11 +224,14 @@ export default function FinderDashboard() {
       {loading && <div className="center-loading">Searching local engine…</div>}
 
       {/* Empty State */}
-      {!loading && searched && results.length === 0 && (
+      {!loading && results.length === 0 && (
         <EmptyState
           location={location}
           query={query}
-          onSelectNearby={handleNearbySelect}
+          onSelectEverywhere={() => {
+            setLocation('Everywhere')
+            executeSearch(query, 'Everywhere', activeCategory)
+          }}
         />
       )}
 

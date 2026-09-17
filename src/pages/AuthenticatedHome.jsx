@@ -172,20 +172,20 @@ export default function AuthenticatedHome() {
         </button>
       </div>
 
-      {/* SECTION 1: ADMIN SPOTLIGHT HERO CAROUSEL */}
+      {/* SECTION 1: DOTCH SPOTLIGHT HERO CAROUSEL */}
       {loadingAds ? (
         <div className="ad-hero-skeleton">
-          <div className="center-loading">Loading curated spotlights…</div>
+          <div className="center-loading">Loading DOTCH Spotlight…</div>
         </div>
       ) : currentHero ? (
-        <section className="ad-hero-section" aria-label="Admin Spotlight Advertisement">
+        <section className="ad-hero-section" aria-label="DOTCH Spotlight Advertisement">
           <div className="ad-hero-banner" style={{ backgroundImage: `url(${currentHero.imageUrl || currentHero.flyerUrl})` }}>
             <div className="ad-hero-overlay">
               <div className="ad-hero-content">
                 {/* Labels */}
                 <div className="ad-badge-group">
                   <span className="ad-sponsored-pill">
-                    {currentHero.badge === 'Sponsored' ? '📢 Sponsored' : '🌟 Admin Spotlight'}
+                    {currentHero.badge === 'Sponsored' ? '📢 Sponsored' : '🌟 DOTCH Spotlight'}
                   </span>
                   {currentHero.targetReach && (
                     <span className="ad-reach-pill">
@@ -267,19 +267,19 @@ export default function AuthenticatedHome() {
         </section>
       ) : null}
 
-      {/* SECTION 2: FEATURED BUSINESS FLYERS & PROMOTIONS */}
+      {/* SECTION 2: DOTCH SPOTLIGHT FLYERS & CAMPAIGNS */}
       {activeFlyerAds.length > 0 && (
         <section className="home-section ad-flyers-section">
           <div className="section-header-row">
             <div>
-              <div className="section-pretitle">Admin Picked Campaigns</div>
-              <h2 className="section-title">Featured Business Flyers & Offers</h2>
+              <div className="section-pretitle">Curated Promotions</div>
+              <h2 className="section-title">DOTCH Spotlight: Featured Campaigns & Offers</h2>
               <p className="section-subtitle">
-                Exclusive promotions and special offers highlighted by the DOTCH editorial team
+                Exclusive business campaigns, product drops, and verified promotions curated by the DOTCH team
               </p>
             </div>
             <span className="sponsored-disclaimer-pill">
-              🛡️ Verified Partner Ads
+              🛡️ Admin-Curated Ads
             </span>
           </div>
 
@@ -299,7 +299,7 @@ export default function AuthenticatedHome() {
                   />
                   <div className="ad-flyer-badge-overlay">
                     <span className="ad-tag-badge">
-                      {item.badge || 'Sponsored'}
+                      {item.badge || 'DOTCH Spotlight'}
                     </span>
                     {item.targetReach && (
                       <span className="ad-tag-reach">{item.targetReach}</span>

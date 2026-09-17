@@ -374,33 +374,6 @@ export default function Account() {
 
         <hr className="account-divider" />
 
-        {/* Quick Discovery Navigation */}
-        <div className="account-section">
-          <h2 className="account-section-title" style={{ fontSize: '16px', marginBottom: '8px' }}>
-            Quick Links
-          </h2>
-          <div className="account-links-list">
-            <Link to="/dashboard" className="account-link-row">
-              <span className="account-link-icon">🔍</span>
-              <div className="account-link-text">
-                <strong>Search & Explore</strong>
-                <small>Find stores, hotels, and services nearby</small>
-              </div>
-              <span className="account-link-chevron">›</span>
-            </Link>
-            <Link to="/terms" className="account-link-row">
-              <span className="account-link-icon">📜</span>
-              <div className="account-link-text">
-                <strong>Terms of Service & Privacy Policy</strong>
-                <small>Review platform guidelines and safety terms</small>
-              </div>
-              <span className="account-link-chevron">›</span>
-            </Link>
-          </div>
-        </div>
-
-        <hr className="account-divider" />
-
         {/* Logout */}
         <button className="btn btn-danger btn-block" onClick={handleLogout}>
           🚪 Sign out

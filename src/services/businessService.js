@@ -442,33 +442,24 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
     })
   }
 
-  if (location && location !== 'Near me' && location !== 'Everywhere') {
-    const locLower = location.toLowerCase()
-    const parts = locLower.split('-').map((s) => s.trim())
-    const statePart = parts[0] || ''
-    const cityPart = parts[1] || ''
+  if (
+    location &&
+    location !== 'Near me' &&
+    location !== 'Everywhere' &&
+    location !== 'All of Nigeria' &&
+    location !== 'All Locations'
+  ) {
+    const locLower = location.toLowerCase().trim()
 
     filtered = filtered.filter((b) => {
       const bLoc = (b.location || '').toLowerCase()
       const bCity = (b.city || '').toLowerCase()
       const bState = (b.state || '').toLowerCase()
 
-      // 1. Direct match with full string
+      // Match city, state, or address/location field
       if (bLoc.includes(locLower) || locLower.includes(bLoc)) return true
       if (bCity.includes(locLower) || locLower.includes(bCity)) return true
       if (bState && (bState.includes(locLower) || locLower.includes(bState))) return true
-
-      // 2. Specific City match if cityPart exists
-      if (cityPart && !cityPart.includes('all')) {
-        if (bLoc.includes(cityPart) || cityPart.includes(bLoc)) return true
-        if (bCity.includes(cityPart) || cityPart.includes(bCity)) return true
-      }
-
-      // 3. State match if only state is selected or city matches state
-      if (statePart && !cityPart) {
-        if (bLoc.includes(statePart) || bCity.includes(statePart) || bState.includes(statePart)) return true
-        if (statePart.includes(bLoc) || statePart.includes(bCity) || statePart.includes(bState)) return true
-      }
 
       return false
     })
@@ -489,18 +480,32 @@ export async function searchBusinesses({ category, keyword, location, max = 50 }
     )
   }
 
-  // If local results are few, dynamically scrape real OpenStreetMap POIs for free!
-  if (filtered.length < 5) {
+  // If local results are few, attempt to find real Overpass OpenStreetMap POIs ONLY for the requested location.
+  // Never default to 'Lagos' if the user requested a different location!
+  if (
+    filtered.length < 5 &&
+    location &&
+    location !== 'Everywhere' &&
+    location !== 'All of Nigeria' &&
+    location !== 'All Locations'
+  ) {
     try {
-      const parts = (location || '').split('-').map((s) => s.trim())
-      const targetCity = parts[1] && !parts[1].toLowerCase().includes('all') ? parts[1] : (parts[0] || 'Lagos')
+      const targetCity = location.trim()
       const osmPlaces = await fetchOsmBusinesses({
-        city: targetCity !== 'Near me' && targetCity !== 'Everywhere' ? targetCity : 'Lagos',
+        city: targetCity,
         category: category || keyword || 'all',
         limit: 15,
       })
+      // Only include OSM places that actually belong to the target location!
+      const validOsm = (osmPlaces || []).filter((o) => {
+        const oLoc = (o.location || '').toLowerCase()
+        const oCity = (o.city || '').toLowerCase()
+        const target = targetCity.toLowerCase()
+        return oLoc.includes(target) || oCity.includes(target) || target.includes(oCity)
+      })
+
       const existingNames = new Set(filtered.map((b) => b.name.toLowerCase()))
-      const newOsm = osmPlaces.filter((o) => !existingNames.has(o.name.toLowerCase()))
+      const newOsm = validOsm.filter((o) => !existingNames.has(o.name.toLowerCase()))
       filtered = [...filtered, ...newOsm]
     } catch {
       // ignore osm fallback errors

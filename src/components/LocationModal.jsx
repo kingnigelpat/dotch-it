@@ -2,20 +2,18 @@ import { useState, useMemo } from 'react'
 import { NIGERIA_LOCATIONS, ALL_STATES, POPULAR_STATES } from '../data/nigeriaLocations'
 
 export default function LocationModal({ isOpen, onClose, currentLocation = 'Lagos', onSelectLocation }) {
-  const safeLocation = typeof currentLocation === 'string' ? currentLocation.trim() : 'Lagos'
-
-  // Parse existing location into State and City if available
-  const parsed = useMemo(() => {
-    if (!safeLocation) return { state: 'Lagos', city: '' }
-    const parts = safeLocation.split('-').map((s) => s.trim())
-    return {
-      state: parts[0] || 'Lagos',
-      city: parts[1] || '',
+  // Sanitize location: if hyphenated from legacy data, take the first part
+  const safeLocation = useMemo(() => {
+    if (!currentLocation || typeof currentLocation !== 'string') return 'Lagos'
+    const trimmed = currentLocation.trim()
+    if (trimmed.includes('-')) {
+      return trimmed.split('-')[0].trim()
     }
-  }, [safeLocation])
+    return trimmed
+  }, [currentLocation])
 
   const [step, setStep] = useState(1) // 1: Which State?, 2: Which City?
-  const [selectedState, setSelectedState] = useState(parsed.state || 'Lagos')
+  const [selectedState, setSelectedState] = useState(safeLocation !== 'Everywhere' ? safeLocation : 'Lagos')
   const [stateSearch, setStateSearch] = useState('')
   const [citySearch, setCitySearch] = useState('')
   const [detecting, setDetecting] = useState(false)
@@ -55,21 +53,21 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
     return (stateData?.cities || []).filter((c) => c.toLowerCase().includes(q))
   }, [stateData, citySearch])
 
-  // Handlers
+  // Handlers - Return strictly single location names
   const handleSelectState = (stateName) => {
     setSelectedState(stateName)
     setCitySearch('')
-    setStep(2) // Move to Step 2: Which city?
+    setStep(2) // Move to Step 2: Choose city or entire state
   }
 
   const handleSelectCity = (cityName) => {
-    const formatted = `${selectedState} - ${cityName}`
-    if (onSelectLocation) onSelectLocation(formatted)
+    if (onSelectLocation) onSelectLocation(cityName)
     if (onClose) onClose()
   }
 
-  const handleSelectEntireState = () => {
-    if (onSelectLocation) onSelectLocation(selectedState)
+  const handleSelectEntireState = (stateName) => {
+    const st = stateName || selectedState
+    if (onSelectLocation) onSelectLocation(st)
     if (onClose) onClose()
   }
 
@@ -97,20 +95,16 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
             data.address?.city ||
             data.address?.city_district ||
             data.address?.town ||
-            data.address?.suburb ||
-            'Ikeja'
-          const detectedState = data.address?.state || 'Lagos'
+            data.address?.suburb
+          const detectedState = data.address?.state
 
-          // Clean state name
+          // Clean state match
           const matchState = NIGERIA_LOCATIONS.find((s) =>
-            detectedState.toLowerCase().includes((s.state || '').toLowerCase())
+            detectedState && detectedState.toLowerCase().includes((s.state || '').toLowerCase())
           )
 
-          if (matchState) {
-            if (onSelectLocation) onSelectLocation(`${matchState.state} - ${detectedCity}`)
-          } else {
-            if (onSelectLocation) onSelectLocation(`Lagos - ${detectedCity}`)
-          }
+          const finalLocation = detectedCity || (matchState ? matchState.state : 'Lagos')
+          if (onSelectLocation) onSelectLocation(finalLocation)
           if (onClose) onClose()
         } catch {
           if (onSelectLocation) onSelectLocation('Lagos')
@@ -127,7 +121,6 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
     )
   }
 
-  // ALL HOOKS ARE CALLED ABOVE. Only now can we conditionally return null.
   if (!isOpen) return null
 
   return (
@@ -142,11 +135,11 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <span className="badge-pill explorer-badge" style={{ fontSize: '11px', fontWeight: 800 }}>
-                {step === 1 ? 'Step 1 of 2: Which State?' : `Step 2 of 2: Which City in ${selectedState}?`}
+                {step === 1 ? 'Step 1 of 2: Select State' : `Step 2 of 2: ${selectedState} State`}
               </span>
             </div>
             <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-              {step === 1 ? '1️⃣ Which State are you searching in?' : `2️⃣ Which City / Area in ${selectedState}?`}
+              {step === 1 ? '1️⃣ Which State are you searching in?' : `2️⃣ Select City or Entire ${selectedState} State`}
             </h3>
           </div>
           <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
@@ -172,7 +165,7 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
             style={{ fontSize: '13px' }}
             onClick={handleSelectEverywhere}
           >
-            🌐 All of Nigeria
+            🌐 All of Nigeria (Everywhere)
           </button>
         </div>
 
@@ -181,7 +174,7 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
         {/* ==================================================================== */}
         {step === 1 && (
           <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px' }}>
-            {/* Search Input for States */}
+            {/* Search Input for States/Cities */}
             <div
               className="search-input-wrap"
               style={{
@@ -196,7 +189,7 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
               <input
                 type="text"
                 className="search-input"
-                placeholder="Type state or city (e.g. Lagos, Abuja, Lekki, Port Harcourt)…"
+                placeholder="Type state or city (e.g. Delta, Lagos, Abuja, Asaba, Warri)…"
                 value={stateSearch}
                 onChange={(e) => setStateSearch(e.target.value)}
                 autoFocus
@@ -208,7 +201,7 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
               )}
             </div>
 
-            {/* Direct City Matches (if user typed a specific city like "Lekki") */}
+            {/* Direct City Matches (if user typed a specific city like "Asaba" or "Lekki") */}
             {globalCityMatches.length > 0 && (
               <div style={{ marginBottom: '16px', background: 'var(--brand-light)', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(37, 99, 235, 0.2)' }}>
                 <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--brand-primary)', marginBottom: '8px', textTransform: 'uppercase' }}>
@@ -238,7 +231,7 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {POPULAR_STATES.map((stateName) => {
-                    const isCurrent = (parsed.state || '').toLowerCase() === stateName.toLowerCase()
+                    const isCurrent = safeLocation.toLowerCase() === stateName.toLowerCase()
                     return (
                       <button
                         key={stateName}
@@ -268,12 +261,9 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
                     type="button"
                     className="btn btn-primary btn-sm"
                     style={{ marginTop: '10px' }}
-                    onClick={() => {
-                      if (onSelectLocation) onSelectLocation(stateSearch.trim())
-                      if (onClose) onClose()
-                    }}
+                    onClick={() => handleSelectCity(stateSearch.trim())}
                   >
-                    Search in “{stateSearch.trim()}” anyway →
+                    Select “{stateSearch.trim()}” →
                   </button>
                 </div>
               ) : (
@@ -287,7 +277,7 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
                   {filteredStates.map((stateName) => {
                     const stObj = NIGERIA_LOCATIONS.find((n) => n.state === stateName)
                     const count = stObj?.cities?.length || 0
-                    const isSelected = (parsed.state || '').toLowerCase() === stateName.toLowerCase()
+                    const isSelected = safeLocation.toLowerCase() === stateName.toLowerCase()
 
                     return (
                       <button
@@ -315,7 +305,7 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
         )}
 
         {/* ==================================================================== */}
-        {/* STEP 2: WHICH CITY IN SELECTED STATE? */}
+        {/* STEP 2: WHICH CITY OR ENTIRE STATE? */}
         {/* ==================================================================== */}
         {step === 2 && (
           <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px' }}>
@@ -357,6 +347,26 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
               </button>
             </div>
 
+            {/* Primary Action: Select Entire State */}
+            <div style={{ marginBottom: '14px' }}>
+              <button
+                type="button"
+                className={`btn btn-block ${safeLocation.toLowerCase() === selectedState.toLowerCase() ? 'btn-primary' : 'btn-outline'}`}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  justifyContent: 'center',
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  borderRadius: 'var(--radius-md)',
+                  background: safeLocation.toLowerCase() === selectedState.toLowerCase() ? undefined : 'var(--bg-surface)',
+                }}
+                onClick={() => handleSelectEntireState(selectedState)}
+              >
+                📍 Select All of {selectedState} State
+              </button>
+            </div>
+
             {/* City Search Filter */}
             <div
               className="search-input-wrap"
@@ -384,29 +394,9 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
               )}
             </div>
 
-            {/* Priority Option: Entire State (All Cities) */}
-            <div style={{ marginBottom: '14px' }}>
-              <button
-                type="button"
-                className={`btn btn-block ${(safeLocation || '').toLowerCase() === (selectedState || '').toLowerCase() ? 'btn-primary' : 'btn-outline'}`}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  fontWeight: 800,
-                  borderRadius: 'var(--radius-md)',
-                  background: (safeLocation || '').toLowerCase() === (selectedState || '').toLowerCase() ? undefined : 'var(--bg-surface)',
-                }}
-                onClick={handleSelectEntireState}
-              >
-                📍 Entire {selectedState} (All Cities)
-              </button>
-            </div>
-
             {/* Cities Grid */}
             <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>
-              Cities & Commercial Areas in {selectedState} ({filteredCities.length}):
+              Cities in {selectedState} ({filteredCities.length}):
             </div>
 
             {filteredCities.length === 0 ? (
@@ -418,7 +408,7 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
                   style={{ marginTop: '10px' }}
                   onClick={() => handleSelectCity(citySearch.trim())}
                 >
-                  Use “{selectedState} - {citySearch.trim()}” anyway →
+                  Select “{citySearch.trim()}” →
                 </button>
               </div>
             ) : (
@@ -430,10 +420,7 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
                 }}
               >
                 {filteredCities.map((cityName) => {
-                  const targetFormatted = `${selectedState} - ${cityName}`
-                  const isSelected =
-                    (safeLocation || '').toLowerCase() === targetFormatted.toLowerCase() ||
-                    (safeLocation || '').toLowerCase() === cityName.toLowerCase()
+                  const isSelected = safeLocation.toLowerCase() === cityName.toLowerCase()
 
                   return (
                     <button

@@ -19,16 +19,27 @@ export default function LocationSelector({ currentLocation, onLocationChange }) 
     setModalOpen(false)
   }
 
+  // Sanitize any legacy hyphenated location values
+  const cleanLoc = (currentLocation || '').includes('-')
+    ? currentLocation.split('-')[0].trim()
+    : currentLocation
+
+  const isEverywhere = !cleanLoc || cleanLoc === 'Everywhere' || cleanLoc === 'All of Nigeria' || cleanLoc === 'All Locations'
+
   return (
     <>
       <button
         type="button"
         className="location-pill-btn"
         onClick={handleOpen}
-        title="Search in a specific location (State - City)"
+        title="Select search location (City or State)"
       >
-        <span style={{ color: 'var(--brand-primary)', fontSize: '14px' }}>📍</span>
-        <span className="location-pill-text">{currentLocation || 'Lagos'}</span>
+        <span style={{ color: 'var(--brand-primary)', fontSize: '14px' }}>
+          {isEverywhere ? '🌐' : '📍'}
+        </span>
+        <span className="location-pill-text">
+          {isEverywhere ? 'All Locations' : cleanLoc}
+        </span>
         <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: '2px' }}>▼</span>
       </button>
 
@@ -36,7 +47,7 @@ export default function LocationSelector({ currentLocation, onLocationChange }) 
         <LocationModal
           isOpen={true}
           onClose={handleClose}
-          currentLocation={currentLocation || 'Lagos'}
+          currentLocation={cleanLoc || 'Everywhere'}
           onSelectLocation={handleSelect}
         />
       )}
