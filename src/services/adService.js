@@ -98,6 +98,35 @@ export const SAMPLE_ADVERTS = [
 ]
 
 const CACHE_KEY_ACTIVE_ADS = 'active_ads'
+const DELETED_ADS_STORAGE_KEY = 'dotch_deleted_ad_ids'
+
+export function getDeletedAdIds() {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(DELETED_ADS_STORAGE_KEY) : null
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+export function addDeletedAdId(id) {
+  if (!id) return
+  try {
+    if (typeof window !== 'undefined') {
+      const list = getDeletedAdIds()
+      if (!list.includes(id)) {
+        list.push(id)
+        localStorage.setItem(DELETED_ADS_STORAGE_KEY, JSON.stringify(list))
+      }
+    }
+  } catch (e) {}
+
+  // Remove from in-memory SAMPLE_ADVERTS immediately
+  const idx = SAMPLE_ADVERTS.findIndex((s) => s.id === id)
+  if (idx !== -1) {
+    SAMPLE_ADVERTS.splice(idx, 1)
+  }
+}
 
 /**
  * Fetch all currently active, non-expired adverts for public display.
@@ -107,6 +136,7 @@ export async function getActiveAds() {
   const cached = cacheService.get(CACHE_KEY_ACTIVE_ADS)
   if (cached) return cached
 
+  const deletedIds = new Set(getDeletedAdIds())
   const now = new Date().toISOString()
   let dbAds = []
 
@@ -121,10 +151,18 @@ export async function getActiveAds() {
     }
   }
 
-  // Combine DB ads with sample ads (avoiding ID collisions)
-  const dbAdIds = new Set(dbAds.map((a) => a.id))
-  const validSamples = SAMPLE_ADVERTS.filter((s) => !dbAdIds.has(s.id))
-  const allAds = [...dbAds, ...validSamples]
+  // Collect any DB ads marked as deleted
+  dbAds.forEach((a) => {
+    if (a.status === 'deleted' || a.isDeleted) {
+      deletedIds.add(a.id)
+    }
+  })
+
+  // Filter out deleted dbAds
+  const validDbAds = dbAds.filter((a) => a.status !== 'deleted' && !a.isDeleted && !deletedIds.has(a.id))
+  const dbAdIds = new Set(validDbAds.map((a) => a.id))
+  const validSamples = SAMPLE_ADVERTS.filter((s) => !dbAdIds.has(s.id) && !deletedIds.has(s.id))
+  const allAds = [...validDbAds, ...validSamples]
 
   // Filter out any that have expired or are marked paused/inactive
   const activeAds = allAds.filter((ad) => {
@@ -142,7 +180,9 @@ export async function getActiveAds() {
  * Fetch all adverts for Admin Panel management.
  */
 export async function getAllAdsAdmin() {
+  const deletedIds = new Set(getDeletedAdIds())
   let dbAds = []
+
   if (db) {
     try {
       const col = collection(db, AD_COLLECTION)
@@ -153,9 +193,19 @@ export async function getAllAdsAdmin() {
     }
   }
 
-  const dbAdIds = new Set(dbAds.map((a) => a.id))
-  const remainingSamples = SAMPLE_ADVERTS.filter((s) => !dbAdIds.has(s.id))
-  return [...dbAds, ...remainingSamples]
+  // Collect any DB ads marked as deleted and sync with deletedIds
+  dbAds.forEach((a) => {
+    if (a.status === 'deleted' || a.isDeleted) {
+      deletedIds.add(a.id)
+      addDeletedAdId(a.id)
+    }
+  })
+
+  // Filter out deleted dbAds
+  const validDbAds = dbAds.filter((a) => a.status !== 'deleted' && !a.isDeleted && !deletedIds.has(a.id))
+  const dbAdIds = new Set(validDbAds.map((a) => a.id))
+  const remainingSamples = SAMPLE_ADVERTS.filter((s) => !dbAdIds.has(s.id) && !deletedIds.has(s.id))
+  return [...validDbAds, ...remainingSamples]
 }
 
 /**
@@ -180,23 +230,64 @@ export async function createAd(adData, adminUid) {
  * Update an existing advert in Firestore.
  */
 export async function updateAd(id, data) {
-  if (!db) throw new Error('Database is not initialized')
-  const ref = doc(db, AD_COLLECTION, id)
-  await updateDoc(ref, {
-    ...data,
-    updatedAt: new Date().toISOString(),
-  })
+  if (!id) return
+  const sampleMatch = SAMPLE_ADVERTS.find((s) => s.id === id)
+  if (sampleMatch) {
+    Object.assign(sampleMatch, data)
+  }
+
+  // Cache in localStorage
+  try {
+    const localKey = `dotch_ad_${id}`
+    const existing = JSON.parse(localStorage.getItem(localKey) || '{}')
+    localStorage.setItem(localKey, JSON.stringify({ ...existing, ...(sampleMatch || {}), ...data }))
+  } catch (e) {}
+
+  if (db) {
+    try {
+      const ref = doc(db, AD_COLLECTION, id)
+      await setDoc(ref, {
+        ...(sampleMatch || {}),
+        ...data,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true })
+    } catch (err) {
+      console.warn('Firestore updateAd warning:', err)
+    }
+  }
+
   // Invalidate active ads cache
   cacheService.remove(CACHE_KEY_ACTIVE_ADS)
 }
 
 /**
- * Delete an advert.
+ * Delete an advert permanently.
  */
 export async function deleteAd(id) {
-  if (!db) throw new Error('Database is not initialized')
-  const ref = doc(db, AD_COLLECTION, id)
-  await deleteDoc(ref)
-  // Invalidate active ads cache
+  if (!id) return
+
+  // 1. Immediately track as deleted locally & in-memory
+  addDeletedAdId(id)
+
+  // 2. Invalidate active ads cache
   cacheService.remove(CACHE_KEY_ACTIVE_ADS)
+
+  // 3. Delete from Firestore and save tombstone
+  if (db) {
+    try {
+      const ref = doc(db, AD_COLLECTION, id)
+      await deleteDoc(ref)
+      await setDoc(
+        ref,
+        {
+          status: 'deleted',
+          isDeleted: true,
+          deletedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      )
+    } catch (err) {
+      console.warn('Firestore deleteAd warning (persisted locally):', err)
+    }
+  }
 }

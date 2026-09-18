@@ -488,14 +488,57 @@ export async function getBusinessByOwner(uid) {
   }
 }
 
-export async function deleteBusiness(id) {
+const DELETED_BIZ_STORAGE_KEY = 'dotch_deleted_biz_ids'
+
+export function getDeletedBizIds() {
   try {
-    await deleteDoc(doc(db, BUSINESS_COLLECTION, id))
-    cacheService.clear('all_businesses_')
-    cacheService.clear('search_')
-  } catch (err) {
-    console.warn('Could not delete firestore business:', err)
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(DELETED_BIZ_STORAGE_KEY) : null
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
   }
+}
+
+export function addDeletedBizId(id) {
+  if (!id) return
+  try {
+    if (typeof window !== 'undefined') {
+      const list = getDeletedBizIds()
+      if (!list.includes(id)) {
+        list.push(id)
+        localStorage.setItem(DELETED_BIZ_STORAGE_KEY, JSON.stringify(list))
+      }
+    }
+  } catch (e) {}
+
+  // Remove from in-memory DEMO_BUSINESSES immediately
+  const idx = DEMO_BUSINESSES.findIndex((b) => b.id === id)
+  if (idx !== -1) {
+    DEMO_BUSINESSES.splice(idx, 1)
+  }
+}
+
+export async function deleteBusiness(id) {
+  if (!id) return
+  addDeletedBizId(id)
+  try {
+    localStorage.removeItem(`dotch_biz_${id}`)
+  } catch (e) {}
+
+  if (db) {
+    try {
+      await deleteDoc(doc(db, BUSINESS_COLLECTION, id))
+      await setDoc(
+        doc(db, BUSINESS_COLLECTION, id),
+        { status: 'deleted', isDeleted: true, deletedAt: new Date().toISOString() },
+        { merge: true }
+      )
+    } catch (err) {
+      console.warn('Could not delete firestore business:', err)
+    }
+  }
+  cacheService.clear('all_businesses_')
+  cacheService.clear('search_')
 }
 
 /**
@@ -568,8 +611,13 @@ export async function searchBusinesses({ category, keyword, location, userCoords
     }
   }
 
-  // Merge DB results with demo results
-  const all = [...dbResults, ...DEMO_BUSINESSES]
+  // Merge DB results with demo results (excluding any deleted IDs)
+  const deletedIds = new Set(getDeletedBizIds())
+  const validDbResults = dbResults.filter((b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id))
+  const all = [
+    ...validDbResults,
+    ...DEMO_BUSINESSES.filter((d) => !deletedIds.has(d.id) && d.status !== 'deleted'),
+  ]
 
   let filtered = all
 
@@ -695,8 +743,13 @@ export async function getAllBusinesses(max = 50) {
     }
   }
 
-  const existingIds = new Set(dbResults.map((b) => b.id))
-  const combined = [...dbResults, ...DEMO_BUSINESSES.filter((d) => !existingIds.has(d.id))]
+  const deletedIds = new Set(getDeletedBizIds())
+  const validDbResults = dbResults.filter((b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id))
+  const existingIds = new Set(validDbResults.map((b) => b.id))
+  const combined = [
+    ...validDbResults,
+    ...DEMO_BUSINESSES.filter((d) => !existingIds.has(d.id) && !deletedIds.has(d.id) && d.status !== 'deleted'),
+  ]
   
   // Sort priority tiers first
   const tierWeight = { pro_2m: 4, pro_1m: 3, enterprise_monthly: 3, pro_monthly: 2, starter: 1 }

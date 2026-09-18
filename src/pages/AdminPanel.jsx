@@ -337,7 +337,8 @@ export default function AdminPanel() {
         setSuccess('')
         try {
           await deleteAd(ad.id)
-          showSuccess(`Advert "${ad.title}" deleted.`)
+          setAds((prev) => prev.filter((item) => item.id !== ad.id))
+          showSuccess(`Advert "${ad.title}" deleted successfully.`)
           setConfirmState(null)
           await loadAds()
         } catch (err) {
