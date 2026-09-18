@@ -39,8 +39,8 @@ const TRENDING_SEARCHES = [
 export default function Landing() {
   const navigate = useNavigate()
   const { user, profile } = useAuth()
-  const [query, setQuery] = useState('')
-  const [location, setLocation] = useState('Lagos')
+  const [query, setQuery] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('dotch_last_search_query') || '' : ''))
+  const [location, setLocation] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('dotch_last_search_loc') || 'Lagos' : 'Lagos'))
   const [featured, setFeatured] = useState([])
   const [selectedCategoryTab, setSelectedCategoryTab] = useState('all')
 
@@ -48,8 +48,19 @@ export default function Landing() {
     getAllBusinesses(12).then(setFeatured)
   }, [])
 
+  const handleQueryChange = (newQ) => {
+    setQuery(newQ)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('dotch_last_search_query', newQ)
+    }
+  }
+
   const handleSearch = (customQuery) => {
     const q = customQuery !== undefined ? customQuery : query
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('dotch_last_search_query', q)
+      sessionStorage.setItem('dotch_last_search_loc', location)
+    }
     if (q.trim()) {
       navigate(`/dashboard?q=${encodeURIComponent(q)}&loc=${encodeURIComponent(location)}`)
     } else {
@@ -121,10 +132,15 @@ export default function Landing() {
         <div className="hero-search-wrapper">
           <SearchBar
             query={query}
-            setQuery={setQuery}
+            setQuery={handleQueryChange}
             onSearch={() => handleSearch()}
             location={location}
-            setLocation={setLocation}
+            setLocation={(newLoc) => {
+              setLocation(newLoc)
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('dotch_last_search_loc', newLoc)
+              }
+            }}
             autoFocus={true}
           />
         </div>

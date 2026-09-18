@@ -1057,6 +1057,17 @@ a:hover {
   gap: 4px;
 }
 
+.phone-whatsapp-link {
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.phone-whatsapp-link:hover {
+  color: #16a34a !important;
+  text-decoration: underline;
+  transform: translateY(-1px);
+}
+
 .result-thumbs {
   display: grid;
   grid-template-columns: 1fr 1fr;

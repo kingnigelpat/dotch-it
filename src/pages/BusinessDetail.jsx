@@ -272,12 +272,16 @@ export default function BusinessDetail() {
 
             {business.phone && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px' }}>
-                <span>📞</span>
-                <strong style={{ color: 'var(--text-primary)' }}>Phone Line:</strong>
+                <span title="Direct WhatsApp hotline">💬</span>
+                <strong style={{ color: 'var(--text-primary)' }}>WhatsApp / Phone:</strong>
                 <a
-                  href={`tel:${formatTo234(business.phone)}`}
-                  style={{ color: 'var(--brand-primary)', fontWeight: 700, textDecoration: 'none' }}
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--brand-primary)', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  title="Chat directly with vendor on WhatsApp"
                 >
+                  <i className="fa-brands fa-whatsapp" style={{ color: '#25D366' }} />
                   {displayFormattedPhone(business.phone)}
                 </a>
               </div>

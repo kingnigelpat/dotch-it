@@ -1,12 +1,7 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { Link } from 'react-router-dom'
 import { normalizeWhatsAppPhone, displayFormattedPhone } from '../utils/phoneUtils'
 
 export default function BusinessCard({ business }) {
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
-
   if (!business) return null
 
   // AI Suggestion card layout
@@ -88,10 +83,18 @@ export default function BusinessCard({ business }) {
           {business.distance && ` · ${business.distance}`}
         </span>
         {business.phone && (
-          <span className="result-meta-item" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-            <i className="fa-solid fa-phone" style={{ marginRight: '4px', fontSize: '11px', color: 'var(--brand-primary)' }} />
-            {displayFormattedPhone(business.phone)}
-          </span>
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="result-meta-item phone-whatsapp-link"
+            style={{ fontWeight: 600, color: 'var(--text-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+            title="Chat with vendor on WhatsApp"
+          >
+            <i className="fa-brands fa-whatsapp" style={{ marginRight: '4px', fontSize: '12px', color: '#25D366' }} />
+            <span>{displayFormattedPhone(business.phone)}</span>
+          </a>
         )}
         {business.rating && (
           <span className="result-meta-item"><i className="fa-solid fa-star" style={{ marginRight: '3px', color: '#f59e0b' }} /> {business.rating}</span>
@@ -111,25 +114,16 @@ export default function BusinessCard({ business }) {
 
       {/* Action buttons with custom WhatsApp pre-filled text & View details */}
       <div className="result-actions">
-        <button
-          type="button"
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="btn btn-whatsapp btn-sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            if (!user) {
-              navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}&reason=whatsapp`)
-              return
-            }
-            window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
-          }}
-          title={user ? 'Chat on WhatsApp' : 'Log in to chat on WhatsApp'}
+          onClick={(e) => e.stopPropagation()}
+          title="Chat directly on WhatsApp"
         >
-          {user ? (
-            <><i className="fa-brands fa-whatsapp" style={{ marginRight: '5px' }} /> Chat on WhatsApp</>
-          ) : (
-            <><i className="fa-solid fa-lock" style={{ marginRight: '5px' }} /> Log in to WhatsApp</>
-          )}
-        </button>
+          <i className="fa-brands fa-whatsapp" style={{ marginRight: '5px' }} /> Chat on WhatsApp
+        </a>
 
         <Link to={`/business/${business.id}`} className="btn btn-primary btn-sm">
           View details <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} />

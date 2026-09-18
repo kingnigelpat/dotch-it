@@ -12,8 +12,10 @@ export default function FinderDashboard() {
   const { user, profile } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const initialQ = searchParams.get('q') || ''
-  const initialLoc = searchParams.get('loc') || 'Everywhere'
+  const urlQ = searchParams.get('q')
+  const initialQ = urlQ !== null ? urlQ : (typeof window !== 'undefined' ? sessionStorage.getItem('dotch_last_search_query') || '' : '')
+  const urlLoc = searchParams.get('loc')
+  const initialLoc = urlLoc !== null ? urlLoc : (typeof window !== 'undefined' ? sessionStorage.getItem('dotch_last_search_loc') || 'Everywhere' : 'Everywhere')
 
   const [query, setQuery] = useState(initialQ)
   const [location, setLocation] = useState(initialLoc)
@@ -24,11 +26,23 @@ export default function FinderDashboard() {
   const [aiIntent, setAiIntent] = useState('')
   const [categories] = useState(getSuggestedCategories())
 
+  const handleQueryChange = (val) => {
+    setQuery(val)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('dotch_last_search_query', val)
+    }
+  }
+
   const executeSearch = useCallback(
     async (overrideQuery, overrideLocation, overrideCat) => {
       const q = overrideQuery !== undefined ? overrideQuery : query
       const loc = overrideLocation !== undefined ? overrideLocation : location
       const cat = overrideCat !== undefined ? overrideCat : activeCategory
+
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('dotch_last_search_query', q)
+        sessionStorage.setItem('dotch_last_search_loc', loc)
+      }
 
       const isEverywhere =
         !loc || loc === 'Everywhere' || loc === 'All Locations' || loc === 'All of Nigeria'
@@ -167,7 +181,7 @@ export default function FinderDashboard() {
       <div style={{ marginBottom: '24px' }}>
         <SearchBar
           query={query}
-          setQuery={setQuery}
+          setQuery={handleQueryChange}
           onSearch={() => executeSearch(query, location, activeCategory)}
           location={location}
           setLocation={(newLoc) => {
