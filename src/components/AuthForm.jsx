@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import PhoneInput from './PhoneInput'
 
 export default function AuthForm({ title, subtitle, fields, onSubmit, submitLabel, error, loading, children, onValuesChange }) {
   const [values, setValues] = useState(() =>
@@ -26,7 +27,30 @@ export default function AuthForm({ title, subtitle, fields, onSubmit, submitLabe
       <form onSubmit={handleSubmit}>
         {fields.map((f) => {
           const isPassword = f.type === 'password'
+          const isPhone = f.type === 'tel' || f.name === 'phone'
           const isVisible = Boolean(showPasswords[f.name])
+
+          if (isPhone) {
+            return (
+              <div className="form-group" key={f.name}>
+                <label htmlFor={f.name}>{f.label}</label>
+                <PhoneInput
+                  id={f.name}
+                  name={f.name}
+                  value={values[f.name]}
+                  required={f.required !== false}
+                  placeholder={f.placeholder || '801 234 5678'}
+                  onChange={(val) => {
+                    setValues((v) => {
+                      const next = { ...v, [f.name]: val }
+                      if (onValuesChange) onValuesChange(next)
+                      return next
+                    })
+                  }}
+                />
+              </div>
+            )
+          }
 
           return (
             <div className="form-group" key={f.name}>

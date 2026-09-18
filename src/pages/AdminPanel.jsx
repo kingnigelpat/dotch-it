@@ -22,7 +22,8 @@ import {
   deleteAd,
 } from '../services/adService'
 import { uploadImage, fileToBase64 } from '../services/cloudinaryService'
-import { formatTo234 } from '../utils/phoneUtils'
+import { formatTo234, displayFormattedPhone } from '../utils/phoneUtils'
+import PhoneInput from '../components/PhoneInput'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 const EMPTY_AD_FORM = {
@@ -65,7 +66,7 @@ const SEED_BUSINESSES = [
     category: 'Hotel & Travel',
     location: 'Victoria Island, Lagos',
     city: 'Lagos',
-    phone: '+2348031234567',
+    phone: '+2348092772700',
     price: '₦45,000 / night',
     description: 'Luxury rooms, ocean view swimming pool, 24/7 power, and high-speed Wi-Fi in the heart of VI.',
     logoUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&auto=format&fit=crop',
@@ -79,7 +80,7 @@ const SEED_BUSINESSES = [
     category: 'Restaurant',
     location: 'Wuse 2, Abuja',
     city: 'Abuja',
-    phone: '+2348098765432',
+    phone: '+2347073544811',
     price: '₦2,500 – ₦8,000',
     description: 'Authentic Nigerian delicacies: Jollof rice, pounded yam, seafood okra, pepper soup, and chilled drinks.',
     logoUrl: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=200&auto=format&fit=crop',
@@ -93,7 +94,7 @@ const SEED_BUSINESSES = [
     category: 'Electronics & Tech',
     location: 'Computer Village, Ikeja, Lagos',
     city: 'Lagos',
-    phone: '+2348123456789',
+    phone: '+2349062083582',
     price: 'Free diagnostic check',
     description: 'Same-day iPhone, Samsung, and MacBook screen and board repairs with genuine replacement parts and warranty.',
     logoUrl: 'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=200&auto=format&fit=crop',
@@ -687,6 +688,9 @@ export default function AdminPanel() {
                         </div>
                         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                           <i className="fa-solid fa-envelope" style={{ marginRight: '4px', opacity: 0.6 }} /> {v.email} • <i className="fa-solid fa-tag" style={{ marginRight: '4px', opacity: 0.6 }} /> {planName}
+                          {v.phone && (
+                            <> • <i className="fa-brands fa-whatsapp" style={{ marginRight: '3px', color: '#25D366' }} /> <strong style={{ color: 'var(--text-primary)' }}>{displayFormattedPhone(v.phone)}</strong></>
+                          )}
                           {v.createdAt?.seconds && (<> • <i className="fa-solid fa-calendar" style={{ marginRight: '4px', opacity: 0.6 }} /> {new Date(v.createdAt.seconds * 1000).toLocaleDateString()}</>)}
                         </div>
                       </div>
@@ -791,7 +795,10 @@ export default function AdminPanel() {
 
                   <div className="form-group">
                     <label>WhatsApp / Phone Number</label>
-                    <input className="form-control" name="phone" value={form.phone} onChange={handleChange} placeholder="e.g. +2348012345678" />
+                    <PhoneInput
+                      value={form.phone}
+                      onChange={(val) => setForm((p) => ({ ...p, phone: val }))}
+                    />
                   </div>
 
                   <div className="form-group">
@@ -884,6 +891,7 @@ export default function AdminPanel() {
                     <div className="admin-biz-name">{biz.name}</div>
                     <div className="admin-biz-meta">
                       {biz.category} • {biz.city || biz.location || '—'}
+                      {biz.phone && (<> • <i className="fa-brands fa-whatsapp" style={{ color: '#25D366', marginRight: '2px' }} /> {displayFormattedPhone(biz.phone)}</>)}
                       {biz.verified && (<> • <i className="fa-solid fa-circle-check" style={{ color: 'var(--accent-emerald)', marginRight: '2px' }} /> Verified</>)}
                       {biz.featured && (<> • <i className="fa-solid fa-star" style={{ color: '#f59e0b', marginRight: '2px' }} /> Featured</>)}
                       {biz.adminAdded && (<> • <i className="fa-solid fa-shield-halved" style={{ color: 'var(--brand-primary)', marginRight: '2px' }} /> Admin</>)}
@@ -1029,13 +1037,9 @@ export default function AdminPanel() {
 
                   <div className="form-group">
                     <label className="form-label">WhatsApp Contact Phone Number *</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      className="form-input"
+                    <PhoneInput
                       value={adForm.phone}
-                      onChange={handleAdFormChange}
-                      placeholder="+2348012345678"
+                      onChange={(val) => setAdForm((p) => ({ ...p, phone: val }))}
                     />
                   </div>
 

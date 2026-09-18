@@ -10,6 +10,7 @@ import { updateUserProfile } from '../services/authService'
 import { uploadImage, fileToBase64 } from '../services/cloudinaryService'
 import { getSuggestedCategories } from '../services/openrouterService'
 import { formatTo234 } from '../utils/phoneUtils'
+import PhoneInput from '../components/PhoneInput'
 
 function ImagePicker({ label, file, url, onChange, disabled }) {
   const [preview, setPreview] = useState('')
@@ -295,14 +296,12 @@ export default function BusinessSetup() {
 
         <div className="form-group">
           <label>WhatsApp / Phone Contact Number *</label>
-          <input
-            className="form-control"
+          <PhoneInput
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="e.g. +234 801 234 5678 or 08012345678"
+            onChange={(val) => setPhone(val)}
             required
           />
-          <small style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '3px', display: 'block' }}>
+          <small style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
             Customers will tap to chat directly with you on WhatsApp using this number.
           </small>
         </div>
@@ -328,7 +327,7 @@ export default function BusinessSetup() {
           />
         </div>
 
-        {/* Cloudinary Image Upload Controls */}
+        {/* Photos & Brand Media */}
         <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', marginTop: '16px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>
             <i className="fa-solid fa-images" style={{ marginRight: '6px' }} /> Photos & Brand Media
@@ -343,15 +342,23 @@ export default function BusinessSetup() {
           disabled={uploading || saving}
           style={{ marginTop: '20px' }}
         >
-          {uploading
-            ? 'Uploading photos…'
-            : saving
-            ? 'Saving business profile…'
-            : editingId
-            ? 'Save Changes'
-            : isApproved
-            ? 'Publish Business Listing'
-            : 'Save & Continue to Payment →'}
+          {uploading ? (
+            <>
+              <span className="btn-spinner" aria-hidden="true" style={{ marginRight: '8px' }} />
+              <span>Uploading…</span>
+            </>
+          ) : saving ? (
+            <>
+              <span className="btn-spinner" aria-hidden="true" style={{ marginRight: '8px' }} />
+              <span>Saving…</span>
+            </>
+          ) : editingId ? (
+            'Save Changes'
+          ) : isApproved ? (
+            'Publish Business Listing'
+          ) : (
+            'Save & Continue to Payment →'
+          )}
         </button>
       </form>
     </div>

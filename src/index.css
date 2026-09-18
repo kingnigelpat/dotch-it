@@ -4684,4 +4684,75 @@ a:hover {
   }
 }
 
+/* ==========================================================================
+   PHONE INPUT WITH +234 NIGERIA COUNTRY CODE
+   ========================================================================== */
+.phone-input-wrapper {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.phone-input-wrapper:focus-within {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.phone-prefix-addon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  background: var(--bg-muted);
+  border-right: 1.5px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 14.5px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.phone-prefix-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.phone-prefix-code {
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  letter-spacing: 0.5px;
+}
+
+.phone-input-field {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  padding: 12px 14px !important;
+  font-size: 16px !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-main);
+  width: 100%;
+  min-width: 0;
+  box-shadow: none !important;
+  box-sizing: border-box;
+}
+
+.phone-input-field::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.phone-input-field:disabled {
+  background: var(--bg-muted) !important;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 

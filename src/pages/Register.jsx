@@ -47,7 +47,7 @@ export default function Register() {
       fields={[
         { name: 'name', label: isVendor ? 'Business Owner / Contact Name' : 'Full Name', placeholder: 'Enter your name' },
         { name: 'email', label: 'Email Address', type: 'email', placeholder: 'name@example.com' },
-        { name: 'phone', label: 'Phone Number / WhatsApp', type: 'tel', placeholder: 'e.g. +234 801 234 5678 or 08012345678' },
+        { name: 'phone', label: 'Phone Number / WhatsApp', type: 'tel', placeholder: '801 234 5678' },
         { name: 'password', label: 'Password', type: 'password', placeholder: 'At least 6 characters' },
       ]}
     >

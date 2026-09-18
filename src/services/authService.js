@@ -19,6 +19,7 @@ import {
   where,
   serverTimestamp,
 } from 'firebase/firestore'
+import { formatTo234 } from '../utils/phoneUtils'
 
 export async function registerUser({ email, password, name, phone = '', role, plan }) {
   if (!auth || !db) throw new Error('Firebase Authentication is not configured.')
@@ -30,7 +31,7 @@ export async function registerUser({ email, password, name, phone = '', role, pl
     uid: userCred.user.uid,
     name,
     email,
-    phone: phone.trim(),
+    phone: formatTo234(phone),
     role,
     paymentStatus: isVendor ? 'pending' : 'none',
     paymentApproved: false,
@@ -56,9 +57,13 @@ export async function sendVerificationEmail(targetUser) {
 
 export async function updateUserProfile(uid, data) {
   if (!db || !uid) return
+  const payload = { ...data }
+  if (payload.phone !== undefined) {
+    payload.phone = formatTo234(payload.phone)
+  }
   const userRef = doc(db, 'users', uid)
   await updateDoc(userRef, {
-    ...data,
+    ...payload,
     updatedAt: serverTimestamp(),
   })
 }
@@ -72,13 +77,19 @@ export async function getAllVendors() {
       where('role', 'in', ['vendor', 'business'])
     )
     const snap = await getDocs(q)
-    return snap.docs.map((d) => ({ uid: d.id, ...d.data() }))
+    return snap.docs.map((d) => {
+      const data = d.data()
+      return { uid: d.id, ...data, phone: formatTo234(data.phone || '') }
+    })
   } catch (err) {
     console.warn('Could not fetch vendors with query, fallback to all users:', err)
     try {
       const allSnap = await getDocs(collection(db, 'users'))
       return allSnap.docs
-        .map((d) => ({ uid: d.id, ...d.data() }))
+        .map((d) => {
+          const data = d.data()
+          return { uid: d.id, ...data, phone: formatTo234(data.phone || '') }
+        })
         .filter((u) => u.role === 'vendor' || u.role === 'business')
     } catch {
       return []

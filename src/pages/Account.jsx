@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext'
 import { updateUserProfile } from '../services/authService'
 import { getBusinessByOwner } from '../services/businessService'
 import { formatTo234, displayFormattedPhone } from '../utils/phoneUtils'
+import PhoneInput from '../components/PhoneInput'
 
 export default function Account() {
   const { user, profile, logout, refreshProfile, reloadUser, sendVerification } = useAuth()
@@ -223,26 +224,26 @@ export default function Account() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleSavePhone} style={{ display: 'flex', gap: '6px', width: '100%', maxWidth: '320px' }}>
-                  <input
-                    type="tel"
-                    className="form-control"
-                    value={phoneVal}
-                    onChange={(e) => setPhoneVal(e.target.value)}
-                    placeholder="e.g. +234 801 234 5678"
-                    style={{ fontSize: '13px', padding: '6px 10px' }}
-                    required
-                  />
-                  <button type="submit" className="btn btn-primary btn-sm" disabled={savingPhone}>
-                    {savingPhone ? '...' : 'Save'}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setEditingPhone(false)}
-                  >
-                    Cancel
-                  </button>
+                <form onSubmit={handleSavePhone} style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '380px', marginTop: '6px' }}>
+                  <div style={{ flex: '1 1 200px' }}>
+                    <PhoneInput
+                      value={phoneVal}
+                      onChange={(val) => setPhoneVal(val)}
+                      required
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={savingPhone}>
+                      {savingPhone ? 'Saving…' : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setEditingPhone(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </form>
               )}
             </div>

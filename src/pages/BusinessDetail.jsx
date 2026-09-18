@@ -269,6 +269,19 @@ export default function BusinessDetail() {
                 <span style={{ color: 'var(--accent-emerald)', fontWeight: 700 }}>{business.price}</span>
               </div>
             )}
+
+            {business.phone && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px' }}>
+                <span>📞</span>
+                <strong style={{ color: 'var(--text-primary)' }}>Phone Line:</strong>
+                <a
+                  href={`tel:${formatTo234(business.phone)}`}
+                  style={{ color: 'var(--brand-primary)', fontWeight: 700, textDecoration: 'none' }}
+                >
+                  {displayFormattedPhone(business.phone)}
+                </a>
+              </div>
+            )}
           </div>
 
           {/* About & Description Section */}

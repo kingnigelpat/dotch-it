@@ -16,6 +16,7 @@ import { fetchOsmBusinesses } from './osmService'
 import { cacheService } from '../utils/cacheService'
 import { NIGERIA_LOCATIONS } from '../data/nigeriaLocations'
 import { calculateDistanceKm, getCoordsForLocationString } from './geolocationService'
+import { formatTo234 } from '../utils/phoneUtils'
 
 export const BUSINESS_COLLECTION = 'businesses'
 
@@ -31,7 +32,7 @@ const DEMO_BUSINESSES = [
     city: 'Lagos',
     verified: true,
     rating: '4.9',
-    phone: '+2348012345678',
+    phone: '+2347073544811',
     logoUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=400&auto=format&fit=crop',
@@ -47,7 +48,7 @@ const DEMO_BUSINESSES = [
     city: 'Abuja',
     verified: true,
     rating: '4.9',
-    phone: '+2349088880000',
+    phone: '+2348039013000',
     logoUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&auto=format&fit=crop',
@@ -63,7 +64,7 @@ const DEMO_BUSINESSES = [
     city: 'Lagos',
     verified: true,
     rating: '4.9',
-    phone: '+23412772700',
+    phone: '+2348092772700',
     logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&auto=format&fit=crop',
@@ -79,7 +80,7 @@ const DEMO_BUSINESSES = [
     city: 'Lagos',
     verified: true,
     rating: '4.9',
-    phone: '+2348099990011',
+    phone: '+2348133934758',
     logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&auto=format&fit=crop',
@@ -95,7 +96,7 @@ const DEMO_BUSINESSES = [
     city: 'Abuja',
     verified: true,
     rating: '4.8',
-    phone: '+2348033334455',
+    phone: '+2348153221279',
     logoUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop',
@@ -111,7 +112,7 @@ const DEMO_BUSINESSES = [
     city: 'Lagos',
     verified: true,
     rating: '4.8',
-    phone: '+23414610123',
+    phone: '+2347080610000',
     logoUrl: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=400&auto=format&fit=crop',
@@ -127,7 +128,7 @@ const DEMO_BUSINESSES = [
     city: 'Lagos',
     verified: true,
     rating: '4.9',
-    phone: '+2348186868686',
+    phone: '+2348186298888',
     logoUrl: 'https://images.unsplash.com/photo-1578474846511-04ba529f0b88?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&auto=format&fit=crop',
@@ -143,7 +144,7 @@ const DEMO_BUSINESSES = [
     city: 'Port Harcourt',
     verified: true,
     rating: '4.7',
-    phone: '+2348039001122',
+    phone: '+2348055559500',
     logoUrl: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=400&auto=format&fit=crop',
@@ -159,7 +160,7 @@ const DEMO_BUSINESSES = [
     city: 'Port Harcourt',
     verified: true,
     rating: '4.9',
-    phone: '+2348066667788',
+    phone: '+2348179670902',
     logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&auto=format&fit=crop',
@@ -175,7 +176,7 @@ const DEMO_BUSINESSES = [
     city: 'Asaba',
     verified: true,
     rating: '4.7',
-    phone: '+2348051112233',
+    phone: '+2348115599988',
     logoUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&auto=format&fit=crop',
@@ -191,7 +192,7 @@ const DEMO_BUSINESSES = [
     city: 'Ibadan',
     verified: true,
     rating: '4.9',
-    phone: '+2348077778899',
+    phone: '+2347073544811',
     logoUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&auto=format&fit=crop',
@@ -207,7 +208,7 @@ const DEMO_BUSINESSES = [
     city: 'Ibadan',
     verified: true,
     rating: '4.6',
-    phone: '+2348022233445',
+    phone: '+2349060757189',
     logoUrl: 'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1568495248636-6432b97bd949?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=400&auto=format&fit=crop',
@@ -239,7 +240,7 @@ const DEMO_BUSINESSES = [
     city: 'Lagos',
     verified: true,
     rating: '4.8',
-    phone: '+2348098765432',
+    phone: '+2347086990485',
     logoUrl: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop',
@@ -255,7 +256,7 @@ const DEMO_BUSINESSES = [
     city: 'Enugu',
     verified: true,
     rating: '4.7',
-    phone: '+2348011223344',
+    phone: '+2348100393579',
     logoUrl: 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&auto=format&fit=crop',
@@ -271,7 +272,7 @@ const DEMO_BUSINESSES = [
     city: 'Enugu',
     verified: true,
     rating: '4.7',
-    phone: '+2348044445566',
+    phone: '+2349042903777',
     logoUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&auto=format&fit=crop',
@@ -287,7 +288,7 @@ const DEMO_BUSINESSES = [
     city: 'Lagos',
     verified: true,
     rating: '4.8',
-    phone: '+2348023456789',
+    phone: '+2347073544811',
     logoUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&auto=format&fit=crop',
@@ -303,7 +304,7 @@ const DEMO_BUSINESSES = [
     city: 'Lagos',
     verified: true,
     rating: '5.0',
-    phone: '+2348034567890',
+    phone: '+2347073544811',
     logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1597740985671-2a8a3b80502e?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop',
@@ -319,7 +320,7 @@ const DEMO_BUSINESSES = [
     city: 'Lagos',
     verified: true,
     rating: '4.9',
-    phone: '+2348045678901',
+    phone: '+2347073544811',
     logoUrl: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400&auto=format&fit=crop',
@@ -335,7 +336,7 @@ const DEMO_BUSINESSES = [
     city: 'Asaba',
     verified: true,
     rating: '4.8',
-    phone: '+2348056789012',
+    phone: '+2347073544811',
     logoUrl: 'https://images.unsplash.com/photo-1535141192574-5d4897c13136?w=200&auto=format&fit=crop',
     image1Url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&auto=format&fit=crop',
     image2Url: 'https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?w=400&auto=format&fit=crop',
@@ -352,6 +353,7 @@ export async function createBusiness({ uid, data }) {
   const ref = doc(collection(db, BUSINESS_COLLECTION))
   const payload = {
     ...data,
+    phone: formatTo234(data?.phone || ''),
     ownerUid: uid,
     status: 'active',
     verified: true,
@@ -365,18 +367,24 @@ export async function createBusiness({ uid, data }) {
 
 export async function updateBusiness(id, data) {
   const ref = doc(db, BUSINESS_COLLECTION, id)
-  await updateDoc(ref, data)
+  const payload = { ...data }
+  if (payload.phone !== undefined) {
+    payload.phone = formatTo234(payload.phone)
+  }
+  await updateDoc(ref, payload)
   cacheService.clear('all_businesses_')
   cacheService.clear('search_')
 }
 
 export async function getBusiness(id) {
   const demoMatch = DEMO_BUSINESSES.find((b) => b.id === id)
-  if (demoMatch) return demoMatch
+  if (demoMatch) return { ...demoMatch, phone: formatTo234(demoMatch.phone) }
 
   try {
     const snap = await getDoc(doc(db, BUSINESS_COLLECTION, id))
-    return snap.exists() ? { id: snap.id, ...snap.data() } : null
+    if (!snap.exists()) return null
+    const data = snap.data()
+    return { id: snap.id, ...data, phone: formatTo234(data?.phone || '') }
   } catch {
     return null
   }
@@ -390,7 +398,9 @@ export async function getBusinessByOwner(uid) {
       limit(1),
     )
     const snap = await getDocs(q)
-    return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }
+    if (snap.empty) return null
+    const data = snap.docs[0].data()
+    return { id: snap.docs[0].id, ...data, phone: formatTo234(data?.phone || '') }
   } catch {
     return null
   }
@@ -465,7 +475,10 @@ export async function searchBusinesses({ category, keyword, location, userCoords
       let q = category ? query(col, where('category', '==', category)) : query(col)
       const snap = await getDocs(q)
       dbResults = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
+        .map((d) => {
+          const data = d.data()
+          return { id: d.id, ...data, phone: formatTo234(data?.phone || '') }
+        })
         // REQUIREMENT 16: Only approved / active businesses are publicly listed in search
         .filter((b) => b.status === 'active' || b.paymentStatus === 'approved' || b.verified === true)
     } catch (err) {
@@ -589,7 +602,10 @@ export async function getAllBusinesses(max = 50) {
       const q = query(collection(db, BUSINESS_COLLECTION), limit(max))
       const snap = await getDocs(q)
       dbResults = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
+        .map((d) => {
+          const data = d.data()
+          return { id: d.id, ...data, phone: formatTo234(data?.phone || '') }
+        })
         // REQUIREMENT 16: Only approved / active businesses are publicly listed
         .filter((b) => b.status === 'active' || b.paymentStatus === 'approved' || b.verified === true)
     } catch {

@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { normalizeWhatsAppPhone } from '../utils/phoneUtils'
+import { normalizeWhatsAppPhone, displayFormattedPhone } from '../utils/phoneUtils'
 
 export default function BusinessCard({ business }) {
   const { user } = useAuth()
@@ -87,6 +87,12 @@ export default function BusinessCard({ business }) {
           <i className="fa-solid fa-location-dot" style={{ marginRight: '4px' }} /> {business.location || business.city || 'Lagos'}
           {business.distance && ` · ${business.distance}`}
         </span>
+        {business.phone && (
+          <span className="result-meta-item" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+            <i className="fa-solid fa-phone" style={{ marginRight: '4px', fontSize: '11px', color: 'var(--brand-primary)' }} />
+            {displayFormattedPhone(business.phone)}
+          </span>
+        )}
         {business.rating && (
           <span className="result-meta-item"><i className="fa-solid fa-star" style={{ marginRight: '3px', color: '#f59e0b' }} /> {business.rating}</span>
         )}
