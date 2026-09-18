@@ -9,6 +9,7 @@ import {
 import { updateUserProfile } from '../services/authService'
 import { uploadImage, fileToBase64 } from '../services/cloudinaryService'
 import { getSuggestedCategories } from '../services/openrouterService'
+import { formatTo234 } from '../utils/phoneUtils'
 
 function ImagePicker({ label, file, url, onChange, disabled }) {
   const [preview, setPreview] = useState('')
@@ -158,12 +159,14 @@ export default function BusinessSetup() {
         if (url) uploadedImg2 = url
       }
 
+      const formattedPhone = formatTo234(phone)
+
       const businessData = {
         name: name.trim(),
         category,
         location: location.trim(),
         city: location.trim(),
-        phone: phone.trim(),
+        phone: formattedPhone,
         price: price.trim(),
         description: description.trim(),
         logoUrl: uploadedLogo,
@@ -191,7 +194,7 @@ export default function BusinessSetup() {
       await updateUserProfile(user.uid, {
         role: 'business',
         selectedPlan: currentTier,
-        phone: phone.trim(),
+        phone: formattedPhone,
         paymentStatus: isApproved ? 'approved' : (profile?.paymentStatus || 'pending'),
       })
 
@@ -296,7 +299,7 @@ export default function BusinessSetup() {
             className="form-control"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="e.g. 08012345678 or +2348012345678"
+            placeholder="e.g. +234 801 234 5678 or 08012345678"
             required
           />
           <small style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '3px', display: 'block' }}>
@@ -341,7 +344,7 @@ export default function BusinessSetup() {
           style={{ marginTop: '20px' }}
         >
           {uploading
-            ? 'Uploading photos to Cloudinary…'
+            ? 'Uploading photos…'
             : saving
             ? 'Saving business profile…'
             : editingId

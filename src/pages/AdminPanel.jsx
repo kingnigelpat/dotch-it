@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import {
   getAllBusinesses,
   createBusiness,
@@ -21,6 +22,8 @@ import {
   deleteAd,
 } from '../services/adService'
 import { uploadImage, fileToBase64 } from '../services/cloudinaryService'
+import { formatTo234 } from '../utils/phoneUtils'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const EMPTY_AD_FORM = {
   title: '',
@@ -37,7 +40,7 @@ const EMPTY_AD_FORM = {
   pricePromo: '',
   ctaText: 'Chat on WhatsApp',
   startDate: new Date().toISOString().split('T')[0],
-  endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  endDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
   status: 'active',
 }
 
@@ -52,69 +55,58 @@ const EMPTY_FORM = {
   logoUrl: '',
   image1Url: '',
   image2Url: '',
-  featured: true,
+  featured: false,
   verified: true,
 }
 
-const POPULAR_SAMPLES = [
+const SEED_BUSINESSES = [
   {
-    label: 'Sample 5-Star Hotel',
-    icon: 'fa-solid fa-hotel',
-    data: {
-      name: 'Radisson Blu Anchorage Hotel',
-      category: 'Hotel & Travel',
-      city: 'Lagos',
-      location: 'Ozumba Mbadiwe Ave, Victoria Island, Lagos',
-      phone: '+2347080610000',
-      price: '₦140,000 - ₦420,000 / night',
-      description: 'Waterfront luxury hotel overlooking the Lagos Lagoon with contemporary rooms, infinity pool, fitness center & terrace dining.',
-      logoUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&auto=format&fit=crop',
-      image1Url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&auto=format&fit=crop',
-      image2Url: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&auto=format&fit=crop',
-      featured: true,
-      verified: true,
-    },
+    name: 'Eko Grand Hotel & Suites',
+    category: 'Hotel & Travel',
+    location: 'Victoria Island, Lagos',
+    city: 'Lagos',
+    phone: '+2348031234567',
+    price: '₦45,000 / night',
+    description: 'Luxury rooms, ocean view swimming pool, 24/7 power, and high-speed Wi-Fi in the heart of VI.',
+    logoUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&auto=format&fit=crop',
+    image1Url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&auto=format&fit=crop',
+    image2Url: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&auto=format&fit=crop',
+    featured: true,
+    verified: true,
   },
   {
-    label: 'Sample Restaurant',
-    icon: 'fa-solid fa-utensils',
-    data: {
-      name: 'Terra Kulture Restaurant',
-      category: 'Restaurant',
-      city: 'Lagos',
-      location: 'Plot 1376 Tiamiyu Savage St, Victoria Island, Lagos',
-      phone: '+2348104265974',
-      price: '₦6,000 - ₦25,000',
-      description: 'Premier Nigerian cultural restaurant serving famous spicy goat meat Asun, native Jollof, Yam porridge & seafood okra.',
-      logoUrl: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=200&auto=format&fit=crop',
-      image1Url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop',
-      image2Url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop',
-      featured: true,
-      verified: true,
-    },
+    name: 'Naija Spice Kitchen',
+    category: 'Restaurant',
+    location: 'Wuse 2, Abuja',
+    city: 'Abuja',
+    phone: '+2348098765432',
+    price: '₦2,500 – ₦8,000',
+    description: 'Authentic Nigerian delicacies: Jollof rice, pounded yam, seafood okra, pepper soup, and chilled drinks.',
+    logoUrl: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=200&auto=format&fit=crop',
+    image1Url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&auto=format&fit=crop',
+    image2Url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop',
+    featured: true,
+    verified: true,
   },
   {
-    label: 'Sample Tech Store',
-    icon: 'fa-solid fa-mobile-screen',
-    data: {
-      name: 'Slot Systems Ikeja',
-      category: 'Phones & Tech Gadgets',
-      city: 'Lagos',
-      location: 'Computer Village, Otigba St, Ikeja, Lagos',
-      phone: '+2347007568644',
-      price: '₦45,000 - ₦1,800,000',
-      description: 'Official retailer for genuine Apple iPhones, Samsung Galaxy, MacBooks, Dell laptops, accessories, warranties & repairs.',
-      logoUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=200&auto=format&fit=crop',
-      image1Url: 'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=400&auto=format&fit=crop',
-      image2Url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&auto=format&fit=crop',
-      featured: true,
-      verified: true,
-    },
+    name: 'Zinox Tech & Phone Repair Hub',
+    category: 'Electronics & Tech',
+    location: 'Computer Village, Ikeja, Lagos',
+    city: 'Lagos',
+    phone: '+2348123456789',
+    price: 'Free diagnostic check',
+    description: 'Same-day iPhone, Samsung, and MacBook screen and board repairs with genuine replacement parts and warranty.',
+    logoUrl: 'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=200&auto=format&fit=crop',
+    image1Url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop',
+    image2Url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&auto=format&fit=crop',
+    featured: true,
+    verified: true,
   },
 ]
 
 export default function AdminPanel() {
   const { user, profile, loading } = useAuth()
+  const { showSuccess, showError } = useToast()
   const navigate = useNavigate()
   const categories = getSuggestedCategories()
 
@@ -139,6 +131,10 @@ export default function AdminPanel() {
   const [editingAdId, setEditingAdId] = useState(null)
   const [showAdForm, setShowAdForm] = useState(false)
   const [savingAd, setSavingAd] = useState(false)
+
+  // Shared Confirm Dialog state
+  const [confirmState, setConfirmState] = useState(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
 
   const loadVendors = async () => {
     setLoadingVendors(true)
@@ -198,29 +194,40 @@ export default function AdminPanel() {
     try {
       const planToSet = v.selectedPlan || 'pro_1m'
       await approveVendorPayment(v.uid, planToSet)
-      setSuccess(`Payment approved for ${v.name || v.email}! Their listing creation is now unlocked.`)
+      showSuccess(`Payment approved for ${v.name || v.email}! Their listing creation is now unlocked.`)
       await loadVendors()
     } catch (err) {
-      setError('Could not approve payment: ' + err.message)
+      console.error('Failed to approve vendor payment:', err)
+      showError('Could not approve payment: ' + (err.message || 'Please try again.'))
     } finally {
       setActionLoadingId(null)
     }
   }
 
-  const handleRevokeVendor = async (v) => {
-    if (!window.confirm(`Revoke payment approval and lock listing creation for ${v.name || v.email}?`)) return
-    setActionLoadingId(v.uid)
-    setError('')
-    setSuccess('')
-    try {
-      await revokeVendorPayment(v.uid)
-      setSuccess(`Listing creation locked for ${v.name || v.email}.`)
-      await loadVendors()
-    } catch (err) {
-      setError('Could not revoke payment: ' + err.message)
-    } finally {
-      setActionLoadingId(null)
-    }
+  const handleRevokeVendor = (v) => {
+    setConfirmState({
+      title: `Revoke payment approval for ${v.name || v.email}?`,
+      body: `This will lock listing creation and revert ${v.name || v.email}'s vendor status to pending. Their business listing will be hidden until re-approved.`,
+      confirmLabel: 'Revoke approval',
+      onConfirm: async () => {
+        setConfirmLoading(true)
+        setActionLoadingId(v.uid)
+        setError('')
+        setSuccess('')
+        try {
+          await revokeVendorPayment(v.uid)
+          showSuccess(`Listing creation locked for ${v.name || v.email}.`)
+          setConfirmState(null)
+          await loadVendors()
+        } catch (err) {
+          console.error('Failed to revoke vendor payment:', err)
+          showError('Could not revoke payment: ' + (err.message || 'Please try again.'))
+        } finally {
+          setActionLoadingId(null)
+          setConfirmLoading(false)
+        }
+      },
+    })
   }
 
   const handleChange = (e) => {
@@ -272,11 +279,15 @@ export default function AdminPanel() {
     setError('')
     setSuccess('')
     try {
+      const payload = {
+        ...adForm,
+        phone: formatTo234(adForm.phone),
+      }
       if (editingAdId) {
-        await updateAd(editingAdId, adForm)
+        await updateAd(editingAdId, payload)
         setSuccess('Advert updated successfully!')
       } else {
-        await createAd(adForm, user?.uid)
+        await createAd(payload, user?.uid)
         setSuccess('New advert created and published to homepage!')
       }
       setShowAdForm(false)
@@ -314,17 +325,28 @@ export default function AdminPanel() {
     setError('')
   }
 
-  const handleDeleteAd = async (ad) => {
-    if (!window.confirm(`Delete advert "${ad.title}"?`)) return
-    setError('')
-    setSuccess('')
-    try {
-      await deleteAd(ad.id)
-      setSuccess(`Advert "${ad.title}" deleted.`)
-      await loadAds()
-    } catch (err) {
-      setError('Could not delete advert: ' + err.message)
-    }
+  const handleDeleteAd = (ad) => {
+    setConfirmState({
+      title: `Delete advert "${ad.title}"?`,
+      body: `This will permanently remove this advert spotlight from the homepage and directory. This action cannot be undone.`,
+      confirmLabel: 'Delete advert',
+      onConfirm: async () => {
+        setConfirmLoading(true)
+        setError('')
+        setSuccess('')
+        try {
+          await deleteAd(ad.id)
+          showSuccess(`Advert "${ad.title}" deleted.`)
+          setConfirmState(null)
+          await loadAds()
+        } catch (err) {
+          console.error('Failed to delete advert:', err)
+          showError('Could not delete advert: ' + (err.message || 'Please try again.'))
+        } finally {
+          setConfirmLoading(false)
+        }
+      },
+    })
   }
 
   const handleToggleAdStatus = async (ad) => {
@@ -333,10 +355,11 @@ export default function AdminPanel() {
     setSuccess('')
     try {
       await updateAd(ad.id, { status: nextStatus })
-      setSuccess(`Status for "${ad.title}" changed to ${nextStatus}.`)
+      showSuccess(`Status for "${ad.title}" changed to ${nextStatus}.`)
       await loadAds()
     } catch (err) {
-      setError('Could not toggle status: ' + err.message)
+      console.error('Failed to toggle advert status:', err)
+      showError('Could not toggle status: ' + (err.message || 'Please try again.'))
     }
   }
 
@@ -368,7 +391,7 @@ export default function AdminPanel() {
         category: form.category,
         location: form.location.trim() || form.city.trim() || 'Lagos',
         city: form.city.trim() || form.location.trim() || 'Lagos',
-        phone: form.phone.trim(),
+        phone: formatTo234(form.phone),
         price: form.price.trim(),
         description: form.description.trim(),
         logoUrl: form.logoUrl.trim(),
@@ -405,14 +428,26 @@ export default function AdminPanel() {
     }
   }
 
-  const handleDelete = async (biz) => {
-    if (!window.confirm(`Delete "${biz.name}"? This cannot be undone.`)) return
-    try {
-      await deleteBusiness(biz.id)
-      setBusinesses((prev) => prev.filter((b) => b.id !== biz.id))
-    } catch (err) {
-      alert('Could not delete: ' + err.message)
-    }
+  const handleDelete = (biz) => {
+    setConfirmState({
+      title: `Delete "${biz.name}"?`,
+      body: `This will permanently remove "${biz.name}" along with all photos, description, and contact info from Dotch-IT search results. This action cannot be undone.`,
+      confirmLabel: 'Delete business',
+      onConfirm: async () => {
+        setConfirmLoading(true)
+        try {
+          await deleteBusiness(biz.id)
+          setBusinesses((prev) => prev.filter((b) => b.id !== biz.id))
+          showSuccess(`"${biz.name}" deleted successfully.`)
+          setConfirmState(null)
+        } catch (err) {
+          console.error('Failed to delete business:', err)
+          showError('Could not delete business: ' + (err.message || 'Please try again.'))
+        } finally {
+          setConfirmLoading(false)
+        }
+      },
+    })
   }
 
   // Quick Post to Homepage — switches to adverts tab with form open
@@ -1198,6 +1233,18 @@ export default function AdminPanel() {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={Boolean(confirmState)}
+        title={confirmState?.title || ''}
+        body={confirmState?.body || ''}
+        confirmLabel={confirmState?.confirmLabel || 'Delete'}
+        cancelLabel="Cancel"
+        onConfirm={confirmState?.onConfirm}
+        onCancel={() => !confirmLoading && setConfirmState(null)}
+        isLoading={confirmLoading}
+      />
     </div>
   )
 }
+

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import AuthForm from '../components/AuthForm'
 import { registerUser, friendlyAuthError } from '../services/authService'
 import { useAuth } from '../context/AuthContext'
+import { formatTo234 } from '../utils/phoneUtils'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -20,7 +21,8 @@ export default function Register() {
     setError('')
     setLoading(true)
     try {
-      await registerUser({ name, email, password, phone, role, plan })
+      const formattedPhone = formatTo234(phone)
+      await registerUser({ name, email, password, phone: formattedPhone, role, plan })
       if (refreshProfile) await refreshProfile()
       navigate(role === 'vendor' || role === 'business' ? '/business' : (redirectUrl || '/'), {
         replace: true,
@@ -45,7 +47,7 @@ export default function Register() {
       fields={[
         { name: 'name', label: isVendor ? 'Business Owner / Contact Name' : 'Full Name', placeholder: 'Enter your name' },
         { name: 'email', label: 'Email Address', type: 'email', placeholder: 'name@example.com' },
-        { name: 'phone', label: 'Phone Number / WhatsApp', type: 'tel', placeholder: 'e.g. 08012345678 or +234...' },
+        { name: 'phone', label: 'Phone Number / WhatsApp', type: 'tel', placeholder: 'e.g. +234 801 234 5678 or 08012345678' },
         { name: 'password', label: 'Password', type: 'password', placeholder: 'At least 6 characters' },
       ]}
     >

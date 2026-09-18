@@ -5,6 +5,7 @@ import BusinessCard from '../components/BusinessCard'
 import { getActiveAds } from '../services/adService'
 import { getAllBusinesses } from '../services/businessService'
 import { getSuggestedCategories } from '../services/openrouterService'
+import { normalizeWhatsAppPhone } from '../utils/phoneUtils'
 
 const CATEGORY_ICONS = {
   'Hotel': 'fa-solid fa-hotel',
@@ -122,7 +123,7 @@ export default function AuthenticatedHome() {
   const currentHero = activeHeroAds[currentHeroIndex] || activeHeroAds[0]
 
   const getWhatsAppUrl = (phone, title, businessName) => {
-    const raw = phone ? phone.replace(/[^0-9]/g, '') : '2348012345678'
+    const raw = normalizeWhatsAppPhone(phone || '2348012345678')
     const msg = encodeURIComponent(
       `Hello! I saw your feature "${title}" on DOTCH and would like to inquire about this promotion.`
     )

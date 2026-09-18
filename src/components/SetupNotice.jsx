@@ -1,7 +1,7 @@
 import { isFirebaseConfigured } from '../firebase'
 
 export default function SetupNotice() {
-  if (isFirebaseConfigured) return null
+  if (!import.meta.env.DEV || isFirebaseConfigured) return null
 
   return (
     <div className="setup-notice">
@@ -9,3 +9,4 @@ export default function SetupNotice() {
     </div>
   )
 }
+

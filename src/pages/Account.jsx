@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { updateUserProfile } from '../services/authService'
 import { getBusinessByOwner } from '../services/businessService'
+import { formatTo234, displayFormattedPhone } from '../utils/phoneUtils'
 
 export default function Account() {
   const { user, profile, logout, refreshProfile, reloadUser, sendVerification } = useAuth()
+  const { showSuccess, showError } = useToast()
   const navigate = useNavigate()
 
   const [business, setBusiness] = useState(null)
@@ -32,7 +35,7 @@ export default function Account() {
   }, [user?.uid, isBusiness])
 
   useEffect(() => {
-    if (profile?.phone && !phoneVal) {
+    if (profile?.phone) {
       setPhoneVal(profile.phone)
     }
   }, [profile?.phone])
@@ -44,16 +47,20 @@ export default function Account() {
 
   const handleSavePhone = async (e) => {
     e.preventDefault()
-    if (!user) return
     setSavingPhone(true)
     setPhoneMessage('')
     try {
-      await updateUserProfile(user.uid, { phone: phoneVal.trim() })
+      const formatted = formatTo234(phoneVal)
+      await updateUserProfile(user.uid, { phone: formatted })
       if (refreshProfile) await refreshProfile()
-      setPhoneMessage('✅ Phone number updated successfully.')
       setEditingPhone(false)
+      setPhoneMessage('Phone number updated successfully.')
+      showSuccess('Phone number updated successfully.')
+      setTimeout(() => setPhoneMessage(''), 4000)
     } catch (err) {
-      setPhoneMessage('❌ Could not update phone: ' + err.message)
+      console.error('Failed to update phone number:', err)
+      setPhoneMessage('Failed to update phone number.')
+      showError('Failed to update phone number.')
     } finally {
       setSavingPhone(false)
     }
@@ -63,8 +70,10 @@ export default function Account() {
     try {
       await sendVerification()
       setVerifySent(true)
+      showSuccess('Verification email sent! Please check your inbox.')
     } catch (err) {
-      alert('Could not send verification email: ' + err.message)
+      console.error('Could not send verification email:', err)
+      showError('Could not send verification email — please try again.')
     }
   }
 
@@ -202,7 +211,7 @@ export default function Account() {
               {!editingPhone ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <strong className="account-detail-val">
-                    {profile?.phone || phoneVal || 'Not provided'}
+                    {displayFormattedPhone(profile?.phone || phoneVal) || 'Not provided'}
                   </strong>
                   <button
                     type="button"
@@ -220,7 +229,7 @@ export default function Account() {
                     className="form-control"
                     value={phoneVal}
                     onChange={(e) => setPhoneVal(e.target.value)}
-                    placeholder="e.g. +234..."
+                    placeholder="e.g. +234 801 234 5678"
                     style={{ fontSize: '13px', padding: '6px 10px' }}
                     required
                   />

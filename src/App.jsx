@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { ToastProvider } from './context/ToastContext'
 import Navbar from './components/Navbar'
 import MobileBottomNav from './components/MobileBottomNav'
 import Landing from './pages/Landing'
@@ -37,7 +38,7 @@ function AdminOnly({ children }) {
           Admin Privileges Required
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5, marginBottom: '20px' }}>
-          You are logged in as <strong>{user.email}</strong>, but this account does not have <code>role: "admin"</code> in Firestore.
+          You are logged in as <strong>{user.email}</strong>, but this account does not have administrator privileges.
         </p>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <a href="/" className="btn btn-outline btn-sm">Return Home</a>
@@ -53,11 +54,12 @@ export default function App() {
   const { user, profile } = useAuth()
 
   return (
-    <div className="app">
-      <Navbar />
-      <SetupNotice />
-      <main className="main">
-        <Routes>
+    <ToastProvider>
+      <div className="app">
+        <Navbar />
+        <SetupNotice />
+        <main className="main">
+          <Routes>
           <Route path="/" element={user ? <AuthenticatedHome /> : <Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -111,5 +113,7 @@ export default function App() {
       <Footer />
       <MobileBottomNav />
     </div>
+  </ToastProvider>
   )
 }
+

@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { normalizeWhatsAppPhone } from '../utils/phoneUtils'
 
 export default function BusinessCard({ business }) {
   const { user } = useAuth()
@@ -39,7 +40,7 @@ export default function BusinessCard({ business }) {
   }
 
   // Pre-filled WhatsApp message
-  const rawPhone = business.phone ? business.phone.replace(/[^0-9]/g, '') : '2348012345678'
+  const rawPhone = normalizeWhatsAppPhone(business.phone || '2348012345678')
   const customMessage = encodeURIComponent(
     `Hi ${business.name}! I found your listing on Dotch and would like to inquire about your products/services.`
   )

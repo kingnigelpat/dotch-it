@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react'
 import { NIGERIA_LOCATIONS, ALL_STATES, POPULAR_STATES } from '../data/nigeriaLocations'
 import { getBrowserCurrentPosition } from '../services/geolocationService'
+import { useToast } from '../context/ToastContext'
 
 export default function LocationModal({ isOpen, onClose, currentLocation = 'Lagos', onSelectLocation }) {
+  const { showError } = useToast()
   // Sanitize location: if hyphenated from legacy data, take the first part
   const safeLocation = useMemo(() => {
     if (!currentLocation || typeof currentLocation !== 'string') return 'Lagos'
@@ -85,7 +87,8 @@ export default function LocationModal({ isOpen, onClose, currentLocation = 'Lago
       if (onSelectLocation) onSelectLocation(locationName)
       if (onClose) onClose()
     } catch (err) {
-      alert(err.message || 'Could not detect your current location. Please select your city or state from the list.')
+      console.error('Location detection error:', err)
+      showError(err.message || 'Could not detect your current location. Please select your city or state from the list.')
     } finally {
       setDetecting(false)
     }

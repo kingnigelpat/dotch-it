@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { getBusinessByOwner, deleteBusiness } from '../services/businessService'
 import BusinessCard from '../components/BusinessCard'
 import BankTransferCard from '../components/BankTransferCard'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function BusinessDashboard() {
   const { user, profile, refreshProfile } = useAuth()
+  const { showSuccess, showError } = useToast()
   const [business, setBusiness] = useState(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
   const isApproved = profile?.paymentStatus === 'approved' || profile?.paymentApproved === true || profile?.role === 'admin'
@@ -36,13 +40,15 @@ export default function BusinessDashboard() {
 
   const handleDelete = async () => {
     if (!business?.id) return
-    if (!window.confirm('Are you sure you want to remove your business listing? You can recreate it anytime.')) {
-      return
-    }
     setDeleting(true)
     try {
       await deleteBusiness(business.id)
       setBusiness(null)
+      setIsConfirmOpen(false)
+      showSuccess('Business listing deleted successfully.')
+    } catch (err) {
+      console.error('Failed to delete business listing:', err)
+      showError('Could not delete listing — please try again.')
     } finally {
       setDeleting(false)
     }
@@ -143,8 +149,13 @@ export default function BusinessDashboard() {
           <Link to={`/business/${business.id}`} className="btn btn-primary btn-sm">
             <i className="fa-solid fa-eye" style={{ marginRight: '4px' }} /> View Live Profile
           </Link>
-          <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
-            {deleting ? 'Removing…' : (<><i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }} /> Delete Listing</>)}
+          <button
+            type="button"
+            className="btn btn-danger btn-sm"
+            onClick={() => setIsConfirmOpen(true)}
+            disabled={deleting}
+          >
+            <i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }} /> Delete Listing
           </button>
         </div>
       </div>
@@ -206,6 +217,18 @@ export default function BusinessDashboard() {
           <BusinessCard business={business} />
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        title="Delete this business listing?"
+        body={`This will permanently remove "${business.name}", including your photos, location, and WhatsApp contact details from Dotch-IT search results. This action cannot be undone.`}
+        confirmLabel="Delete listing"
+        cancelLabel="Cancel"
+        onConfirm={handleDelete}
+        onCancel={() => !deleting && setIsConfirmOpen(false)}
+        isLoading={deleting}
+      />
     </div>
   )
 }
+

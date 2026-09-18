@@ -155,8 +155,9 @@ export function friendlyAuthError(code) {
     case 'auth/weak-password':
       return 'Password should be at least 6 characters.'
     case 'auth/operation-not-allowed':
-      return 'Email/password sign-in is not enabled in Firebase.'
+      return 'Email/password sign-in is currently unavailable. Please contact support.'
     default:
-      return 'Something went wrong. Check your keys and try again.'
+      return 'Something went wrong. Please try again or contact support.'
   }
 }
+

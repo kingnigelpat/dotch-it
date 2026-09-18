@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getBusiness } from '../services/businessService'
+import { formatTo234, normalizeWhatsAppPhone, displayFormattedPhone } from '../utils/phoneUtils'
 
 export default function BusinessDetail() {
   const { user } = useAuth()
@@ -60,7 +61,7 @@ export default function BusinessDetail() {
     )
   }
 
-  const rawPhone = business.phone ? business.phone.replace(/[^0-9]/g, '') : '2348012345678'
+  const rawPhone = normalizeWhatsAppPhone(business.phone || '2348012345678')
   const customMessage = encodeURIComponent(
     `Hello ${business.name}! I found your business on Dotch and would like to inquire about your products/services.`
   )
@@ -69,7 +70,7 @@ export default function BusinessDetail() {
   const handleCopyPhone = async () => {
     if (!business.phone) return
     try {
-      await navigator.clipboard.writeText(business.phone)
+      await navigator.clipboard.writeText(formatTo234(business.phone))
       setCopiedPhone(true)
       setTimeout(() => setCopiedPhone(false), 2000)
     } catch {
@@ -227,7 +228,7 @@ export default function BusinessDetail() {
                   title="Copy telephone number"
                 >
                   <span>📞</span>
-                  <span>{copiedPhone ? '✓ Copied' : 'Call / Copy Phone'}</span>
+                  <span>{copiedPhone ? '✓ Copied' : displayFormattedPhone(business.phone)}</span>
                 </button>
               )}
             </div>
