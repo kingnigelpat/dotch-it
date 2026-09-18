@@ -56,16 +56,40 @@ export async function sendVerificationEmail(targetUser) {
 }
 
 export async function updateUserProfile(uid, data) {
-  if (!db || !uid) return
+  if (!uid) return
   const payload = { ...data }
   if (payload.phone !== undefined) {
     payload.phone = formatTo234(payload.phone)
   }
-  const userRef = doc(db, 'users', uid)
-  await updateDoc(userRef, {
-    ...payload,
-    updatedAt: serverTimestamp(),
-  })
+
+  // 1. Immediately cache in localStorage so updates survive reloads and offline state
+  const localKey = `dotch_user_profile_${uid}`
+  try {
+    let existing = {}
+    const raw = localStorage.getItem(localKey)
+    if (raw) existing = JSON.parse(raw)
+    const merged = { ...existing, ...payload }
+    localStorage.setItem(localKey, JSON.stringify(merged))
+  } catch (e) {
+    console.warn('Could not cache user profile to localStorage:', e)
+  }
+
+  // 2. Persist to Firestore using setDoc with merge: true (handles existing and new docs)
+  if (db) {
+    try {
+      const userRef = doc(db, 'users', uid)
+      await setDoc(
+        userRef,
+        {
+          ...payload,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      )
+    } catch (err) {
+      console.warn('Firestore profile update warning (persisted locally):', err)
+    }
+  }
 }
 
 
@@ -141,13 +165,34 @@ export function watchAuth(onChange) {
 }
 
 export async function getUserProfile(uid) {
-  if (!db || !uid) return null
+  if (!uid) return null
+  const localKey = `dotch_user_profile_${uid}`
+  let localData = null
+  try {
+    const raw = localStorage.getItem(localKey)
+    if (raw) localData = JSON.parse(raw)
+  } catch (e) {}
+
+  if (!db) return localData
+
   try {
     const snap = await getDoc(doc(db, 'users', uid))
-    return snap.exists() ? snap.data() : null
+    if (snap.exists()) {
+      const data = snap.data()
+      const merged = {
+        ...localData,
+        ...data,
+        phone: formatTo234(data.phone || localData?.phone || ''),
+      }
+      try {
+        localStorage.setItem(localKey, JSON.stringify(merged))
+      } catch (e) {}
+      return merged
+    }
+    return localData
   } catch (err) {
-    console.warn('Could not fetch user profile:', err)
-    return null
+    console.warn('Could not fetch user profile from Firestore, using local cache:', err)
+    return localData
   }
 }
 

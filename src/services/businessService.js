@@ -359,38 +359,113 @@ export async function createBusiness({ uid, data }) {
     verified: true,
     createdAt: new Date().toISOString(),
   }
-  await setDoc(ref, payload)
+  if (db) {
+    try {
+      await setDoc(ref, payload, { merge: true })
+    } catch (err) {
+      console.warn('Firestore createBusiness warning (cached locally):', err)
+    }
+  }
+  const result = { id: ref.id, ...payload }
+  try {
+    localStorage.setItem(`dotch_owner_biz_${uid}`, JSON.stringify(result))
+    localStorage.setItem(`dotch_biz_${ref.id}`, JSON.stringify(result))
+  } catch (e) {}
+
   cacheService.clear('all_businesses_')
   cacheService.clear('search_')
-  return { id: ref.id, ...payload }
+  return result
 }
 
 export async function updateBusiness(id, data) {
-  const ref = doc(db, BUSINESS_COLLECTION, id)
+  if (!id) return
   const payload = { ...data }
   if (payload.phone !== undefined) {
     payload.phone = formatTo234(payload.phone)
   }
-  await updateDoc(ref, payload)
+
+  // 1. Update in-memory DEMO_BUSINESSES if matched
+  const demoMatch = DEMO_BUSINESSES.find((b) => b.id === id)
+  if (demoMatch) {
+    Object.assign(demoMatch, payload)
+  }
+
+  // 2. Cache in localStorage so changes persist offline and across page refreshes
+  try {
+    const bizKey = `dotch_biz_${id}`
+    const existing = JSON.parse(localStorage.getItem(bizKey) || '{}')
+    localStorage.setItem(bizKey, JSON.stringify({ ...existing, ...payload }))
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('dotch_owner_biz_')) {
+        try {
+          const ob = JSON.parse(localStorage.getItem(k) || '{}')
+          if (ob.id === id) {
+            localStorage.setItem(k, JSON.stringify({ ...ob, ...payload }))
+          }
+        } catch (e) {}
+      }
+    }
+  } catch (e) {}
+
+  // 3. Persist to Firestore with setDoc merge: true
+  if (db) {
+    try {
+      const ref = doc(db, BUSINESS_COLLECTION, id)
+      await setDoc(ref, payload, { merge: true })
+    } catch (err) {
+      console.warn('Firestore updateBusiness warning (persisted locally):', err)
+    }
+  }
+
   cacheService.clear('all_businesses_')
   cacheService.clear('search_')
 }
 
 export async function getBusiness(id) {
+  if (!id) return null
+
+  // Check local cache
+  let localBiz = null
+  try {
+    const raw = localStorage.getItem(`dotch_biz_${id}`)
+    if (raw) localBiz = JSON.parse(raw)
+  } catch (e) {}
+
   const demoMatch = DEMO_BUSINESSES.find((b) => b.id === id)
-  if (demoMatch) return { ...demoMatch, phone: formatTo234(demoMatch.phone) }
+  if (demoMatch) {
+    const merged = { ...demoMatch, ...localBiz, phone: formatTo234(localBiz?.phone || demoMatch.phone) }
+    return merged
+  }
+
+  if (!db) return localBiz
 
   try {
     const snap = await getDoc(doc(db, BUSINESS_COLLECTION, id))
-    if (!snap.exists()) return null
+    if (!snap.exists()) return localBiz
     const data = snap.data()
-    return { id: snap.id, ...data, phone: formatTo234(data?.phone || '') }
+    const merged = { id: snap.id, ...localBiz, ...data, phone: formatTo234(data?.phone || localBiz?.phone || '') }
+    try {
+      localStorage.setItem(`dotch_biz_${id}`, JSON.stringify(merged))
+    } catch (e) {}
+    return merged
   } catch {
-    return null
+    return localBiz
   }
 }
 
 export async function getBusinessByOwner(uid) {
+  if (!uid) return null
+  const ownerKey = `dotch_owner_biz_${uid}`
+  let localBiz = null
+  try {
+    const raw = localStorage.getItem(ownerKey)
+    if (raw) localBiz = JSON.parse(raw)
+  } catch (e) {}
+
+  if (!db) return localBiz
+
   try {
     const q = query(
       collection(db, BUSINESS_COLLECTION),
@@ -398,11 +473,18 @@ export async function getBusinessByOwner(uid) {
       limit(1),
     )
     const snap = await getDocs(q)
-    if (snap.empty) return null
-    const data = snap.docs[0].data()
-    return { id: snap.docs[0].id, ...data, phone: formatTo234(data?.phone || '') }
+    if (!snap.empty) {
+      const data = snap.docs[0].data()
+      const merged = { id: snap.docs[0].id, ...localBiz, ...data, phone: formatTo234(data?.phone || localBiz?.phone || '') }
+      try {
+        localStorage.setItem(ownerKey, JSON.stringify(merged))
+        localStorage.setItem(`dotch_biz_${merged.id}`, JSON.stringify(merged))
+      } catch (e) {}
+      return merged
+    }
+    return localBiz
   } catch {
-    return null
+    return localBiz
   }
 }
 

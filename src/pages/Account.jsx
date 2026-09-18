@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { updateUserProfile } from '../services/authService'
-import { getBusinessByOwner } from '../services/businessService'
+import { getBusinessByOwner, updateBusiness } from '../services/businessService'
 import { formatTo234, displayFormattedPhone } from '../utils/phoneUtils'
 import PhoneInput from '../components/PhoneInput'
 
@@ -29,7 +29,12 @@ export default function Account() {
     if (user?.uid && isBusiness) {
       setLoadingBiz(true)
       getBusinessByOwner(user.uid)
-        .then((b) => setBusiness(b))
+        .then((b) => {
+          setBusiness(b)
+          if (b?.phone && !phoneVal) {
+            setPhoneVal(b.phone)
+          }
+        })
         .catch((err) => console.warn('Could not load user business in account:', err))
         .finally(() => setLoadingBiz(false))
     }
@@ -52,11 +57,32 @@ export default function Account() {
     setPhoneMessage('')
     try {
       const formatted = formatTo234(phoneVal)
+
+      // 1. Update user profile
       await updateUserProfile(user.uid, { phone: formatted })
-      if (refreshProfile) await refreshProfile()
+
+      // 2. If vendor / business owner has a business listing, update its phone too!
+      let targetBiz = business
+      if (!targetBiz && user?.uid) {
+        try {
+          targetBiz = await getBusinessByOwner(user.uid)
+        } catch (bizErr) {
+          console.warn('Could not fetch owner business during phone update:', bizErr)
+        }
+      }
+      if (targetBiz?.id) {
+        await updateBusiness(targetBiz.id, { phone: formatted })
+        setBusiness((prev) => (prev ? { ...prev, phone: formatted } : { ...targetBiz, phone: formatted }))
+      }
+
+      // 3. Immediately refresh auth profile in context & local state
+      if (refreshProfile) {
+        await refreshProfile({ phone: formatted })
+      }
+      setPhoneVal(formatted)
       setEditingPhone(false)
-      setPhoneMessage('Phone number updated successfully.')
-      showSuccess('Phone number updated successfully.')
+      setPhoneMessage('Phone number and business WhatsApp contact updated successfully.')
+      showSuccess('Phone number and WhatsApp contact updated successfully.')
       setTimeout(() => setPhoneMessage(''), 4000)
     } catch (err) {
       console.error('Failed to update phone number:', err)
@@ -319,6 +345,13 @@ export default function Account() {
                 <div className="account-detail-row">
                   <span className="account-detail-label">Location</span>
                   <strong className="account-detail-val">{business.location || business.city || 'Lagos'}</strong>
+                </div>
+                <div className="account-detail-row">
+                  <span className="account-detail-label">Listing WhatsApp Line</span>
+                  <strong className="account-detail-val" style={{ color: 'var(--brand-primary)' }}>
+                    <i className="fa-brands fa-whatsapp" style={{ color: '#25D366', marginRight: '4px' }} />
+                    {displayFormattedPhone(business.phone) || 'Not set'}
+                  </strong>
                 </div>
                 <div className="account-detail-row">
                   <span className="account-detail-label">Listing Status</span>

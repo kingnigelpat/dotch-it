@@ -31,9 +31,15 @@ export function AuthProvider({ children }) {
     const unsub = watchAuth(async (fbUser) => {
       try {
         if (fbUser) {
+          // Pre-populate immediately from local cache if available to avoid flicker
+          try {
+            const cached = localStorage.getItem(`dotch_user_profile_${fbUser.uid}`)
+            if (cached) setProfile(JSON.parse(cached))
+          } catch (e) {}
+
           const prof = await getUserProfile(fbUser.uid)
           setUser(fbUser)
-          setProfile(prof)
+          if (prof) setProfile(prof)
           // Default view mode if not manually set
           setViewMode((prev) => {
             if (prev) return prev
@@ -49,7 +55,6 @@ export function AuthProvider({ children }) {
       } catch (err) {
         console.error('Error fetching user profile:', err)
         setUser(fbUser)
-        setProfile(null)
       } finally {
         setLoading(false)
       }
@@ -89,8 +94,15 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const refreshProfile = async () => {
-    if (user) setProfile(await getUserProfile(user.uid))
+  const refreshProfile = async (explicitData) => {
+    if (explicitData) {
+      setProfile((prev) => ({ ...prev, ...explicitData }))
+    }
+    const targetUid = user?.uid || auth?.currentUser?.uid
+    if (targetUid) {
+      const latest = await getUserProfile(targetUid)
+      if (latest) setProfile(latest)
+    }
   }
 
   return (
