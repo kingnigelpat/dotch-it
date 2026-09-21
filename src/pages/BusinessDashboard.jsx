@@ -3,9 +3,51 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { getBusinessByOwner, deleteBusiness } from '../services/businessService'
+import {
+  subscribeToBusinessAnalytics,
+  subscribeToRecentEvents,
+  formatRelativeTime,
+  formatEventType,
+} from '../services/analyticsService'
 import BusinessCard from '../components/BusinessCard'
 import BankTransferCard from '../components/BankTransferCard'
 import ConfirmDialog from '../components/ConfirmDialog'
+
+function getProfileStatus(business) {
+  const dateStr = business?.updatedAt || business?.createdAt
+  if (!dateStr) {
+    return {
+      badge: '🟢 Profile Active',
+      text: 'Your business profile is live and searchable on DOTCH.',
+    }
+  }
+
+  const updatedDate = new Date(dateStr)
+  const now = new Date()
+  const diffDays = Math.floor((now - updatedDate) / (1000 * 60 * 60 * 24))
+
+  if (diffDays <= 0) {
+    return {
+      badge: '🟢 Recently Updated',
+      text: 'Your business information was updated today.',
+    }
+  } else if (diffDays === 1) {
+    return {
+      badge: '🟢 Recently Updated',
+      text: 'Your business information was updated yesterday.',
+    }
+  } else if (diffDays <= 14) {
+    return {
+      badge: '🟢 Recently Updated',
+      text: `Your business information was updated ${diffDays} days ago.`,
+    }
+  } else {
+    return {
+      badge: '✓ Up to Date',
+      text: `Last updated ${diffDays} days ago. Keeping your photos and price list fresh helps buyers choose your business.`,
+    }
+  }
+}
 
 export default function BusinessDashboard() {
   const { user, profile, refreshProfile } = useAuth()
@@ -15,15 +57,52 @@ export default function BusinessDashboard() {
   const [deleting, setDeleting] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [copiedShortlink, setCopiedShortlink] = useState(false)
 
   const isApproved = profile?.paymentStatus === 'approved' || profile?.paymentApproved === true || profile?.role === 'admin'
+
+  const [analytics, setAnalytics] = useState({
+    profileViews: 0,
+    whatsappClicks: 0,
+    phoneClicks: 0,
+    lastInteractionAt: null,
+  })
+  const [recentEvents, setRecentEvents] = useState([])
 
   useEffect(() => {
     if (!user?.uid) return
     getBusinessByOwner(user.uid)
-      .then(setBusiness)
+      .then((b) => {
+        setBusiness(b)
+        if (b) {
+          setAnalytics({
+            profileViews: Number(b.profileViews) || 0,
+            whatsappClicks: Number(b.whatsappClicks) || 0,
+            phoneClicks: Number(b.phoneClicks) || 0,
+            lastInteractionAt: b.lastInteractionAt || null,
+          })
+        }
+      })
       .finally(() => setLoading(false))
   }, [user?.uid])
+
+  // Real-time Firestore subscription to analytics & activity events
+  useEffect(() => {
+    if (!business?.id) return
+
+    const unsubAnalytics = subscribeToBusinessAnalytics(business.id, (data) => {
+      setAnalytics((prev) => ({ ...prev, ...data }))
+    })
+
+    const unsubEvents = subscribeToRecentEvents(business.id, (events) => {
+      setRecentEvents(events)
+    }, 6)
+
+    return () => {
+      unsubAnalytics()
+      unsubEvents()
+    }
+  }, [business?.id])
 
   const handleRefreshStatus = async () => {
     setRefreshing(true)
@@ -125,6 +204,22 @@ export default function BusinessDashboard() {
 
   // CASE 3: APPROVED AND ACTIVE BUSINESS
   // NOTE (Requirement 11): Hide pricing after successful payment! Do not repeatedly pressure approved customers to pay again.
+  const shortUrl = business && typeof window !== 'undefined' ? `${window.location.origin}/b/${business.id}` : ''
+
+  const handleCopyShortlink = async () => {
+    if (!shortUrl) return
+    try {
+      await navigator.clipboard.writeText(shortUrl)
+      setCopiedShortlink(true)
+      showSuccess('Shortlink copied to clipboard!')
+      setTimeout(() => setCopiedShortlink(false), 2500)
+    } catch {
+      // ignore
+    }
+  }
+
+  const profileStatus = getProfileStatus(business)
+
   return (
     <div className="business-dashboard">
       {/* Header with Approved Status & Actions */}
@@ -203,6 +298,229 @@ export default function BusinessDashboard() {
             <strong>Photo Gallery:</strong> {(business.image1Url || business.image2Url) ? (<><i className="fa-solid fa-circle-check" style={{ color: 'var(--accent-emerald)', marginRight: '3px' }} /> Active</>) : 'No photos added yet'}
           </div>
         </div>
+      </div>
+
+      {/* 1. Your DOTCH Activity (Private to Business Owner) */}
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+            DOTCH Activity
+          </h2>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            <i className="fa-solid fa-lock" style={{ marginRight: '4px' }} /> Private to you
+          </span>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: '14px',
+          marginBottom: '10px',
+        }}>
+          {/* Profile Views */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            padding: '20px',
+          }}>
+            <div style={{ fontSize: '18px', marginBottom: '4px' }}>👁</div>
+            <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--brand-primary)', lineHeight: 1 }}>
+              {analytics.profileViews}
+            </div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '8px' }}>
+              Profile Views
+            </div>
+          </div>
+
+          {/* WhatsApp Clicks */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            padding: '20px',
+          }}>
+            <div style={{ fontSize: '18px', marginBottom: '4px' }}>💬</div>
+            <div style={{ fontSize: '32px', fontWeight: 800, color: '#25D366', lineHeight: 1 }}>
+              {analytics.whatsappClicks}
+            </div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '8px' }}>
+              WhatsApp Clicks
+            </div>
+          </div>
+
+          {/* Phone Clicks */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            padding: '20px',
+          }}>
+            <div style={{ fontSize: '18px', marginBottom: '4px' }}>📞</div>
+            <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--accent-amber, #f59e0b)', lineHeight: 1 }}>
+              {analytics.phoneClicks}
+            </div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '8px' }}>
+              Phone Clicks
+            </div>
+          </div>
+
+          {/* Last Activity */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            padding: '20px',
+          }}>
+            <div style={{ fontSize: '18px', marginBottom: '4px' }}>🕒</div>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2, minHeight: '32px', display: 'flex', alignItems: 'center' }}>
+              {formatRelativeTime(analytics.lastInteractionAt)}
+            </div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '8px' }}>
+              Last Activity
+            </div>
+          </div>
+        </div>
+
+        <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '6px 0 12px', lineHeight: 1.4 }}>
+          These numbers are based on recorded interactions on DOTCH. Basic throttling is used to reduce duplicate activity.
+        </p>
+
+        {/* Lightweight Anonymous Recent Activity Log */}
+        <div style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)',
+          padding: '16px 20px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>
+              Recent Activity
+            </span>
+            <span style={{ fontSize: '11px', color: 'var(--accent-emerald)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent-emerald)', display: 'inline-block' }} /> Live Updates
+            </span>
+          </div>
+
+          {recentEvents.length === 0 ? (
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '8px 0' }}>
+              No activity yet. Recent interactions will appear here in real time as visitors discover your profile.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {recentEvents.map((evt) => {
+                const info = formatEventType(evt.eventType)
+                return (
+                  <div
+                    key={evt.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      background: 'var(--bg-muted)',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '13px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        background: info.badgeBg,
+                        color: info.color,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '11px',
+                      }}>
+                        <i className={info.icon} />
+                      </span>
+                      <strong style={{ color: 'var(--text-primary)' }}>{info.label}</strong>
+                    </div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                      {formatRelativeTime(evt.timestamp)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 2. Your DOTCH Profile Shortlink & Sharing */}
+      <div style={{
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '22px',
+        marginBottom: '28px',
+      }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 6px', color: 'var(--text-primary)' }}>
+          Your DOTCH Profile
+        </h3>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 14px' }}>
+          Share your verified business profile directly with customers, on your WhatsApp status, or in your social bio:
+        </p>
+
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{
+            background: 'var(--bg-muted)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            padding: '10px 14px',
+            fontFamily: 'monospace',
+            fontSize: '13.5px',
+            color: 'var(--text-primary)',
+            fontWeight: 700,
+            flex: '1 1 240px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {shortUrl}
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={handleCopyShortlink}
+            style={{ fontWeight: 700 }}
+          >
+            {copiedShortlink ? '✓ Link Copied' : 'Copy Link'}
+          </button>
+
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(`We are verified on DOTCH! View our photos, price list, and exact location here: ${shortUrl} 📍`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-whatsapp btn-sm"
+            style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <span>💬</span> Share to WhatsApp Status
+          </a>
+        </div>
+      </div>
+
+      {/* 3. Profile Status */}
+      <div style={{
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '20px 22px',
+        marginBottom: '28px',
+      }}>
+        <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+          Profile Status
+        </div>
+        <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>{profileStatus.badge}</span>
+        </div>
+        <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', margin: 0 }}>
+          {profileStatus.text}
+        </p>
       </div>
 
       {/* Live Search Result Card Preview */}

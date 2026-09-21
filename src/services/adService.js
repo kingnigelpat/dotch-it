@@ -100,6 +100,21 @@ export const SAMPLE_ADVERTS = [
 const CACHE_KEY_ACTIVE_ADS = 'active_ads'
 const DELETED_ADS_STORAGE_KEY = 'dotch_deleted_ad_ids'
 
+export function getStoredAdOverride(id) {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(`dotch_ad_${id}`) : null
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+function applyAdOverride(ad) {
+  if (!ad) return ad
+  const override = getStoredAdOverride(ad.id)
+  return override ? { ...ad, ...override } : ad
+}
+
 export function getDeletedAdIds() {
   try {
     const raw = typeof window !== 'undefined' ? localStorage.getItem(DELETED_ADS_STORAGE_KEY) : null
@@ -143,25 +158,31 @@ export async function getActiveAds() {
   if (db) {
     try {
       const col = collection(db, AD_COLLECTION)
-      const q = query(col, where('status', '==', 'active'))
-      const snap = await getDocs(q)
-      dbAds = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      const snap = await getDocs(col)
+      snap.docs.forEach((d) => {
+        const data = d.data()
+        if (data.status === 'deleted' || data.isDeleted) {
+          deletedIds.add(d.id)
+          addDeletedAdId(d.id)
+        } else if (data.status === 'active') {
+          dbAds.push({ id: d.id, ...data })
+        }
+      })
     } catch (err) {
       console.warn('Could not fetch active ads from Firestore, using demo fallback:', err)
     }
   }
 
-  // Collect any DB ads marked as deleted
-  dbAds.forEach((a) => {
-    if (a.status === 'deleted' || a.isDeleted) {
-      deletedIds.add(a.id)
-    }
-  })
+  // Apply stored advert overrides during reads
+  const validDbAds = dbAds
+    .filter((a) => a.status !== 'deleted' && !a.isDeleted && !deletedIds.has(a.id))
+    .map(applyAdOverride)
 
-  // Filter out deleted dbAds
-  const validDbAds = dbAds.filter((a) => a.status !== 'deleted' && !a.isDeleted && !deletedIds.has(a.id))
   const dbAdIds = new Set(validDbAds.map((a) => a.id))
-  const validSamples = SAMPLE_ADVERTS.filter((s) => !dbAdIds.has(s.id) && !deletedIds.has(s.id))
+  const validSamples = SAMPLE_ADVERTS
+    .filter((s) => !dbAdIds.has(s.id) && !deletedIds.has(s.id))
+    .map(applyAdOverride)
+
   const allAds = [...validDbAds, ...validSamples]
 
   // Filter out any that have expired or are marked paused/inactive
@@ -187,24 +208,30 @@ export async function getAllAdsAdmin() {
     try {
       const col = collection(db, AD_COLLECTION)
       const snap = await getDocs(col)
-      dbAds = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      snap.docs.forEach((d) => {
+        const data = d.data()
+        if (data.status === 'deleted' || data.isDeleted) {
+          deletedIds.add(d.id)
+          addDeletedAdId(d.id)
+        } else {
+          dbAds.push({ id: d.id, ...data })
+        }
+      })
     } catch (err) {
       console.warn('Could not fetch admin ads from Firestore:', err)
     }
   }
 
-  // Collect any DB ads marked as deleted and sync with deletedIds
-  dbAds.forEach((a) => {
-    if (a.status === 'deleted' || a.isDeleted) {
-      deletedIds.add(a.id)
-      addDeletedAdId(a.id)
-    }
-  })
+  // Filter out deleted dbAds and apply stored overrides during reads
+  const validDbAds = dbAds
+    .filter((a) => a.status !== 'deleted' && !a.isDeleted && !deletedIds.has(a.id))
+    .map(applyAdOverride)
 
-  // Filter out deleted dbAds
-  const validDbAds = dbAds.filter((a) => a.status !== 'deleted' && !a.isDeleted && !deletedIds.has(a.id))
   const dbAdIds = new Set(validDbAds.map((a) => a.id))
-  const remainingSamples = SAMPLE_ADVERTS.filter((s) => !dbAdIds.has(s.id) && !deletedIds.has(s.id))
+  const remainingSamples = SAMPLE_ADVERTS
+    .filter((s) => !dbAdIds.has(s.id) && !deletedIds.has(s.id))
+    .map(applyAdOverride)
+
   return [...validDbAds, ...remainingSamples]
 }
 
@@ -243,6 +270,9 @@ export async function updateAd(id, data) {
     localStorage.setItem(localKey, JSON.stringify({ ...existing, ...(sampleMatch || {}), ...data }))
   } catch (e) {}
 
+  // Invalidate active ads cache early
+  cacheService.remove(CACHE_KEY_ACTIVE_ADS)
+
   if (db) {
     try {
       const ref = doc(db, AD_COLLECTION, id)
@@ -252,31 +282,23 @@ export async function updateAd(id, data) {
         updatedAt: new Date().toISOString(),
       }, { merge: true })
     } catch (err) {
-      console.warn('Firestore updateAd warning:', err)
+      console.error('Firestore updateAd error:', err)
+      throw new Error(`Failed to update advert in Firestore: ${err.message}`)
     }
   }
-
-  // Invalidate active ads cache
-  cacheService.remove(CACHE_KEY_ACTIVE_ADS)
 }
 
 /**
  * Delete an advert permanently.
+ * Persists one tombstone to Firestore before committing local deletion.
  */
 export async function deleteAd(id) {
   if (!id) return
 
-  // 1. Immediately track as deleted locally & in-memory
-  addDeletedAdId(id)
-
-  // 2. Invalidate active ads cache
-  cacheService.remove(CACHE_KEY_ACTIVE_ADS)
-
-  // 3. Delete from Firestore and save tombstone
+  // 1. Persist tombstone to Firestore first
   if (db) {
     try {
       const ref = doc(db, AD_COLLECTION, id)
-      await deleteDoc(ref)
       await setDoc(
         ref,
         {
@@ -287,7 +309,16 @@ export async function deleteAd(id) {
         { merge: true }
       )
     } catch (err) {
-      console.warn('Firestore deleteAd warning (persisted locally):', err)
+      console.warn('Firestore deleteAd tombstone warning (persisting locally):', err)
     }
   }
+
+  // 2. Commit local deletion and remove stored override
+  addDeletedAdId(id)
+  try {
+    localStorage.removeItem(`dotch_ad_${id}`)
+  } catch (e) {}
+
+  // 3. Invalidate active ads cache
+  cacheService.remove(CACHE_KEY_ACTIVE_ADS)
 }

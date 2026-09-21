@@ -29,18 +29,35 @@ service cloud.firestore {
         (request.resource.data.ownerUid == request.auth.uid && request.resource.data.status != 'active')
       );
 
-      // 3. Updates: Owner or Admin (normal users cannot change approval status directly)
-      allow update: if isAuthenticated() && (
-        isAdmin() ||
-        (resource.data.ownerUid == request.auth.uid &&
-         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'paymentApproved']))
-      );
+      // 3. Updates: Allow anonymous analytics metrics increments OR Owner/Admin edits
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['profileViews', 'whatsappClicks', 'phoneClicks', 'lastInteractionAt']) ||
+        (isAuthenticated() && (
+          isAdmin() ||
+          (resource.data.ownerUid == request.auth.uid &&
+           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'paymentApproved']))
+        ));
 
       // 4. Delete: Owner or Admin
       allow delete: if isAuthenticated() && (
         isAdmin() ||
         resource.data.ownerUid == request.auth.uid
       );
+
+      // 5. Lightweight activity events subcollection
+      match /activity_events/{eventId} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasOnly(['businessId', 'eventType', 'timestamp']);
+      }
+    }
+
+    // Dedicated fallback analytics collection
+    match /business_analytics/{businessId} {
+      allow read: if true;
+      allow write: if true;
+      match /activity_events/{eventId} {
+        allow read: if true;
+        allow create: if true;
+      }
     }
 
     // Advertisements collection

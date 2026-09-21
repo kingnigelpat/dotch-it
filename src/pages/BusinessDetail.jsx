@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getBusiness } from '../services/businessService'
 import { formatTo234, normalizeWhatsAppPhone, displayFormattedPhone } from '../utils/phoneUtils'
+import { recordBusinessView, recordWhatsAppClick, recordPhoneClick } from '../services/analyticsService'
+import { applyBusinessSeo } from '../utils/seoUtils'
 
 export default function BusinessDetail() {
   const { user } = useAuth()
@@ -22,10 +24,16 @@ export default function BusinessDetail() {
       setNotFound(true)
       return
     }
+    let cleanupSeo = () => {}
     getBusiness(id)
       .then((b) => {
         if (b) {
           setBusiness(b)
+          // Throttled profile view tracking
+          recordBusinessView(b.id)
+          // Apply structured SEO JSON-LD & meta tags
+          cleanupSeo = applyBusinessSeo(b)
+
           // Track recently viewed in localStorage for the discovery dashboard
           try {
             const raw = localStorage.getItem('dotch_recently_viewed')
@@ -42,6 +50,10 @@ export default function BusinessDetail() {
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
+
+    return () => {
+      cleanupSeo()
+    }
   }, [id])
 
   if (loading) return <div className="center-loading">Loading business profile…</div>
@@ -69,6 +81,7 @@ export default function BusinessDetail() {
 
   const handleCopyPhone = async () => {
     if (!business.phone) return
+    recordPhoneClick(business.id)
     try {
       await navigator.clipboard.writeText(formatTo234(business.phone))
       setCopiedPhone(true)
@@ -212,6 +225,7 @@ export default function BusinessDetail() {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => recordWhatsAppClick(business.id)}
                 className="btn btn-whatsapp"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontWeight: 700 }}
               >
@@ -391,6 +405,7 @@ export default function BusinessDetail() {
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => recordWhatsAppClick(business.id)}
           className="btn btn-whatsapp btn-block btn-lg"
           style={{ fontWeight: 800 }}
         >

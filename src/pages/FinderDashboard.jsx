@@ -7,6 +7,7 @@ import BusinessCard from '../components/BusinessCard'
 import EmptyState from '../components/EmptyState'
 import { searchBusinesses, getAllBusinesses } from '../services/businessService'
 import { understandSearch, getSuggestedCategories } from '../services/openrouterService'
+import { parseQueryAndLocation } from '../utils/searchParser'
 
 export default function FinderDashboard() {
   const { user, profile } = useAuth()
@@ -47,11 +48,24 @@ export default function FinderDashboard() {
       const isEverywhere =
         !loc || loc === 'Everywhere' || loc === 'All Locations' || loc === 'All of Nigeria'
 
+      // Natural language query & location parsing (e.g. "bag in lagos" -> cleanKeyword: "bag", detectedLocation: "Lagos")
+      const { keyword: cleanKeyword, location: resolvedLoc, detectedLocation } = parseQueryAndLocation(q, isEverywhere ? '' : loc)
+      const effectiveLoc = resolvedLoc || (isEverywhere ? '' : loc)
+      const effectiveIsEverywhere =
+        !effectiveLoc ||
+        effectiveLoc === 'Everywhere' ||
+        effectiveLoc === 'All Locations' ||
+        effectiveLoc === 'All of Nigeria'
+
+      if (detectedLocation && isEverywhere) {
+        setLocation(detectedLocation)
+      }
+
       setLoading(true)
       setSearched(true)
       setSearchParams({
-        ...(q.trim() ? { q: q.trim() } : {}),
-        loc: isEverywhere ? 'Everywhere' : loc,
+        ...(cleanKeyword ? { q: cleanKeyword } : (q.trim() ? { q: q.trim() } : {})),
+        loc: effectiveIsEverywhere ? 'Everywhere' : effectiveLoc,
         ...(cat ? { cat } : {}),
       })
 
@@ -60,8 +74,10 @@ export default function FinderDashboard() {
         let parsedIntent = ''
         let aiOutside = []
         if (q.trim()) {
-          const ai = await understandSearch(q.trim(), isEverywhere ? 'Nigeria' : loc)
-          parsedIntent = ai.intent
+          const ai = await understandSearch(q.trim(), effectiveIsEverywhere ? 'Nigeria' : effectiveLoc)
+          parsedIntent = detectedLocation
+            ? `Looking for: ${cleanKeyword || q.trim()} · 📍 ${detectedLocation}`
+            : (ai.intent || q.trim())
           setAiIntent(parsedIntent)
           aiOutside = ai.aiSuggestions || []
         } else {
@@ -70,16 +86,15 @@ export default function FinderDashboard() {
 
         // Location-aware search
         let local = []
-        if (!q.trim() && !cat && isEverywhere) {
+        if (!q.trim() && !cat && effectiveIsEverywhere) {
           // No query, no category, and Everywhere: show all listings
           local = await getAllBusinesses()
         } else {
-          // If a specific location (e.g. 'Delta'), keyword, or category is selected,
-          // filter strictly by that location!
+          // Filter by resolved location and clean keyword
           local = await searchBusinesses({
             category: cat,
-            keyword: q.trim(),
-            location: isEverywhere ? '' : loc,
+            keyword: cleanKeyword || q.trim(),
+            location: effectiveIsEverywhere ? '' : effectiveLoc,
           })
         }
 

@@ -17,6 +17,7 @@ import { cacheService } from '../utils/cacheService'
 import { NIGERIA_LOCATIONS } from '../data/nigeriaLocations'
 import { calculateDistanceKm, getCoordsForLocationString } from './geolocationService'
 import { formatTo234 } from '../utils/phoneUtils'
+import { parseQueryAndLocation } from '../utils/searchParser'
 
 export const BUSINESS_COLLECTION = 'businesses'
 
@@ -342,6 +343,22 @@ const DEMO_BUSINESSES = [
     image2Url: 'https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?w=400&auto=format&fit=crop',
     keywords: ['cakes', 'birthday', 'bakery', 'pastries', 'asaba', 'dessert'],
   },
+  {
+    id: 'demo-bags-lagos',
+    name: 'Luxe Leather & Handbag Gallery Lagos',
+    category: 'Fashion & Clothing',
+    description: 'Luxury designer handbags, leather tote bags, shoulder bags, travel duffels & corporate briefcases. Express delivery across Lagos & nationwide.',
+    price: '₦28,000 - ₦145,000',
+    location: 'Lekki Phase 1, Lagos',
+    city: 'Lagos',
+    verified: true,
+    rating: '4.9',
+    phone: '+2347073544811',
+    logoUrl: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&auto=format&fit=crop',
+    image1Url: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&auto=format&fit=crop',
+    image2Url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&auto=format&fit=crop',
+    keywords: ['bag', 'bags', 'handbag', 'handbags', 'tote', 'leather', 'purse', 'fashion', 'accessories', 'lagos', 'lekki'],
+  },
 ]
 
 export async function createBusiness({ uid, data }) {
@@ -379,7 +396,7 @@ export async function createBusiness({ uid, data }) {
 
 export async function updateBusiness(id, data) {
   if (!id) return
-  const payload = { ...data }
+  const payload = { ...data, updatedAt: new Date().toISOString() }
   if (payload.phone !== undefined) {
     payload.phone = formatTo234(payload.phone)
   }
@@ -520,23 +537,40 @@ export function addDeletedBizId(id) {
 
 export async function deleteBusiness(id) {
   if (!id) return
-  addDeletedBizId(id)
-  try {
-    localStorage.removeItem(`dotch_biz_${id}`)
-  } catch (e) {}
 
+  // 1. Persist one tombstone in Firestore
   if (db) {
     try {
-      await deleteDoc(doc(db, BUSINESS_COLLECTION, id))
+      const ref = doc(db, BUSINESS_COLLECTION, id)
       await setDoc(
-        doc(db, BUSINESS_COLLECTION, id),
+        ref,
         { status: 'deleted', isDeleted: true, deletedAt: new Date().toISOString() },
         { merge: true }
       )
     } catch (err) {
-      console.warn('Could not delete firestore business:', err)
+      console.warn('Could not persist tombstone in Firestore:', err)
     }
   }
+
+  // 2. Commit local deletion
+  addDeletedBizId(id)
+
+  // 3. Remove local cache and remove owner-specific local cache
+  try {
+    localStorage.removeItem(`dotch_biz_${id}`)
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('dotch_owner_biz_')) {
+        try {
+          const item = JSON.parse(localStorage.getItem(k) || '{}')
+          if (item?.id === id) {
+            localStorage.removeItem(k)
+          }
+        } catch {}
+      }
+    }
+  } catch (e) {}
+
   cacheService.clear('all_businesses_')
   cacheService.clear('search_')
 }
@@ -589,30 +623,37 @@ function isLocationMatch(b, targetLocStr) {
 }
 
 export async function searchBusinesses({ category, keyword, location, userCoords, max = 50 }) {
-  const cacheKey = `search_${category || ''}_${keyword || ''}_${location || ''}_${userCoords?.lat || ''}_${max}`
+  // Parse natural language queries (e.g. "bag in lagos" -> keyword: "bag", location: "Lagos")
+  const parsed = parseQueryAndLocation(keyword, location)
+  const effectiveKeyword = parsed.keyword
+  const effectiveLocation = parsed.location
+
+  const cacheKey = `search_${category || ''}_${effectiveKeyword || ''}_${effectiveLocation || ''}_${userCoords?.lat || ''}_${max}`
   const cached = cacheService.get(cacheKey)
   if (cached) return cached
 
+  const deletedIds = new Set(getDeletedBizIds())
   let dbResults = []
   if (db) {
     try {
       const col = collection(db, BUSINESS_COLLECTION)
       let q = category ? query(col, where('category', '==', category)) : query(col)
       const snap = await getDocs(q)
-      dbResults = snap.docs
-        .map((d) => {
-          const data = d.data()
-          return { id: d.id, ...data, phone: formatTo234(data?.phone || '') }
-        })
-        // REQUIREMENT 16: Only approved / active businesses are publicly listed in search
-        .filter((b) => b.status === 'active' || b.paymentStatus === 'approved' || b.verified === true)
+      snap.docs.forEach((d) => {
+        const data = d.data()
+        if (data.status === 'deleted' || data.isDeleted) {
+          deletedIds.add(d.id)
+          addDeletedBizId(d.id)
+        } else if (data.status === 'active' || data.paymentStatus === 'approved' || data.verified === true) {
+          dbResults.push({ id: d.id, ...data, phone: formatTo234(data?.phone || '') })
+        }
+      })
     } catch (err) {
       console.warn('Firestore fetch fallback:', err)
     }
   }
 
   // Merge DB results with demo results (excluding any deleted IDs)
-  const deletedIds = new Set(getDeletedBizIds())
   const validDbResults = dbResults.filter((b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id))
   const all = [
     ...validDbResults,
@@ -635,42 +676,58 @@ export async function searchBusinesses({ category, keyword, location, userCoords
   }
 
   if (
-    location &&
-    location !== 'Everywhere' &&
-    location !== 'All of Nigeria' &&
-    location !== 'All Locations'
+    effectiveLocation &&
+    effectiveLocation !== 'Everywhere' &&
+    effectiveLocation !== 'All of Nigeria' &&
+    effectiveLocation !== 'All Locations'
   ) {
-    filtered = filtered.filter((b) => isLocationMatch(b, location))
+    filtered = filtered.filter((b) => isLocationMatch(b, effectiveLocation))
   }
 
-  if (keyword) {
-    const k = keyword.toLowerCase()
-    filtered = filtered.filter(
-      (b) =>
-        (b.name && b.name.toLowerCase().includes(k)) ||
-        (b.category && b.category.toLowerCase().includes(k)) ||
-        (b.description && b.description.toLowerCase().includes(k)) ||
-        (b.location && b.location.toLowerCase().includes(k)) ||
-        (b.city && b.city.toLowerCase().includes(k)) ||
-        (b.keywords &&
-          Array.isArray(b.keywords) &&
-          b.keywords.some((kw) => kw.toLowerCase().includes(k)))
-    )
+  if (effectiveKeyword) {
+    const k = effectiveKeyword.toLowerCase()
+    const stopWords = new Set(['in', 'at', 'near', 'around', 'and', 'the', 'for', 'with', 'to', 'of', 'on', 'a', 'an'])
+    const tokens = k.split(/\s+/).filter((w) => w.length > 1 && !stopWords.has(w))
+
+    filtered = filtered.filter((b) => {
+      const bName = (b.name || '').toLowerCase()
+      const bCat = (b.category || '').toLowerCase()
+      const bDesc = (b.description || '').toLowerCase()
+      const bLoc = (b.location || '').toLowerCase()
+      const bCity = (b.city || '').toLowerCase()
+      const bKeywords = Array.isArray(b.keywords) ? b.keywords.map((kw) => kw.toLowerCase()) : []
+      const combinedText = `${bName} ${bCat} ${bDesc} ${bLoc} ${bCity} ${bKeywords.join(' ')}`
+
+      // 1. Direct exact match
+      if (combinedText.includes(k)) return true
+
+      // 2. Token match with simple plural/singular support (e.g. bag <-> bags)
+      if (tokens.length > 0) {
+        return tokens.some((token) => {
+          if (combinedText.includes(token)) return true
+          if (token.endsWith('s') && combinedText.includes(token.slice(0, -1))) return true
+          if (!token.endsWith('s') && combinedText.includes(token + 's')) return true
+          return false
+        })
+      }
+
+      return false
+    })
   }
 
   // If local results are few, attempt to find real Overpass OpenStreetMap POIs ONLY for the requested location.
   if (
     filtered.length < 5 &&
-    location &&
-    location !== 'Everywhere' &&
-    location !== 'All of Nigeria' &&
-    location !== 'All Locations'
+    effectiveLocation &&
+    effectiveLocation !== 'Everywhere' &&
+    effectiveLocation !== 'All of Nigeria' &&
+    effectiveLocation !== 'All Locations'
   ) {
     try {
-      const targetCity = location.trim()
+      const targetCity = effectiveLocation.trim()
       const osmPlaces = await fetchOsmBusinesses({
         city: targetCity,
-        category: category || keyword || 'all',
+        category: category || effectiveKeyword || 'all',
         limit: 15,
       })
       const validOsm = (osmPlaces || []).filter((o) => isLocationMatch(o, targetCity))
@@ -726,24 +783,26 @@ export async function getAllBusinesses(max = 50) {
   const cached = cacheService.get(cacheKey)
   if (cached) return cached
 
+  const deletedIds = new Set(getDeletedBizIds())
   let dbResults = []
   if (db) {
     try {
       const q = query(collection(db, BUSINESS_COLLECTION), limit(max))
       const snap = await getDocs(q)
-      dbResults = snap.docs
-        .map((d) => {
-          const data = d.data()
-          return { id: d.id, ...data, phone: formatTo234(data?.phone || '') }
-        })
-        // REQUIREMENT 16: Only approved / active businesses are publicly listed
-        .filter((b) => b.status === 'active' || b.paymentStatus === 'approved' || b.verified === true)
+      snap.docs.forEach((d) => {
+        const data = d.data()
+        if (data.status === 'deleted' || data.isDeleted) {
+          deletedIds.add(d.id)
+          addDeletedBizId(d.id)
+        } else if (data.status === 'active' || data.paymentStatus === 'approved' || data.verified === true) {
+          dbResults.push({ id: d.id, ...data, phone: formatTo234(data?.phone || '') })
+        }
+      })
     } catch {
       // ignore
     }
   }
 
-  const deletedIds = new Set(getDeletedBizIds())
   const validDbResults = dbResults.filter((b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id))
   const existingIds = new Set(validDbResults.map((b) => b.id))
   const combined = [

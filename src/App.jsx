@@ -87,6 +87,7 @@ export default function App() {
             }
           />
           <Route path="/business/:id" element={<BusinessDetail />} />
+          <Route path="/b/:id" element={<BusinessDetail />} />
 
           {/* Hidden admin-only route — not linked from any public page */}
           <Route
