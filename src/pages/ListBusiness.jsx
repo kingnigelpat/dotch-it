@@ -136,7 +136,7 @@ export default function ListBusiness() {
           </p>
         </div>
 
-        <div className="plans-grid" style={{ maxWidth: '780px', margin: '0 auto' }}>
+        <div className="plans-grid" style={{ maxWidth: '1080px', margin: '0 auto' }}>
           {/* 1 Month Plan */}
           <div className="plan-card">
             <div className="plan-head">
@@ -228,6 +228,59 @@ export default function ListBusiness() {
             >
               {user ? 'Set Up 2-Month Listing →' : 'Sign Up for ₦7,999 Plan →'}
             </Link>
+          </div>
+
+          {/* 1 Year Plan — Contact Admin */}
+          <div className="plan-card" style={{ border: '2px solid rgba(238, 93, 54, 0.45)', background: 'var(--bg-surface)' }}>
+            <div className="plan-badge" style={{ background: 'var(--slate-petrol)' }}>
+              👑 VIP ANNUAL • BEST RATE
+            </div>
+            <div className="plan-head">
+              <h3 className="plan-name">1 Year VIP Vendor Plan</h3>
+              <div className="plan-price-wrap">
+                <span className="plan-price" style={{ fontSize: '24px' }}>Contact Admin</span>
+                <span className="plan-interval">/ 12 months</span>
+              </div>
+            </div>
+
+            <div className="plan-divider" />
+
+            <ul className="plan-features">
+              <li className="plan-feature-item">
+                <span className="feature-check">✓</span>
+                <span>Full 365-day active search listing</span>
+              </li>
+              <li className="plan-feature-item">
+                <span className="feature-check">✓</span>
+                <span><strong>10x Maximum Search Boost</strong></span>
+              </li>
+              <li className="plan-feature-item">
+                <span className="feature-check">✓</span>
+                <span><strong>Top Featured Flyer Spotlight</strong></span>
+              </li>
+              <li className="plan-feature-item">
+                <span className="feature-check">✓</span>
+                <span><strong>Official Diamond VIP Badge</strong></span>
+              </li>
+              <li className="plan-feature-item">
+                <span className="feature-check">✓</span>
+                <span>Dedicated Admin Account Manager</span>
+              </li>
+              <li className="plan-feature-item">
+                <span className="feature-check">✓</span>
+                <span>Direct WhatsApp VIP hotline</span>
+              </li>
+            </ul>
+
+            <a
+              href={`https://wa.me/2347073544811?text=${encodeURIComponent('Hello Dotch Admin, I am interested in subscribing to the 1-Year VIP Vendor Plan on Dotch.')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary btn-block"
+              style={{ textAlign: 'center', marginTop: 'auto', background: '#25D366', borderColor: '#25D366' }}
+            >
+              <i className="fa-brands fa-whatsapp" style={{ marginRight: '6px' }} /> Contact Admin on WhatsApp →
+            </a>
           </div>
         </div>
       </section>

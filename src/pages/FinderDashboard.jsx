@@ -136,64 +136,22 @@ export default function FinderDashboard() {
   }
 
   return (
-    <div className="finder-dashboard">
-      {/* Explore Value & Discovery Header */}
-      <div className="explore-hero-card">
-        <div className="explore-hero-body">
-          <div className="explore-badge-row">
-            <span className="badge-pill explorer-badge">🔍 Explore Businesses & Places</span>
-            <span className="badge-sparkle">📍 Nigeria Wide</span>
-          </div>
-          <h1 className="explore-hero-title">
-            Discover Verified Businesses, Stays & Products
-          </h1>
-          <p className="explore-hero-subtitle">
-            Search genuine stores, inspect verified photos of places and products, locate verified vendors in your city, and connect directly on WhatsApp with zero middlemen fees.
-          </p>
-        </div>
-
-        {!user ? (
-          <div className="explore-auth-cta">
-            <div className="explore-auth-info">
-              <span className="explore-auth-heading">Join Dotch or Sign In</span>
-              <span className="explore-auth-sub">Sign in to save favorite spots, contact sellers, or list your business.</span>
-            </div>
-            <div className="explore-auth-actions">
-              <Link to="/login?redirect=/dashboard" className="btn btn-outline btn-sm">
-                Log In
-              </Link>
-              <Link to="/register" className="btn btn-primary btn-sm">
-                Sign Up Free →
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="explore-auth-cta explore-auth-cta-user">
-            <div className="explore-auth-info">
-              <span className="explore-auth-heading">
-                👋 Hello, {profile?.name || user.email}
-              </span>
-              <span className="explore-auth-sub">
-                {profile?.role === 'vendor' ? 'You have an active vendor account' : 'Browse verified places and chat with vendors'}
-              </span>
-            </div>
-            <div className="explore-auth-actions">
-              {profile?.role === 'vendor' ? (
-                <Link to="/business" className="btn btn-primary btn-sm">
-                  Vendor Dashboard →
-                </Link>
-              ) : (
-                <Link to="/list-business" className="btn btn-outline btn-sm">
-                  🏪 List Your Business
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
+    <div className="finder-dashboard purr-container" style={{ paddingBottom: '90px', paddingTop: '8px' }}>
+      {/* Sleek Top Navigation Bar (Inspo Screen 1) */}
+      <div className="purr-topbar">
+        <Link to="/" className="purr-circle-btn" title="Back to Home">
+          <i className="fa-solid fa-chevron-left" />
+        </Link>
+        <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
+          {location || 'All of Nigeria'}
+        </span>
+        <Link to="/list-business" className="purr-circle-btn" title="List your business">
+          <i className="fa-solid fa-plus" />
+        </Link>
       </div>
 
-      {/* Search Header */}
-      <div style={{ marginBottom: '24px' }}>
+      {/* Floating Pill Search Box */}
+      <div style={{ marginBottom: '12px' }}>
         <SearchBar
           query={query}
           setQuery={handleQueryChange}
@@ -206,51 +164,62 @@ export default function FinderDashboard() {
           loading={loading}
         />
 
-        {searched && (
-          <div style={{ textAlign: 'center' }}>
+        {searched && aiIntent && (
+          <div style={{ textAlign: 'center', marginTop: '6px' }}>
             <SearchIntent intent={aiIntent} location={location} query={query} />
           </div>
         )}
       </div>
 
-      {/* Categories & Filter Bar */}
-      <div className="category-bar">
+      {/* Purrweb Filter Pills Strip (Inspo Screen 1: "Nearby x", "Open now x", "Category x") */}
+      <div className="filter-pill-strip">
         <button
-          className={`chip-tag ${activeCategory === '' ? 'chip-tag-active' : ''}`}
+          type="button"
+          className={`filter-pill ${activeCategory === '' ? 'active-coral' : ''}`}
           onClick={() => handleCategorySelect('')}
         >
-          🌐 All Categories
+          <span>🌐 All Spots</span>
         </button>
-        {categories.map((c) => (
-          <button
-            key={c}
-            className={`chip-tag ${activeCategory === c ? 'chip-tag-active' : ''}`}
-            onClick={() => handleCategorySelect(c)}
-          >
-            {c}
-          </button>
-        ))}
+
+        {categories.map((c) => {
+          const isActive = activeCategory === c
+          return (
+            <button
+              key={c}
+              type="button"
+              className={`filter-pill ${isActive ? 'active' : ''}`}
+              onClick={() => handleCategorySelect(c)}
+            >
+              <span>{c}</span>
+              {isActive && <span className="pill-close">✕</span>}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Results Header with City/Region summary and Active Filters */}
-      <div className="results-header">
+      {/* Clean Results Header with Location & Count */}
+      <div className="purr-section-header" style={{ margin: '14px 0 16px 0' }}>
         <div>
-          <h2 style={{ fontSize: '20px' }}>
-            {searched ? (query ? `Results for “${query}”` : `${activeCategory || 'Top'} Listings`) : 'Discover Local Businesses'}
+          <h2 className="purr-section-title" style={{ fontSize: '18px' }}>
+            {searched ? (query ? `Results for “${query}”` : `${activeCategory || 'Places'} in ${location || 'Nigeria'}`) : `Discover in ${location}`}
           </h2>
-          <p className="results-meta">
-            Showing verified sellers in <strong style={{ color: 'var(--brand-primary)' }}>{location || 'Everywhere'}</strong>
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span className="results-meta" style={{ fontWeight: 600 }}>
-            {results.length} {results.length === 1 ? 'place' : 'places'} found
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            Showing verified listings in <strong style={{ color: 'var(--brand-primary)' }}>{location || 'Everywhere'}</strong>
           </span>
         </div>
+
+        <span className="filter-pill" style={{ fontSize: '12px', padding: '4px 12px', cursor: 'default' }}>
+          {results.length} {results.length === 1 ? 'place' : 'places'}
+        </span>
       </div>
 
       {/* Loading indicator */}
-      {loading && <div className="center-loading">Searching local engine…</div>}
+      {loading && (
+        <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--brand-primary)' }}>
+          <i className="fa-solid fa-circle-notch fa-spin fa-2x" />
+          <div style={{ marginTop: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>Searching spots near {location}…</div>
+        </div>
+      )}
 
       {/* Empty State */}
       {!loading && results.length === 0 && (
@@ -264,14 +233,31 @@ export default function FinderDashboard() {
         />
       )}
 
-      {/* Results Grid */}
+      {/* Results Cards Grid using Purrweb card layout */}
       {!loading && results.length > 0 && (
-        <div className="results-grid">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gap: '18px',
+          }}
+        >
           {results.map((b) => (
             <BusinessCard key={b.id} business={b} />
           ))}
         </div>
       )}
+
+      {/* Prominent Bottom Coral Action Button */}
+      <div className="purr-floating-cta-wrap">
+        <Link
+          to={user ? (profile?.role === 'vendor' ? '/business' : '/list-business') : '/list-business'}
+          className="purr-pill-cta"
+        >
+          <i className="fa-solid fa-plus" /> List a Place
+        </Link>
+      </div>
     </div>
   )
 }
+

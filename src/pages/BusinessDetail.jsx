@@ -97,21 +97,37 @@ export default function BusinessDetail() {
   ].filter(Boolean)
 
   return (
-    <div className="business-detail-page" style={{ paddingBottom: '90px' }}>
-      {/* Top Breadcrumb & Clear Back Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+    <div className="business-detail-page purr-container" style={{ paddingBottom: '90px', paddingTop: '10px' }}>
+      {/* Top App Bar Navigation (Inspo Screen 3) */}
+      <div className="purr-topbar">
         <button
           type="button"
-          className="btn btn-outline btn-sm"
+          className="purr-circle-btn"
           onClick={() => navigate(-1)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          title="Go Back"
         >
-          <span>←</span>
-          <span>Go Back</span>
+          <i className="fa-solid fa-chevron-left" />
         </button>
-        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-          Directory ID: {business.id?.slice(0, 12)}
+
+        <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+          {business.category || 'Place Details'}
         </span>
+
+        <button
+          type="button"
+          className="purr-circle-btn"
+          onClick={() => {
+            if (navigator.share) {
+              navigator.share({ title: business.name, url: window.location.href })
+            } else {
+              navigator.clipboard.writeText(window.location.href)
+              alert('Profile link copied to clipboard!')
+            }
+          }}
+          title="Share Place"
+        >
+          <i className="fa-solid fa-arrow-up-from-bracket" />
+        </button>
       </div>
 
       {/* Main Profile Card Container */}
@@ -119,56 +135,56 @@ export default function BusinessDetail() {
         style={{
           background: 'var(--bg-surface)',
           border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-lg)',
+          borderRadius: 'var(--radius-card)',
           overflow: 'hidden',
-          boxShadow: 'var(--shadow-md)',
+          boxShadow: 'var(--shadow-card)',
         }}
       >
-        {/* Visual Hero Header */}
+        {/* Visual Hero Header - Slate Petrol (Inspo Screen 3) */}
         <div
           style={{
-            height: '180px',
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #4f46e5 100%)',
+            height: '190px',
+            background: 'linear-gradient(135deg, #3d5a6c 0%, #2c4352 100%)',
             position: 'relative',
+            padding: '16px',
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
           }}
         >
-          <div
-            style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              display: 'flex',
-              gap: '8px',
-            }}
-          >
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
             <span
-              className="badge-pill"
+              className="filter-pill"
               style={{
-                background: 'rgba(0, 0, 0, 0.4)',
+                background: 'rgba(0, 0, 0, 0.35)',
                 color: '#fff',
+                borderColor: 'rgba(255, 255, 255, 0.2)',
                 backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                fontSize: '12px',
+                fontSize: '11.5px',
+                padding: '4px 12px',
               }}
             >
               📍 {business.location || business.city || 'Nigeria'}
             </span>
             <span
-              className="badge-pill"
+              className="filter-pill"
               style={{
-                background: 'rgba(16, 185, 129, 0.9)',
+                background: 'var(--brand-primary)',
                 color: '#fff',
-                fontSize: '12px',
+                borderColor: 'transparent',
+                fontSize: '11.5px',
+                padding: '4px 12px',
                 fontWeight: 700,
               }}
             >
-              ● Available
+              ● Open Now
             </span>
           </div>
         </div>
 
         {/* Business Header & Primary Content */}
-        <div style={{ padding: '24px', position: 'relative' }}>
+        <div style={{ padding: '20px 24px', position: 'relative' }}>
           {/* Logo & Headline Row */}
           <div
             style={{
@@ -177,18 +193,18 @@ export default function BusinessDetail() {
               justifyContent: 'space-between',
               flexWrap: 'wrap',
               gap: '16px',
-              marginTop: '-64px',
-              marginBottom: '20px',
+              marginTop: '-56px',
+              marginBottom: '16px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '14px', flexWrap: 'wrap' }}>
               <img
-                src={business.logoUrl || '/icon-logo.png'}
+                src={business.logoUrl || business.image1Url || '/icon-logo.png'}
                 alt={business.name}
                 style={{
-                  width: '96px',
-                  height: '96px',
-                  borderRadius: 'var(--radius-md)',
+                  width: '90px',
+                  height: '90px',
+                  borderRadius: '20px',
                   objectFit: 'cover',
                   border: '4px solid var(--bg-surface)',
                   background: 'var(--bg-surface)',
@@ -200,52 +216,96 @@ export default function BusinessDetail() {
                 }}
               />
               <div style={{ paddingBottom: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                  <span className="result-category">{business.category || 'Local Business'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                  <span className="purr-tag">{business.category || 'Local Place'}</span>
                   {business.verified && (
-                    <span className="badge-verified" style={{ fontSize: '11.5px', padding: '3px 8px' }}>
-                      ✓ Verified Listing
+                    <span className="purr-tag" style={{ background: '#ecfdf5', color: '#059669' }}>
+                      ✓ Verified
                     </span>
                   )}
-                  {business.subscriptionTier === 'pro_2m' && (
-                    <span className="badge-vip" style={{ fontSize: '11.5px', padding: '3px 8px' }}>
-                      🔥 Featured Top Match
+                  {business.rating && (
+                    <span className="purr-card-rating">
+                      <i className="fa-solid fa-star" /> {business.rating}
                     </span>
                   )}
                 </div>
-                <h1 style={{ fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                <h1 style={{ fontSize: 'clamp(22px, 4vw, 28px)', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                   {business.name}
                 </h1>
               </div>
             </div>
 
-            {/* Direct Contact Actions Header (Desktop) */}
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', paddingTop: '48px' }}>
+            {/* Price Pill if specified */}
+            {business.price && (
+              <div className="floating-badge-price" style={{ position: 'static', padding: '6px 14px', fontSize: '14px' }}>
+                🏷️ {business.price}
+              </div>
+            )}
+          </div>
+
+          {/* Squircle Action Buttons Row (Inspo Screen 3: User, Edit/Call, History, Share) */}
+          <div className="purr-action-squircle-row">
+            {business.phone && (
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => recordWhatsAppClick(business.id)}
-                className="btn btn-whatsapp"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontWeight: 700 }}
+                className="action-squircle-btn btn-wa-squircle"
+                title="Chat on WhatsApp"
               >
-                <span>💬</span>
-                <span>Chat on WhatsApp</span>
+                <i className="fa-brands fa-whatsapp" />
               </a>
+            )}
 
-              {business.phone && (
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={handleCopyPhone}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 14px' }}
-                  title="Copy telephone number"
-                >
-                  <span>📞</span>
-                  <span>{copiedPhone ? '✓ Copied' : displayFormattedPhone(business.phone)}</span>
-                </button>
-              )}
-            </div>
+            {business.phone && (
+              <button
+                type="button"
+                className="action-squircle-btn"
+                onClick={handleCopyPhone}
+                title="Copy phone number"
+              >
+                <i className={copiedPhone ? "fa-solid fa-check" : "fa-solid fa-phone"} />
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="action-squircle-btn"
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: business.name, url: window.location.href })
+                } else {
+                  navigator.clipboard.writeText(window.location.href)
+                  alert('Link copied!')
+                }
+              }}
+              title="Share profile"
+            >
+              <i className="fa-solid fa-arrow-up-from-bracket" />
+            </button>
+
+            <a
+              href={`https://maps.google.com/?q=${encodeURIComponent(`${business.name} ${business.location || ''}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="action-squircle-btn"
+              title="Find on Google Maps"
+            >
+              <i className="fa-solid fa-location-arrow" />
+            </a>
+
+            {/* Direct WhatsApp Callout */}
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => recordWhatsAppClick(business.id)}
+              className="btn-purr-wa"
+              style={{ marginLeft: 'auto', padding: '12px 24px', fontSize: '14px', flex: 'initial' }}
+            >
+              <i className="fa-brands fa-whatsapp" style={{ fontSize: '16px' }} /> Chat on WhatsApp
+            </a>
           </div>
 
           {/* Key Quick Info Strip */}

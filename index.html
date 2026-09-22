@@ -20,6 +20,10 @@
     <script>
       (function () {
         try {
+          if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+          }
+          window.scrollTo(0, 0);
           var t = localStorage.getItem('dotch_theme') || 'light';
           document.documentElement.setAttribute('data-theme', t);
         } catch (e) {}

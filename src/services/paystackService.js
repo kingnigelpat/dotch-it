@@ -56,6 +56,25 @@ export const SUBSCRIPTION_PLANS = [
     cta: 'Subscribe for ₦7,999 (2 Months)',
     highlight: true,
   },
+  {
+    id: 'pro_1y',
+    name: '1 Year Vendor Plan',
+    price: null,
+    formattedPrice: 'Contact Admin',
+    interval: 'for 12 months (365 days)',
+    badge: '👑 VIP Annual • Best Rate',
+    features: [
+      '📸 365 Days Uninterrupted Listing & Priority Search',
+      '📍 Top Category Banner & Featured Promo Flyer Spotlight',
+      '📞 Direct WhatsApp hotline with Dedicated Account Support',
+      '⚡ 10x Maximum Platform Reach & SEO indexing',
+      '👑 Official Diamond Verified Vendor Badge',
+      '💬 Instant verification via Admin',
+    ],
+    cta: 'Contact Admin on WhatsApp (1 Year)',
+    highlight: false,
+    contactAdmin: true,
+  },
 ]
 
 // Dynamically load Paystack inline script

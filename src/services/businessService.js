@@ -22,7 +22,7 @@ import { parseQueryAndLocation } from '../utils/searchParser'
 export const BUSINESS_COLLECTION = 'businesses'
 
 // Rich initial sample businesses including popular Hotels & Restaurants across Nigeria
-const DEMO_BUSINESSES = [
+export const DEMO_BUSINESSES = [
   {
     id: 'demo-1',
     name: 'Kicks Hub Lagos',

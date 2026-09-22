@@ -3,37 +3,17 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import SearchBar from '../components/SearchBar'
 import BusinessCard from '../components/BusinessCard'
-import { getAllBusinesses } from '../services/businessService'
+import { getAllBusinesses, DEMO_BUSINESSES } from '../services/businessService'
+import { getActiveAds, SAMPLE_ADVERTS } from '../services/adService'
 
-const CATEGORY_CARDS = [
-  { name: 'Hotels & Luxury Suites', icon: 'fa-solid fa-hotel', count: '120+ Verified Stays', desc: '5-star suites, boutique resorts, serviced apartments & lodges', query: 'Hotel' },
-  { name: 'Food & Fine Dining', icon: 'fa-solid fa-utensils', count: '350+ Kitchens & Cafes', desc: 'Authentic African cuisines, gourmet seafood, grills & fast eats', query: 'Restaurant' },
-  { name: 'Sneakers & Streetwear', icon: 'fa-solid fa-shirt', count: '180+ Stores', desc: 'Original Nike, Adidas, bespoke fashion & premium urban boutiques', query: 'Fashion' },
-  { name: 'Phones & Tech Gadgets', icon: 'fa-solid fa-mobile-screen', count: '240+ Tech Hubs', desc: 'Original smartphones, laptops, repairs & authentic accessories', query: 'Electronics' },
-  { name: 'Research & Hardware Hubs', icon: 'fa-solid fa-flask', count: '90+ Specialists', desc: 'Lab components, specialized materials, books & technical tools', query: 'Research' },
-  { name: 'Beauty, Spas & Grooming', icon: 'fa-solid fa-scissors', count: '160+ Salons', desc: 'Celebrity barbers, luxury wellness spas & aesthetic studios', query: 'Beauty' },
-  { name: 'Auto Repair & Spare Parts', icon: 'fa-solid fa-car', count: '110+ Workshops', desc: 'Certified diagnostics, mechanics, batteries & genuine OEM parts', query: 'Auto' },
-  { name: 'Nightlife, Lounges & Events', icon: 'fa-solid fa-martini-glass', count: '95+ Venues', desc: 'VIP lounges, rooftop bars, beach clubs & private event centers', query: 'Nightlife' },
-]
-
-const POPULAR_CATEGORIES = [
-  { label: 'Hotels & Suites', icon: 'fa-solid fa-hotel', query: 'Hotel' },
-  { label: 'Restaurants & Dining', icon: 'fa-solid fa-utensils', query: 'Restaurant' },
-  { label: 'Sneakers & Streetwear', icon: 'fa-solid fa-shirt', query: 'Fashion' },
-  { label: 'Phones & Gadgets', icon: 'fa-solid fa-mobile-screen', query: 'Electronics' },
-  { label: 'Auto & Spare Parts', icon: 'fa-solid fa-car', query: 'Auto' },
-  { label: 'Beauty & Spas', icon: 'fa-solid fa-scissors', query: 'Beauty' },
-  { label: 'Nightlife & Lounges', icon: 'fa-solid fa-martini-glass', query: 'Nightlife' },
-  { label: 'Hardware & Supplies', icon: 'fa-solid fa-flask', query: 'Hardware' },
-]
-
-const TRENDING_SEARCHES = [
-  'Nike Dunks Lagos',
-  'Transcorp Hilton Abuja',
-  'Yellow Chilli VI',
-  'iPhone 16 Ikeja',
-  'Amala Sky Dugbe',
-  'Toyota OEM Parts',
+const FILTER_PILLS = [
+  { id: 'all', label: '✨ All Spots' },
+  { id: 'hotel', label: '🏨 Hotels & Suites', query: 'Hotel' },
+  { id: 'restaurant', label: '🍽️ Food & Dining', query: 'Restaurant' },
+  { id: 'fashion', label: '🛍️ Streetwear & Stores', query: 'Fashion' },
+  { id: 'tech', label: '📱 Phones & Gadgets', query: 'Electronics' },
+  { id: 'beauty', label: '💆 Beauty & Spas', query: 'Beauty' },
+  { id: 'auto', label: '🚗 Auto & Repairs', query: 'Auto' },
 ]
 
 export default function Landing() {
@@ -41,11 +21,26 @@ export default function Landing() {
   const { user, profile } = useAuth()
   const [query, setQuery] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('dotch_last_search_query') || '' : ''))
   const [location, setLocation] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('dotch_last_search_loc') || 'Lagos' : 'Lagos'))
-  const [featured, setFeatured] = useState([])
-  const [selectedCategoryTab, setSelectedCategoryTab] = useState('all')
+  const [featured, setFeatured] = useState(() => (DEMO_BUSINESSES || []).slice(0, 16))
+  const [ads, setAds] = useState(SAMPLE_ADVERTS)
+  const [adIndex, setAdIndex] = useState(0)
+  const [activeFilter, setActiveFilter] = useState('all')
+  const [segmentedTab, setSegmentedTab] = useState('places') // 'places' | 'recommended'
 
   useEffect(() => {
-    getAllBusinesses(12).then(setFeatured)
+    window.scrollTo(0, 0)
+
+    getAllBusinesses(16).then((data) => {
+      if (data && data.length > 0) {
+        setFeatured(data)
+      }
+    })
+
+    getActiveAds().then((fetchedAds) => {
+      if (fetchedAds && fetchedAds.length > 0) {
+        setAds(fetchedAds)
+      }
+    }).catch(() => {})
   }, [])
 
   const handleQueryChange = (newQ) => {
@@ -68,364 +63,360 @@ export default function Landing() {
     }
   }
 
-  const filteredFeatured = featured.filter((b) => {
-    if (selectedCategoryTab === 'all') return true
-    if (selectedCategoryTab === 'hotel') return (b.category || '').toLowerCase().includes('hotel')
-    if (selectedCategoryTab === 'food') return (b.category || '').toLowerCase().includes('restaurant') || (b.category || '').toLowerCase().includes('food')
-    if (selectedCategoryTab === 'fashion') return (b.category || '').toLowerCase().includes('fashion')
-    if (selectedCategoryTab === 'tech') return (b.category || '').toLowerCase().includes('tech') || (b.category || '').toLowerCase().includes('electronic')
+  const handleFilterPillClick = (pill) => {
+    setActiveFilter(pill.id)
+    if (pill.query) {
+      handleSearch(pill.query)
+    }
+  }
+
+  const filteredPlaces = featured.filter((b) => {
+    if (activeFilter === 'all') return true
+    if (activeFilter === 'hotel') return (b.category || '').toLowerCase().includes('hotel')
+    if (activeFilter === 'restaurant') return (b.category || '').toLowerCase().includes('restaurant') || (b.category || '').toLowerCase().includes('food')
+    if (activeFilter === 'fashion') return (b.category || '').toLowerCase().includes('fashion')
+    if (activeFilter === 'tech') return (b.category || '').toLowerCase().includes('tech') || (b.category || '').toLowerCase().includes('electronic')
+    if (activeFilter === 'beauty') return (b.category || '').toLowerCase().includes('beauty') || (b.category || '').toLowerCase().includes('salon')
+    if (activeFilter === 'auto') return (b.category || '').toLowerCase().includes('auto') || (b.category || '').toLowerCase().includes('car')
     return true
   })
 
+  const nearbyCarouselList = filteredPlaces.slice(0, 8)
+  const recommendedList = filteredPlaces.slice(1, 9)
+
+  const locationLabel = !location || location.toLowerCase() === 'everywhere' ? 'All Places' : `Places in ${location}`
+
   return (
-    <div className="landing-page">
-      {/* Hero Section */}
-      <section className="hero-section">
-        {/* Brand Logo & Search Engine Header */}
-        <div className="hero-brand-badge">
-          <img src="/full-logo.png" alt="Dotch" className="hero-full-logo" />
+    <div className="landing-page purr-container" style={{ paddingBottom: '90px', paddingTop: '10px' }}>
+      {/* Sleek Top Bar & Auth Strip (Inspo Screen 1) */}
+      <div className="purr-topbar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/full-logo.png" alt="Dotch" style={{ height: '32px', objectFit: 'contain' }} />
         </div>
 
-        <div className="live-stat-pill">
-          <span className="badge-sparkle"><i className="fa-solid fa-flag" style={{ color: '#008751' }} /></span>
-          <span>Nigeria's Verified Business, Hotel & Product Search Engine</span>
-        </div>
-
-        {/* Existing Account or Status Notice in Home Section */}
-        {!user ? (
-          <div className="home-auth-strip">
-            <span className="home-auth-text">Already have an account?</span>
-            <Link to="/login" className="home-auth-login-link">
-              Log in here <i className="fa-solid fa-arrow-right" style={{ marginLeft: '3px', fontSize: '11px' }} />
+        <div>
+          {!user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Link to="/login" className="filter-pill" style={{ fontSize: '12.5px', padding: '6px 14px' }}>
+                Log in
+              </Link>
+              <Link to="/register" className="filter-pill active-coral" style={{ fontSize: '12.5px', padding: '6px 14px' }}>
+                Join Free
+              </Link>
+            </div>
+          ) : (
+            <Link
+              to={profile?.role === 'vendor' || profile?.role === 'business' ? '/business' : '/account'}
+              className="filter-pill"
+              style={{ fontSize: '12.5px', padding: '6px 14px' }}
+            >
+              👋 {profile?.name?.split(' ')[0] || user.email?.split('@')[0]}
             </Link>
-            <span className="home-auth-divider">•</span>
-            <Link to="/register" className="home-auth-register-link">
-              Create free account
+          )}
+        </div>
+      </div>
+
+      {/* Hero Headline & Clean Value Props */}
+      <div style={{ textAlign: 'center', margin: '18px 0 20px 0' }}>
+        <h1 style={{ fontSize: 'clamp(26px, 5vw, 38px)', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.5px', lineHeight: 1.2, marginBottom: '8px' }}>
+          Discover Real Places & Spots
+        </h1>
+        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', maxWidth: '520px', margin: '0 auto', lineHeight: 1.5 }}>
+          Inspect verified photos, exact locations, and connect directly on WhatsApp with zero middlemen.
+        </p>
+      </div>
+
+      {/* Sleek Floating Pill Search Bar (Inspo Style) */}
+      <div style={{ marginBottom: '14px' }}>
+        <SearchBar
+          query={query}
+          setQuery={handleQueryChange}
+          onSearch={() => handleSearch()}
+          location={location}
+          setLocation={(newLoc) => {
+            setLocation(newLoc)
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('dotch_last_search_loc', newLoc)
+            }
+          }}
+          autoFocus={false}
+        />
+      </div>
+
+      {/* Quick Filter Pills (Screen 1 Inspiration: "Nearby x", "Open now x", "Italian x") */}
+      <div className="filter-pill-strip">
+        {FILTER_PILLS.map((pill) => (
+          <button
+            key={pill.id}
+            type="button"
+            className={`filter-pill ${activeFilter === pill.id ? 'active-coral' : ''}`}
+            onClick={() => handleFilterPillClick(pill)}
+          >
+            <span>{pill.label}</span>
+            {activeFilter === pill.id && activeFilter !== 'all' && (
+              <span className="pill-close" onClick={(e) => { e.stopPropagation(); setActiveFilter('all') }}>✕</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* 🚀 High-Impact Top Promotion Flyer Banner */}
+      {ads.length > 0 && (() => {
+        const flyer = ads[adIndex] || ads[0] || SAMPLE_ADVERTS[0]
+        const flyerImg = flyer.flyerUrl || flyer.imageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop'
+        const rawPhone = flyer.phone ? flyer.phone.replace(/\D/g, '') : '2347073544811'
+        const flyerWa = `https://wa.me/${rawPhone}?text=${encodeURIComponent(`Hello ${flyer.businessName || 'Dotch Vendor'}! I saw your promotion flyer "${flyer.title}" on Dotch and I would like to make an inquiry.`)}`
+
+        return (
+          <div className="purr-promo-flyer-banner">
+            <div className="promo-flyer-ribbon">
+              <div className="promo-flyer-badge">
+                <span className="pulse-beacon" />
+                <span>🔥 {flyer.badge || 'Featured Promo Flyer'}</span>
+              </div>
+              <div className="promo-flyer-controls">
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>
+                  Flyer {adIndex + 1} of {ads.length}
+                </span>
+                <button
+                  type="button"
+                  className="promo-flyer-nav-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setAdIndex((prev) => (prev - 1 + ads.length) % ads.length)
+                  }}
+                  title="Previous promotion flyer"
+                  aria-label="Previous flyer"
+                >
+                  <i className="fa-solid fa-chevron-left" />
+                </button>
+                <button
+                  type="button"
+                  className="promo-flyer-nav-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setAdIndex((prev) => (prev + 1) % ads.length)
+                  }}
+                  title="Next promotion flyer"
+                  aria-label="Next flyer"
+                >
+                  <i className="fa-solid fa-chevron-right" />
+                </button>
+              </div>
+            </div>
+
+            <div className="promo-flyer-body">
+              <div className="promo-flyer-poster">
+                <img
+                  src={flyerImg}
+                  alt={flyer.title || flyer.businessName}
+                  className="promo-flyer-img"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop'
+                  }}
+                />
+                {flyer.pricePromo && (
+                  <div className="promo-flyer-price-pill">
+                    <i className="fa-solid fa-tag" style={{ color: '#f59e0b' }} />
+                    <span>{flyer.pricePromo}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="promo-flyer-details">
+                <div className="promo-flyer-meta-row">
+                  <span className="promo-flyer-loc-tag">
+                    <i className="fa-solid fa-location-dot" /> {flyer.targetReach || flyer.location || location}
+                  </span>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    • {flyer.category || 'Special Deal'}
+                  </span>
+                </div>
+
+                <h3 className="promo-flyer-biz-name">
+                  {flyer.businessName} <i className="fa-solid fa-circle-check" style={{ color: '#10b981', fontSize: '13px' }} />
+                </h3>
+                <h4 className="promo-flyer-title">{flyer.title}</h4>
+                <p className="promo-flyer-desc">
+                  {flyer.tagline || flyer.description || 'Exclusive deal verified on Dotch. Connect directly with the vendor.'}
+                </p>
+
+                <div className="promo-flyer-actions">
+                  <a
+                    href={flyerWa}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="promo-flyer-wa-btn"
+                  >
+                    <i className="fa-brands fa-whatsapp" /> {flyer.ctaText || 'Chat on WhatsApp'}
+                  </a>
+                  {flyer.businessId && (
+                    <Link
+                      to={`/business/${flyer.businessId}`}
+                      className="promo-flyer-view-btn"
+                    >
+                      View Spot <i className="fa-solid fa-arrow-right" style={{ fontSize: '10px' }} />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Segmented Tabs (Screen 2 Inspiration: "Places" vs "Recommended") */}
+      <div className="purr-segmented-wrap">
+        <div className="purr-segmented-tabs">
+          <button
+            type="button"
+            className={`segmented-tab-btn ${segmentedTab === 'places' ? 'active' : ''}`}
+            onClick={() => setSegmentedTab('places')}
+          >
+            <i className="fa-solid fa-compass" /> {locationLabel}
+          </button>
+          <button
+            type="button"
+            className={`segmented-tab-btn ${segmentedTab === 'recommended' ? 'active' : ''}`}
+            onClick={() => setSegmentedTab('recommended')}
+          >
+            <i className="fa-solid fa-sparkles" /> Recommended Spots
+          </button>
+        </div>
+      </div>
+
+      {/* Dynamic View switching based on Segmented Tab */}
+      {segmentedTab === 'places' ? (
+        <div>
+          {/* Section 1: Places in [Location] Carousel */}
+          <div className="purr-section-header">
+            <h2 className="purr-section-title">{locationLabel}</h2>
+            <Link to={`/dashboard?loc=${encodeURIComponent(location)}`} className="purr-section-action">
+              See all <i className="fa-solid fa-chevron-right" style={{ fontSize: '11px', marginLeft: '3px' }} />
             </Link>
           </div>
-        ) : (
-          <div className="home-auth-strip home-auth-welcome">
-            <span className="home-auth-text">
-              Welcome back, <strong>{profile?.name?.split(' ')[0] || user.email?.split('@')[0]}</strong>
-            </span>
-            {profile?.role === 'admin' ? (
-              <Link to="/admin" className="badge-pill explorer-badge"><i className="fa-solid fa-shield-halved" style={{ marginRight: '4px' }} /> Admin Panel</Link>
-            ) : (profile?.role === 'vendor' || profile?.role === 'business') ? (
-              <Link to="/business" className="badge-pill vendor-badge"><i className="fa-solid fa-store" style={{ marginRight: '4px' }} /> Vendor Dashboard</Link>
+
+          {/* Smooth Horizontal Carousel */}
+          <div className="snap-carousel">
+            {nearbyCarouselList.length > 0 ? (
+              nearbyCarouselList.map((place) => (
+                <BusinessCard key={place.id} business={place} inCarousel={true} />
+              ))
             ) : (
-              <Link to="/dashboard" className="badge-pill explorer-badge"><i className="fa-solid fa-magnifying-glass" style={{ marginRight: '4px' }} /> Explore Places</Link>
+              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)', width: '100%' }}>
+                Loading verified places in {location}…
+              </div>
             )}
           </div>
-        )}
 
-        <h1 className="hero-headline">
-          The Search Engine For
-          <br />
-          <span className="hero-gradient-text">Real Places & Products.</span>
-        </h1>
-
-        <p className="hero-subhead">
-          Search anything you need around your city. Inspect verified photos of places and products, check exact locations, and connect directly on WhatsApp with zero middlemen.
-        </p>
-
-        {/* Hero Search Box */}
-        <div className="hero-search-wrapper">
-          <SearchBar
-            query={query}
-            setQuery={handleQueryChange}
-            onSearch={() => handleSearch()}
-            location={location}
-            setLocation={(newLoc) => {
-              setLocation(newLoc)
-              if (typeof window !== 'undefined') {
-                sessionStorage.setItem('dotch_last_search_loc', newLoc)
-              }
-            }}
-            autoFocus={true}
-          />
-        </div>
-
-        {/* Quick Category Shortcuts */}
-        <div className="persona-nav-wrap">
-          <div className="persona-tag-strip">
-            {POPULAR_CATEGORIES.map((cat) => (
-              <button
-                key={cat.label}
-                type="button"
-                className="chip-tag chip-tag-glow"
-                onClick={() => handleSearch(cat.query)}
-              >
-                <i className={cat.icon} style={{ marginRight: '5px' }} /> {cat.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Trending Searches */}
-          <div className="popular-searches">
-            <span className="popular-label">Trending:</span>
-            {TRENDING_SEARCHES.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                className="chip-tag"
-                onClick={() => handleSearch(tag)}
-                style={{ fontSize: '12.5px', padding: '4px 12px' }}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 3 Core Pillars (Buyers, Tourists, Researchers) */}
-      <section className="value-pillars-section">
-        <div className="pillars-grid">
-          <div className="pillar-card">
-            <div className="pillar-icon-wrap" style={{ background: 'var(--brand-light)', color: 'var(--brand-primary)' }}>
-              <i className="fa-solid fa-bag-shopping" />
-            </div>
-            <h3 className="pillar-title">For Ready Buyers</h3>
-            <p className="pillar-desc">
-              Looking for original sneakers, electronics, or instant meals? Skip days of parcel shipping. Find who has genuine stock right near your location and chat on WhatsApp instantly.
-            </p>
-            <button className="pillar-link" onClick={() => handleSearch('Fashion')}>
-              Find Local Stores <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} />
-            </button>
-          </div>
-
-          <div className="pillar-card pillar-card-featured">
-            <div className="pillar-badge">Popular with Travelers</div>
-            <div className="pillar-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
-              <i className="fa-solid fa-compass" />
-            </div>
-            <h3 className="pillar-title">For Travelers & Tourists</h3>
-            <p className="pillar-desc">
-              Visiting Lagos, Abuja, or Port Harcourt? Discover 5-star hotels, luxury executive suites, authentic African cuisine, and vetted car services with real photos before you arrive.
-            </p>
-            <button className="pillar-link" onClick={() => handleSearch('Hotel')}>
-              Explore Stays & Dining <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} />
-            </button>
-          </div>
-
-          <div className="pillar-card">
-            <div className="pillar-icon-wrap" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)' }}>
-              <i className="fa-solid fa-flask" />
-            </div>
-            <h3 className="pillar-title">For Researchers & Pros</h3>
-            <p className="pillar-desc">
-              Source specialized equipment, academic literature, local raw materials, artisanal fabricators, and specialized services with exact phone numbers and verified location pins.
-            </p>
-            <button className="pillar-link" onClick={() => handleSearch('Electronics')}>
-              Locate Specialists <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive 3-Step "How Dotch Works" */}
-      <section className="how-it-works-section">
-        <div className="section-head-center">
-          <span className="section-eyebrow">FAST & TRANSPARENT</span>
-          <h2 className="section-title">How Dotch Works</h2>
-          <p className="section-desc">Search, inspect real photos, and talk directly to business owners in seconds</p>
-        </div>
-
-        <div className="how-steps-grid">
-          <div className="how-step-card">
-            <div className="step-number">01</div>
-            <div className="step-content">
-              <h4>Search What You Need</h4>
-              <p>Type any item, hotel, restaurant, or service. Filter instantly by your current city or neighborhood.</p>
-            </div>
-          </div>
-
-          <div className="how-step-card">
-            <div className="step-number">02</div>
-            <div className="step-content">
-              <h4>Inspect Verified Photos & Places</h4>
-              <p>Verified sellers post genuine photos of their place, products, and prices so you know exactly what you get.</p>
-            </div>
-          </div>
-
-          <div className="how-step-card">
-            <div className="step-number">03</div>
-            <div className="step-content">
-              <h4>Connect Direct On WhatsApp</h4>
-              <p>Tap one button to call or chat on WhatsApp. Zero commissions, zero hidden platform fees, 100% direct.</p>
+          {/* Places Grid */}
+          <div style={{ marginTop: '22px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+              {filteredPlaces.slice(0, 6).map((place) => (
+                <BusinessCard key={`grid-${place.id}`} business={place} />
+              ))}
             </div>
           </div>
         </div>
-      </section>
+      ) : (
+        <div>
+          {/* Section 2: Recommended Curated Spots */}
+          <div className="purr-section-header">
+            <h2 className="purr-section-title">⭐ Curated Recommended Spots</h2>
+            <span className="purr-section-action" onClick={() => navigate('/dashboard')}>
+              Explore grid <i className="fa-solid fa-chevron-right" style={{ fontSize: '11px', marginLeft: '3px' }} />
+            </span>
+          </div>
 
-      {/* Visual Curated Categories Grid */}
-      <section className="curated-categories-section">
-        <div className="section-head-center">
-          <span className="section-eyebrow">EXPLORE BY CATEGORY</span>
-          <h2 className="section-title">Discover Verified Local Hubs</h2>
-          <p className="section-desc">Curated directories across major Nigerian cities tailored for quick contact</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {recommendedList.map((place) => {
+              const cover = place.image1Url || place.logoUrl || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&auto=format&fit=crop'
+              const rawPhone = place.phone ? place.phone.replace(/\D/g, '') : '2348012345678'
+              const placeWa = `https://wa.me/${rawPhone}?text=${encodeURIComponent(`Hi ${place.name}! I found your place on Dotch Recommended.`)}`
+
+              return (
+                <div
+                  key={`rec-${place.id}`}
+                  className="purr-list-card"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => navigate(`/business/${place.id}`)}
+                >
+                  <img
+                    src={cover}
+                    alt={place.name}
+                    className="purr-list-thumb"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&auto=format&fit=crop'
+                    }}
+                  />
+                  <div className="purr-list-content">
+                    <h4 className="purr-list-title">{place.name}</h4>
+                    <p className="purr-list-desc">
+                      {place.description || `Authentic verified ${place.category || 'spot'} in ${place.location || place.city || location}.`}
+                    </p>
+                    <div className="purr-list-meta">
+                      <span>
+                        <i className="fa-solid fa-star" style={{ color: '#f59e0b', marginRight: '3px' }} />
+                        {place.rating || '4.9'}
+                      </span>
+                      <span>
+                        <i className="fa-solid fa-location-dot" style={{ color: 'var(--brand-primary)', marginRight: '3px' }} />
+                        {place.location || place.city || location}
+                      </span>
+                      {place.verified && (
+                        <span style={{ color: '#10b981' }}>
+                          <i className="fa-solid fa-check-circle" style={{ marginRight: '3px' }} /> Verified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="purr-list-right">
+                    <a
+                      href={placeWa}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="action-squircle-btn btn-wa-squircle"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ width: '38px', height: '38px', fontSize: '16px', borderRadius: '12px' }}
+                      title="Chat on WhatsApp"
+                    >
+                      <i className="fa-brands fa-whatsapp" />
+                    </a>
+                    <i className="fa-solid fa-chevron-right" style={{ color: 'var(--text-muted)', fontSize: '12px' }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
-
-        <div className="category-cards-grid">
-          {CATEGORY_CARDS.map((cat) => (
-            <div
-              key={cat.name}
-              className="curated-category-card"
-              onClick={() => handleSearch(cat.query)}
-            >
-              <div className="cat-card-header">
-                <div className="cat-icon-wrap"><i className={cat.icon} /></div>
-                <span className="cat-count-pill">{cat.count}</span>
-              </div>
-              <h3 className="cat-card-title">{cat.name}</h3>
-              <p className="cat-card-desc">{cat.desc}</p>
-              <div className="cat-card-footer">
-                <span className="cat-card-link">Explore Listings <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} /></span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Top Verified Places Live Showcase */}
-      {featured.length > 0 && (
-        <section className="featured-sellers-section">
-          <div className="results-header">
-            <div>
-              <div className="badge-pill explorer-badge" style={{ marginBottom: '6px' }}>
-                <i className="fa-solid fa-star" style={{ marginRight: '4px' }} /> Handpicked & Verified
-              </div>
-              <h2 style={{ fontSize: '26px' }}>Top Verified Spots in {location}</h2>
-              <p className="results-meta">Popular hotels, top dining, and verified vendors near you</p>
-            </div>
-
-            {/* Quick Filter Tabs */}
-            <div className="featured-filter-tabs">
-              <button
-                type="button"
-                className={`filter-tab-pill ${selectedCategoryTab === 'all' ? 'active' : ''}`}
-                onClick={() => setSelectedCategoryTab('all')}
-              >
-                All
-              </button>
-              <button
-                type="button"
-                className={`filter-tab-pill ${selectedCategoryTab === 'hotel' ? 'active' : ''}`}
-                onClick={() => setSelectedCategoryTab('hotel')}
-              >
-                <i className="fa-solid fa-hotel" style={{ marginRight: '4px' }} /> Hotels
-              </button>
-              <button
-                type="button"
-                className={`filter-tab-pill ${selectedCategoryTab === 'food' ? 'active' : ''}`}
-                onClick={() => setSelectedCategoryTab('food')}
-              >
-                <i className="fa-solid fa-utensils" style={{ marginRight: '4px' }} /> Dining
-              </button>
-              <button
-                type="button"
-                className={`filter-tab-pill ${selectedCategoryTab === 'fashion' ? 'active' : ''}`}
-                onClick={() => setSelectedCategoryTab('fashion')}
-              >
-                <i className="fa-solid fa-shirt" style={{ marginRight: '4px' }} /> Fashion
-              </button>
-              <button
-                type="button"
-                className={`filter-tab-pill ${selectedCategoryTab === 'tech' ? 'active' : ''}`}
-                onClick={() => setSelectedCategoryTab('tech')}
-              >
-                <i className="fa-solid fa-mobile-screen" style={{ marginRight: '4px' }} /> Tech
-              </button>
-            </div>
-          </div>
-
-          <div className="results-grid">
-            {filteredFeatured.slice(0, 6).map((business) => (
-              <BusinessCard key={business.id} business={business} />
-            ))}
-          </div>
-
-          <div style={{ textAlign: 'center', marginTop: '36px' }}>
-            <Link to="/dashboard" className="btn btn-outline btn-lg">
-              View all results in {location} and other cities <i className="fa-solid fa-arrow-right" style={{ marginLeft: '5px' }} />
-            </Link>
-          </div>
-        </section>
       )}
 
-      {/* Trust & Transparency Numbers */}
-      <section className="stats-metric-strip">
-        <div className="metric-item">
-          <div className="metric-number">10,000+</div>
-          <div className="metric-label">Local Searches Daily</div>
+      {/* Prominent Bottom Coral Action Button (Screen 2 Inspiration: "Create a group" -> "List a Business / Explore All") */}
+      <div className="purr-floating-cta-wrap">
+        <Link
+          to={user ? (profile?.role === 'vendor' ? '/business' : '/list-business') : '/list-business'}
+          className="purr-pill-cta"
+        >
+          <i className="fa-solid fa-store" /> List Your Business
+        </Link>
+      </div>
+
+      {/* Subtle Trust Indicators */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', marginTop: '30px', padding: '16px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+          <i className="fa-solid fa-circle-check" style={{ color: '#10b981' }} />
+          <span>100% Verified Photos</span>
         </div>
-        <div className="metric-item">
-          <div className="metric-number">100%</div>
-          <div className="metric-label">Direct WhatsApp Connection</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+          <i className="fa-brands fa-whatsapp" style={{ color: '#25D366' }} />
+          <span>Direct WhatsApp Chat</span>
         </div>
-        <div className="metric-item">
-          <div className="metric-number">36</div>
-          <div className="metric-label">States & Cities Covered</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+          <i className="fa-solid fa-shield-halved" style={{ color: 'var(--brand-primary)' }} />
+          <span>Zero Middleman Fees</span>
         </div>
-        <div className="metric-item">
-          <div className="metric-number">0%</div>
-          <div className="metric-label">Commission On Your Deals</div>
-        </div>
-      </section>
-
-      {/* High-Converting Vendor Growth & Monetization Banner */}
-      <section className="vendor-spotlight-banner">
-        <div className="vendor-spotlight-decor" />
-        <div className="vendor-banner-content">
-          <span className="badge-pill vendor-badge">
-            <i className="fa-solid fa-store" style={{ marginRight: '5px' }} /> For Vendors, Hotels & Local Businesses
-          </span>
-
-          <h2 className="vendor-banner-title">
-            Own a store, hotel, or service?
-            <br />
-            <span className="text-gradient">Get discovered by ready buyers & tourists daily.</span>
-          </h2>
-
-          <p className="vendor-banner-text">
-            Post verified photos of your place & products, list your exact location, and connect directly on WhatsApp with customers looking for what you sell right now.
-          </p>
-
-          {/* Pricing Highlight Strip */}
-          <div className="vendor-plans-teaser-grid">
-            <div className="vendor-plan-box">
-              <div className="plan-box-head">
-                <span className="plan-box-title">1 Month Vendor Plan</span>
-                <span className="plan-box-price">₦5,000</span>
-              </div>
-              <p className="plan-box-sub">Full 30-day access • Place/product photos, exact location & direct phone/WhatsApp linking.</p>
-            </div>
-
-            <div className="vendor-plan-box vendor-plan-box-popular">
-              <div className="plan-box-popular-tag"><i className="fa-solid fa-fire" style={{ marginRight: '4px' }} /> Best Value • Save ₦2,001</div>
-              <div className="plan-box-head">
-                <span className="plan-box-title">2 Months Vendor Plan</span>
-                <span className="plan-box-price">₦7,999</span>
-              </div>
-              <p className="plan-box-sub">Full 60-day access • 5x Search Visibility Boost, Top Placement & Gold Verified Badge.</p>
-            </div>
-          </div>
-
-          <div className="vendor-banner-actions">
-            <Link to={user ? "/business/setup" : "/register?role=vendor"} className="btn btn-primary btn-lg">
-              <i className="fa-solid fa-rocket" style={{ marginRight: '5px' }} /> List Your Business
-            </Link>
-            <Link to="/list-business" className="btn btn-outline btn-lg">
-              <i className="fa-solid fa-bolt" style={{ marginRight: '5px' }} /> View Pricing & Benefits
-            </Link>
-            {!user && (
-              <Link to="/login?redirect=/business" className="btn btn-secondary btn-lg">
-                <i className="fa-solid fa-user" style={{ marginRight: '5px' }} /> Already have an account? Log In
-              </Link>
-            )}
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   )
 }
+

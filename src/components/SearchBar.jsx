@@ -3,12 +3,12 @@ import LocationSelector from './LocationSelector'
 import SearchSuggestions from './SearchSuggestions'
 
 const PLACEHOLDERS = [
-  'Nike shoes around Lagos…',
-  'Best restaurants in Asaba…',
+  'Search restaurants, hotels, shops…',
+  'Best food spots in Lagos…',
+  'Verified hotels in Abuja…',
+  'Sneakers & Streetwear…',
   'iPhone repair near me…',
-  'Birthday cakes in Lekki…',
-  'Who sells basketball shoes in Warri?…',
-  'Hair salon in Ikeja…',
+  'Luxury suites in Lekki…',
 ]
 
 export default function SearchBar({
@@ -42,48 +42,64 @@ export default function SearchBar({
   }
 
   return (
-    <div className="search-container">
-      <form className="search-box" onSubmit={handleSubmit}>
-        <div className="search-input-wrap">
-          <span className="search-icon">🔍</span>
-          <input
-            type="text"
-            className="search-input"
-            placeholder={PLACEHOLDERS[placeholderIndex]}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setTimeout(() => setFocused(false), 200)}
-            autoFocus={autoFocus}
-          />
-          {query && (
-            <button
-              type="button"
-              className="search-clear"
-              onClick={() => setQuery('')}
-              title="Clear text"
-            >
-              ✕
-            </button>
+    <div className="search-container" style={{ position: 'relative', width: '100%', maxWidth: '680px', margin: '0 auto' }}>
+      <form className="purr-search-box" onSubmit={handleSubmit}>
+        {/* Search Icon */}
+        <span style={{ color: 'var(--text-muted)', fontSize: '15px', marginRight: '8px' }}>
+          <i className="fa-solid fa-magnifying-glass" />
+        </span>
+
+        {/* Query Input */}
+        <input
+          type="text"
+          className="purr-search-input"
+          placeholder={PLACEHOLDERS[placeholderIndex]}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 200)}
+          autoFocus={autoFocus}
+        />
+
+        {/* Clear text button */}
+        {query && (
+          <button
+            type="button"
+            className="search-clear"
+            onClick={() => setQuery('')}
+            title="Clear text"
+            style={{ marginRight: '6px' }}
+          >
+            ✕
+          </button>
+        )}
+
+        {/* Integrated Location Selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {setLocation && (
+            <LocationSelector
+              currentLocation={location}
+              onLocationChange={(newLoc) => setLocation(newLoc)}
+            />
           )}
-        </div>
 
-        <div className="search-box-actions">
-          <LocationSelector
-            currentLocation={location}
-            onLocationChange={(newLoc) => setLocation(newLoc)}
-          />
-
+          {/* Clean Coral Submit Button */}
           <button
             type="submit"
-            className="btn btn-primary search-submit-btn"
+            className="purr-search-btn"
             disabled={loading}
+            title="Search"
           >
-            {loading ? 'Searching…' : 'Search'}
+            {loading ? (
+              <i className="fa-solid fa-circle-notch fa-spin" />
+            ) : (
+              <i className="fa-solid fa-arrow-right" />
+            )}
           </button>
         </div>
       </form>
 
+      {/* Autocomplete Search Suggestions */}
       {focused && (
         <SearchSuggestions
           query={query}
@@ -94,3 +110,4 @@ export default function SearchBar({
     </div>
   )
 }
+

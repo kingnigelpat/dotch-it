@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BusinessCard from '../components/BusinessCard'
-import { getActiveAds } from '../services/adService'
-import { getAllBusinesses } from '../services/businessService'
+import { getActiveAds, SAMPLE_ADVERTS } from '../services/adService'
+import { getAllBusinesses, DEMO_BUSINESSES } from '../services/businessService'
 import { getSuggestedCategories } from '../services/openrouterService'
 import { normalizeWhatsAppPhone } from '../utils/phoneUtils'
 
@@ -31,14 +31,18 @@ export default function AuthenticatedHome() {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
 
-  const [ads, setAds] = useState([])
-  const [loadingAds, setLoadingAds] = useState(true)
+  const [ads, setAds] = useState(SAMPLE_ADVERTS)
+  const [loadingAds, setLoadingAds] = useState(false)
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0)
-  const [recentBusinesses, setRecentBusinesses] = useState([])
-  const [loadingBusinesses, setLoadingBusinesses] = useState(true)
+  const [recentBusinesses, setRecentBusinesses] = useState(() => (DEMO_BUSINESSES || []).slice(0, 8))
+  const [loadingBusinesses, setLoadingBusinesses] = useState(false)
   const categories = getSuggestedCategories()
 
   const autoRotateRef = useRef(null)
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
 
   // Fetch active adverts curated by Admin
   useEffect(() => {
@@ -131,60 +135,63 @@ export default function AuthenticatedHome() {
   }
 
   return (
-    <div className="authenticated-home ad-showcase-page">
-      {/* Top Header Bar — Clean & Minimal */}
-      <div className="home-top-header">
-        <div className="home-top-greeting-wrap">
-          <h1 className="home-welcome-title">Welcome back, {userName}!</h1>
-          <p className="home-welcome-subtitle">
-            Explore promotional campaigns and verified businesses across Nigeria.
-          </p>
+    <div className="authenticated-home ad-showcase-page purr-container" style={{ paddingBottom: '90px', paddingTop: '10px' }}>
+      {/* Top Header Bar — Clean & Minimal (Inspo Screen 1) */}
+      <div className="purr-topbar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/full-logo.png" alt="Dotch" style={{ height: '30px', objectFit: 'contain' }} />
         </div>
 
-        <div className="home-top-actions">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {isAdmin && (
-            <Link to="/admin" className="btn btn-outline btn-sm admin-portal-cta">
-              <i className="fa-solid fa-shield-halved" style={{ marginRight: '5px' }} /> Admin Panel
+            <Link to="/admin" className="filter-pill" style={{ fontSize: '12px', padding: '6px 12px' }}>
+              <i className="fa-solid fa-shield-halved" /> Admin
             </Link>
           )}
           {isBusiness ? (
-            <Link to="/business" className="btn btn-primary btn-sm">
-              <i className="fa-solid fa-chart-line" style={{ marginRight: '5px' }} /> Business Portal
+            <Link to="/business" className="filter-pill active-coral" style={{ fontSize: '12px', padding: '6px 12px' }}>
+              <i className="fa-solid fa-store" /> Business Portal
             </Link>
           ) : (
-            <Link to="/list-business" className="btn btn-outline btn-sm">
-              <i className="fa-solid fa-rocket" style={{ marginRight: '5px' }} /> Feature Your Business
+            <Link to="/list-business" className="filter-pill active-coral" style={{ fontSize: '12px', padding: '6px 12px' }}>
+              <i className="fa-solid fa-plus" /> List Business
             </Link>
           )}
         </div>
       </div>
 
-      {/* Quick Search Shortcut Bridge */}
-      <div
-        className="home-search-bridge"
-        onClick={() => navigate('/dashboard')}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') navigate('/dashboard')
-        }}
-      >
-        <div className="search-bridge-left">
-          <span className="search-bridge-icon"><i className="fa-solid fa-magnifying-glass" /></span>
-          <span className="search-bridge-placeholder">
-            Search 5,000+ Nigerian businesses, hotels & services...
-          </span>
-        </div>
-        <button
-          type="button"
-          className="search-bridge-cta-btn"
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate('/dashboard')
+      {/* Greeting Title */}
+      <div style={{ margin: '14px 0 18px 0' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+          Welcome back, {userName}!
+        </h1>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+          Discover verified places, hotels, dining & services around your area.
+        </p>
+      </div>
+
+      {/* Sleek Search Bar Shortcut (Inspo Screen 1) */}
+      <div style={{ marginBottom: '18px' }}>
+        <div
+          className="purr-search-box"
+          onClick={() => navigate('/dashboard')}
+          role="button"
+          tabIndex={0}
+          style={{ cursor: 'pointer' }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') navigate('/dashboard')
           }}
         >
-          Open Search <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} />
-        </button>
+          <span style={{ color: 'var(--text-muted)', fontSize: '15px', marginRight: '10px' }}>
+            <i className="fa-solid fa-magnifying-glass" />
+          </span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '14px', flex: 1 }}>
+            Search restaurants, hotels, shops in Lagos…
+          </span>
+          <div className="purr-search-btn">
+            <i className="fa-solid fa-arrow-right" />
+          </div>
+        </div>
       </div>
 
       {/* SECTION 1: DOTCH SPOTLIGHT HERO CAROUSEL */}
@@ -286,20 +293,51 @@ export default function AuthenticatedHome() {
         </section>
       ) : (
         <section className="ad-hero-section" aria-label="DOTCH Spotlight">
-          <div style={{
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #4f46e5 100%)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '48px 24px',
-            textAlign: 'center',
-            color: '#fff',
-          }}>
-            <div style={{ fontSize: '36px', marginBottom: '12px' }}><i className="fa-solid fa-bullhorn" /></div>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px' }}>
-              DOTCH Spotlight — Coming Soon
-            </h2>
-            <p style={{ fontSize: '15px', opacity: 0.85, maxWidth: '480px', margin: '0 auto' }}>
-              Admin-curated business campaigns and featured promotions will appear here. Check back soon!
-            </p>
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #3d5a6c 0%, #243844 100%)',
+              borderRadius: 'var(--radius-card)',
+              padding: '36px 28px',
+              color: '#fff',
+              boxShadow: 'var(--shadow-card)',
+              border: '1px solid var(--border-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '20px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{ maxWidth: '520px', zIndex: 2 }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                <span className="ad-sponsored-pill">
+                  <i className="fa-solid fa-sparkles" style={{ marginRight: '5px' }} /> Spotlight
+                </span>
+                <span className="ad-reach-pill">
+                  📍 Verified Spots
+                </span>
+              </div>
+              <h2 style={{ fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 800, margin: '0 0 8px 0', color: '#fff' }}>
+                Discover Curated Places & Deals
+              </h2>
+              <p style={{ fontSize: '13.5px', opacity: 0.9, lineHeight: 1.5, margin: '0 0 18px 0' }}>
+                Find verified hotels, restaurants, lounges & stores. Connect directly with owners on WhatsApp with zero middlemen fees.
+              </p>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <Link to="/dashboard" className="purr-pill-cta" style={{ padding: '10px 22px', fontSize: '13.5px' }}>
+                  <i className="fa-solid fa-magnifying-glass" /> Browse Places
+                </Link>
+                <Link to="/list-business" className="btn-elevated-outline">
+                  <i className="fa-solid fa-store" style={{ marginRight: '6px' }} /> Feature Your Business
+                </Link>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '72px', opacity: 0.12, position: 'absolute', right: '24px', bottom: '10px' }}>
+              <i className="fa-solid fa-store" />
+            </div>
           </div>
         </section>
       )}

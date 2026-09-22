@@ -18,6 +18,7 @@ import ListBusiness from './pages/ListBusiness'
 import TermsAndPolicy from './pages/TermsAndPolicy'
 import SetupNotice from './components/SetupNotice'
 import Footer from './components/Footer'
+import ScrollToTop from './components/ScrollToTop'
 
 function Protected({ children }) {
   const { user, loading } = useAuth()
@@ -55,6 +56,7 @@ export default function App() {
 
   return (
     <ToastProvider>
+      <ScrollToTop />
       <div className="app">
         <Navbar />
         <SetupNotice />
