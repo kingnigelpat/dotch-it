@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BusinessCard from '../components/BusinessCard'
@@ -6,9 +6,9 @@ import { getActiveAds, SAMPLE_ADVERTS } from '../services/adService'
 import { getAllBusinesses, DEMO_BUSINESSES } from '../services/businessService'
 import { getSuggestedCategories } from '../services/openrouterService'
 import { normalizeWhatsAppPhone } from '../utils/phoneUtils'
+import { getBusinessStats } from '../utils/socialStore'
 
 const CATEGORY_ICONS = {
-  'Hotel': 'fa-solid fa-hotel',
   'Restaurant': 'fa-solid fa-utensils',
   'Tech': 'fa-solid fa-microchip',
   'Electronic': 'fa-solid fa-mobile-screen',
@@ -34,10 +34,16 @@ export default function AuthenticatedHome() {
   const [ads, setAds] = useState(SAMPLE_ADVERTS)
   const [loadingAds, setLoadingAds] = useState(false)
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0)
-  const [recentBusinesses, setRecentBusinesses] = useState(() => (DEMO_BUSINESSES || []).slice(0, 8))
+  const [allBusinesses, setAllBusinesses] = useState(() => (DEMO_BUSINESSES || []))
   const [loadingBusinesses, setLoadingBusinesses] = useState(false)
-  const categories = getSuggestedCategories()
+  
+  // Dynamic Stream Tabs: 'for_you' | 'near_me' | 'hidden_gems'
+  const [activeStream, setActiveStream] = useState('for_you')
+  const [radarRadius, setRadarRadius] = useState(5)
+  const [visibleCount, setVisibleCount] = useState(12)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
+  const categories = getSuggestedCategories()
   const autoRotateRef = useRef(null)
 
   useEffect(() => {
@@ -70,13 +76,13 @@ export default function AuthenticatedHome() {
   useEffect(() => {
     let isMounted = true
     setLoadingBusinesses(true)
-    getAllBusinesses(12)
+    getAllBusinesses(30)
       .then((all) => {
         if (isMounted) {
           const approved = (all || []).filter(
             (b) => b.status === 'active' || b.paymentStatus === 'approved' || b.verified === true
           )
-          setRecentBusinesses(approved.slice(0, 8))
+          setAllBusinesses(approved.length > 0 ? approved : DEMO_BUSINESSES)
         }
       })
       .catch((err) => {
@@ -94,7 +100,6 @@ export default function AuthenticatedHome() {
   // Filter hero banners and flyer deals
   const heroAds = ads.filter((a) => a.placement === 'hero_banner')
   const flyerAds = ads.filter((a) => a.placement !== 'hero_banner')
-  // Fallback if no specific hero_banner placement is tagged
   const activeHeroAds = heroAds.length > 0 ? heroAds : ads.slice(0, 2)
   const activeFlyerAds = flyerAds.length > 0 ? flyerAds : ads.slice(2)
 
@@ -134,43 +139,58 @@ export default function AuthenticatedHome() {
     return `https://wa.me/${raw}?text=${msg}`
   }
 
+  // Compute stream feeds
+  const streamFeed = useMemo(() => {
+    if (activeStream === 'for_you') {
+      return [...allBusinesses].sort((a, b) => {
+        const statsA = getBusinessStats(a)
+        const statsB = getBusinessStats(b)
+        return (statsB.views + (b.verified ? 100 : 0)) - (statsA.views + (a.verified ? 100 : 0))
+      })
+    }
+    if (activeStream === 'near_me') {
+      return [...allBusinesses].filter((b) => {
+        const distNum = parseFloat(b.distance) || (1.2 + ((b.name?.charCodeAt(1) || 5) % 8) * 0.4)
+        return distNum <= radarRadius
+      })
+    }
+    if (activeStream === 'hidden_gems') {
+      return [...allBusinesses].filter((b) => {
+        const rating = parseFloat(b.rating || 4.8)
+        return rating >= 4.7
+      })
+    }
+    return allBusinesses
+  }, [allBusinesses, activeStream, radarRadius])
+
+  const currentDisplayPlaces = streamFeed.slice(0, visibleCount)
+  const hasMore = visibleCount < streamFeed.length
+
+  const handleLoadMore = () => {
+    setIsLoadingMore(true)
+    setTimeout(() => {
+      setVisibleCount((prev) => prev + 8)
+      setIsLoadingMore(false)
+    }, 450)
+  }
+
   return (
     <div className="authenticated-home ad-showcase-page purr-container" style={{ paddingBottom: '90px', paddingTop: '10px' }}>
-      {/* Top Header Bar — Clean & Minimal (Inspo Screen 1) */}
-      <div className="purr-topbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src="/full-logo.png" alt="Dotch" style={{ height: '30px', objectFit: 'contain' }} />
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {isAdmin && (
-            <Link to="/admin" className="filter-pill" style={{ fontSize: '12px', padding: '6px 12px' }}>
-              <i className="fa-solid fa-shield-halved" /> Admin
-            </Link>
-          )}
-          {isBusiness ? (
-            <Link to="/business" className="filter-pill active-coral" style={{ fontSize: '12px', padding: '6px 12px' }}>
-              <i className="fa-solid fa-store" /> Business Portal
-            </Link>
-          ) : (
-            <Link to="/list-business" className="filter-pill active-coral" style={{ fontSize: '12px', padding: '6px 12px' }}>
-              <i className="fa-solid fa-plus" /> List Business
-            </Link>
-          )}
-        </div>
-      </div>
-
       {/* Greeting Title */}
       <div style={{ margin: '14px 0 18px 0' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+        <div className="landing-live-badge">
+          <span className="live-pulse-dot" />
+          <span>⚡ Feed Active · Verified Local Explorers</span>
+        </div>
+        <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', margin: '8px 0 4px 0' }}>
           Welcome back, {userName}!
         </h1>
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-          Discover verified places, hotels, dining & services around your area.
+          Scroll through live vibes, verified gear & dining. Double-tap to like your favorite spots.
         </p>
       </div>
 
-      {/* Sleek Search Bar Shortcut (Inspo Screen 1) */}
+      {/* Sleek Search Bar Shortcut */}
       <div style={{ marginBottom: '18px' }}>
         <div
           className="purr-search-box"
@@ -186,7 +206,7 @@ export default function AuthenticatedHome() {
             <i className="fa-solid fa-magnifying-glass" />
           </span>
           <span style={{ color: 'var(--text-muted)', fontSize: '14px', flex: 1 }}>
-            Search restaurants, hotels, shops in Lagos…
+            Search restaurants, streetwear, gadgets in Lagos…
           </span>
           <div className="purr-search-btn">
             <i className="fa-solid fa-arrow-right" />
@@ -291,172 +311,112 @@ export default function AuthenticatedHome() {
             </div>
           </div>
         </section>
-      ) : (
-        <section className="ad-hero-section" aria-label="DOTCH Spotlight">
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #3d5a6c 0%, #243844 100%)',
-              borderRadius: 'var(--radius-card)',
-              padding: '36px 28px',
-              color: '#fff',
-              boxShadow: 'var(--shadow-card)',
-              border: '1px solid var(--border-subtle)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '20px',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
+      ) : null}
+
+      {/* 🎯 DYNAMIC DISCOVERY STREAMS TABS */}
+      <div className="discovery-stream-bar" style={{ marginTop: '24px' }}>
+        <div className="discovery-tabs">
+          <button
+            type="button"
+            className={`stream-tab-btn ${activeStream === 'for_you' ? 'is-active' : ''}`}
+            onClick={() => setActiveStream('for_you')}
           >
-            <div style={{ maxWidth: '520px', zIndex: 2 }}>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                <span className="ad-sponsored-pill">
-                  <i className="fa-solid fa-sparkles" style={{ marginRight: '5px' }} /> Spotlight
-                </span>
-                <span className="ad-reach-pill">
-                  📍 Verified Spots
-                </span>
-              </div>
-              <h2 style={{ fontSize: 'clamp(20px, 3.5vw, 26px)', fontWeight: 800, margin: '0 0 8px 0', color: '#fff' }}>
-                Discover Curated Places & Deals
-              </h2>
-              <p style={{ fontSize: '13.5px', opacity: 0.9, lineHeight: 1.5, margin: '0 0 18px 0' }}>
-                Find verified hotels, restaurants, lounges & stores. Connect directly with owners on WhatsApp with zero middlemen fees.
-              </p>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <Link to="/dashboard" className="purr-pill-cta" style={{ padding: '10px 22px', fontSize: '13.5px' }}>
-                  <i className="fa-solid fa-magnifying-glass" /> Browse Places
-                </Link>
-                <Link to="/list-business" className="btn-elevated-outline">
-                  <i className="fa-solid fa-store" style={{ marginRight: '6px' }} /> Feature Your Business
-                </Link>
-              </div>
-            </div>
+            <i className="fa-solid fa-sparkles" />
+            <span>For You</span>
+          </button>
 
-            <div style={{ fontSize: '72px', opacity: 0.12, position: 'absolute', right: '24px', bottom: '10px' }}>
-              <i className="fa-solid fa-store" />
-            </div>
-          </div>
-        </section>
-      )}
+          <button
+            type="button"
+            className={`stream-tab-btn ${activeStream === 'near_me' ? 'is-active' : ''}`}
+            onClick={() => setActiveStream('near_me')}
+          >
+            <i className="fa-solid fa-radar" />
+            <span>Near Me Radar</span>
+          </button>
 
-      {/* SECTION 2: DOTCH SPOTLIGHT FLYERS & CAMPAIGNS */}
-      {activeFlyerAds.length > 0 && (
-        <section className="home-section ad-flyers-section">
-          <div className="section-header-row">
-            <div>
-              <div className="section-pretitle">Curated Promotions</div>
-              <h2 className="section-title">Featured Campaigns & Offers</h2>
-              <p className="section-subtitle">
-                Exclusive business campaigns and verified promotions curated by the DOTCH team
-              </p>
-            </div>
-            <span className="sponsored-disclaimer-pill">
-              <i className="fa-solid fa-shield-halved" style={{ marginRight: '5px' }} /> Admin-Curated
-            </span>
-          </div>
-
-          <div className="ad-flyers-grid">
-            {activeFlyerAds.map((item) => (
-              <div key={item.id} className="ad-flyer-card">
-                <div className="ad-flyer-image-container">
-                  <img
-                    src={item.flyerUrl || item.imageUrl}
-                    alt={item.title}
-                    className="ad-flyer-img"
-                    loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&auto=format&fit=crop'
-                    }}
-                  />
-                  <div className="ad-flyer-badge-overlay">
-                    <span className="ad-tag-badge">
-                      {item.badge || 'DOTCH Spotlight'}
-                    </span>
-                    {item.targetReach && (
-                      <span className="ad-tag-reach">{item.targetReach}</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="ad-flyer-body">
-                  <div className="ad-flyer-meta">
-                    <span className="ad-flyer-cat">{item.category}</span>
-                    {item.pricePromo && (
-                      <span className="ad-flyer-price">{item.pricePromo}</span>
-                    )}
-                  </div>
-
-                  <h3 className="ad-flyer-title">{item.title}</h3>
-                  <p className="ad-flyer-vendor"><i className="fa-solid fa-building" style={{ marginRight: '5px', opacity: 0.6 }} /> {item.businessName}</p>
-                  <p className="ad-flyer-desc">{item.tagline}</p>
-
-                  <div className="ad-flyer-action-row">
-                    <a
-                      href={getWhatsAppUrl(item.phone, item.title, item.businessName)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-whatsapp btn-sm btn-block"
-                    >
-                      <i className="fa-brands fa-whatsapp" style={{ marginRight: '5px' }} /> {item.ctaText || 'Connect on WhatsApp'}
-                    </a>
-                    {item.businessId && (
-                      <Link
-                        to={`/business/${item.businessId}`}
-                        className="btn btn-ghost btn-sm"
-                        title="View Full Profile"
-                      >
-                        Profile <i className="fa-solid fa-arrow-right" style={{ marginLeft: '3px', fontSize: '10px' }} />
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* SECTION 3: RECOMMENDED BUSINESSES */}
-      <section className="home-section recommended-section">
-        <div className="section-header-row">
-          <div>
-            <div className="section-pretitle">Curated Directory</div>
-            <h2 className="section-title">Recommended Businesses</h2>
-            <p className="section-subtitle">
-              Verified service providers, hotels, dining & retail stores across Nigeria
-            </p>
-          </div>
-          <Link to="/dashboard" className="section-link">
-            Open Full Search <i className="fa-solid fa-arrow-right" style={{ marginLeft: '4px', fontSize: '11px' }} />
-          </Link>
+          <button
+            type="button"
+            className={`stream-tab-btn ${activeStream === 'hidden_gems' ? 'is-active' : ''}`}
+            onClick={() => setActiveStream('hidden_gems')}
+          >
+            <i className="fa-solid fa-gem" />
+            <span>Hidden Gems</span>
+          </button>
         </div>
+      </div>
 
-        {loadingBusinesses ? (
-          <div className="center-loading">Loading recommended businesses…</div>
-        ) : recentBusinesses.length > 0 ? (
-          <div className="results-grid">
-            {recentBusinesses.map((b) => (
-              <BusinessCard key={b.id || b.name} business={b} />
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state-box">
-            <div className="empty-state-icon"><i className="fa-solid fa-store" style={{ fontSize: '32px', color: 'var(--brand-primary)' }} /></div>
-            <h3>Explore Verified Businesses</h3>
-            <p>Use our dedicated search engine to find businesses by keyword, category, or city.</p>
-            <Link to="/dashboard" className="btn btn-primary btn-sm">
-              Go to Search
-            </Link>
-          </div>
-        )}
-      </section>
+      {/* Radar distance selector if "Near Me" stream is active */}
+      {activeStream === 'near_me' && (
+        <div className="radar-radius-strip">
+          <span className="radar-label"><i className="fa-solid fa-location-crosshairs" /> Radius:</span>
+          {[
+            { km: 3, label: '< 3km' },
+            { km: 5, label: '< 5km' },
+            { km: 10, label: '< 10km' },
+          ].map((r) => (
+            <button
+              key={r.km}
+              type="button"
+              className={`radar-pill ${radarRadius === r.km ? 'active' : ''}`}
+              onClick={() => setRadarRadius(r.km)}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Social Discovery Feed Grid */}
+      <div className="stream-section-header">
+        <div>
+          <h2 className="stream-title">
+            {activeStream === 'for_you' && '🔥 Recommended For You'}
+            {activeStream === 'near_me' && `📍 Spots Within ${radarRadius}km`}
+            {activeStream === 'hidden_gems' && '💎 High-Rated Local Gems'}
+          </h2>
+          <p className="stream-subtitle">Double-tap photo to like · Instant WhatsApp chat</p>
+        </div>
+        <span className="stream-count-badge">
+          {streamFeed.length} places
+        </span>
+      </div>
+
+      {loadingBusinesses ? (
+        <div className="center-loading">Loading discovery feed…</div>
+      ) : currentDisplayPlaces.length > 0 ? (
+        <div className="social-feed-grid">
+          {currentDisplayPlaces.map((b) => (
+            <BusinessCard key={`auth-feed-${b.id || b.name}`} business={b} />
+          ))}
+        </div>
+      ) : (
+        <div className="empty-stream-box">
+          <i className="fa-solid fa-store" style={{ fontSize: '36px', color: 'var(--brand-primary)', marginBottom: '10px' }} />
+          <h3>No spots found</h3>
+          <p>Try switching to another discovery stream or searching by keyword.</p>
+        </div>
+      )}
+
+      {/* Infinite Scroll / Load More Trigger */}
+      {hasMore && (
+        <div className="infinite-load-more-wrap">
+          <button
+            type="button"
+            className="btn-discover-more"
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? (
+              <span><i className="fa-solid fa-spinner fa-spin" /> Fetching more vibes…</span>
+            ) : (
+              <span>Discover More Spots <i className="fa-solid fa-chevron-down" style={{ marginLeft: '6px' }} /></span>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* SECTION 4: POPULAR CATEGORIES BRIDGE */}
-      <section className="home-section categories-section">
+      <section className="home-section categories-section" style={{ marginTop: '36px' }}>
         <div className="section-header-row">
           <div>
             <div className="section-pretitle">Quick Navigation</div>
@@ -482,17 +442,6 @@ export default function AuthenticatedHome() {
               <span className="category-card-name">{cat}</span>
             </button>
           ))}
-        </div>
-      </section>
-
-      {/* SECTION 5: TRUST & DIRECT CONNECTION STRIP */}
-      <section className="auth-home-notice-strip">
-        <div className="notice-icon"><i className="fa-solid fa-shield-halved" /></div>
-        <div className="notice-content">
-          <strong>Promotional & Direct Connection Policy:</strong>
-          <span>
-            {' '}Advertisements displayed here are curated or approved by DOTCH management. DOTCH connects buyers and clients directly with genuine business owners on WhatsApp with zero middlemen markups. Always verify transaction and delivery details directly.
-          </span>
         </div>
       </section>
     </div>

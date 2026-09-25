@@ -17,7 +17,7 @@ export default function ListBusiness() {
           <span className="hero-gradient-text">Get Discovered By Ready Customers</span>
         </h1>
         <p className="list-biz-subtitle">
-          Connect directly with thousands of buyers, tourists, and researchers searching for hotels, restaurants, shops, and services across Nigerian cities every day.
+          Connect directly with thousands of buyers, clients, and researchers searching for restaurants, shops, gadgets, and services across Nigerian cities every day.
         </p>
 
         {/* Existing Account or Status Banner */}
@@ -68,7 +68,7 @@ export default function ListBusiness() {
             </div>
             <h3>Get Discovered by Ready Buyers</h3>
             <p>
-              Appear instantly in searches when customers, tourists, and researchers look for what you sell across Nigerian cities.
+              Appear instantly in searches when customers, clients, and researchers look for what you sell across Nigerian cities.
             </p>
           </div>
 
@@ -88,7 +88,7 @@ export default function ListBusiness() {
             </div>
             <h3>Display Your Products or Services</h3>
             <p>
-              Upload real photos of your storefront, dishes, rooms, gadgets, or workshop so buyers can see and trust your quality before contacting you.
+              Upload real photos of your storefront, dishes, gadgets, or workshop so buyers can see and trust your quality before contacting you.
             </p>
           </div>
 
@@ -127,23 +127,24 @@ export default function ListBusiness() {
       {/* Pricing Section — Tell Them Price */}
       <section className="list-biz-section" style={{ marginTop: '56px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <span className="section-eyebrow">SIMPLE & AFFORDABLE PRICING</span>
+          <span className="section-eyebrow">SPECIAL PROMO PRICING</span>
           <h2 style={{ fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 800, color: 'var(--text-primary)' }}>
-            Choose Your Business Listing Plan
+            End of Year Vendor Promo Plan
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px', marginTop: '6px' }}>
-            No contracts. No hidden fees. Straightforward vendor pricing.
+            One simple promo price till ending of the year. No hidden charges.
           </p>
         </div>
 
-        <div className="plans-grid" style={{ maxWidth: '1080px', margin: '0 auto' }}>
-          {/* 1 Month Plan */}
-          <div className="plan-card">
+        <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+          {/* End of Year Promo Plan Card */}
+          <div className="plan-card plan-highlight" style={{ padding: '32px 28px' }}>
+            <div className="plan-badge"><i className="fa-solid fa-fire" style={{ marginRight: '4px' }} /> END OF YEAR SPECIAL PROMO</div>
             <div className="plan-head">
-              <h3 className="plan-name">1 Month Vendor Plan</h3>
+              <h3 className="plan-name" style={{ fontSize: '22px' }}>End of Year Vendor Promo Plan</h3>
               <div className="plan-price-wrap">
-                <span className="plan-price">₦5,000</span>
-                <span className="plan-interval">/ month</span>
+                <span className="plan-price" style={{ fontSize: '36px' }}>₦5,000</span>
+                <span className="plan-interval">/ till ending of the year</span>
               </div>
             </div>
 
@@ -151,8 +152,16 @@ export default function ListBusiness() {
 
             <ul className="plan-features">
               <li className="plan-feature-item">
-                <span className="feature-check"><i className="fa-solid fa-check" /></span>
-                <span>Full 30-day active search listing</span>
+                <span className="feature-check">✓</span>
+                <span><strong>Active search listing till ending of the year</strong></span>
+              </li>
+              <li className="plan-feature-item">
+                <span className="feature-check">✓</span>
+                <span><strong>5x Maximum Search Visibility Boost</strong></span>
+              </li>
+              <li className="plan-feature-item">
+                <span className="feature-check">✓</span>
+                <span><strong>Official Gold Verified Vendor Badge</strong></span>
               </li>
               <li className="plan-feature-item">
                 <span className="feature-check">✓</span>
@@ -160,127 +169,21 @@ export default function ListBusiness() {
               </li>
               <li className="plan-feature-item">
                 <span className="feature-check">✓</span>
-                <span>Direct WhatsApp & phone contact buttons</span>
+                <span>Direct WhatsApp & phone hotline buttons (0% commission)</span>
               </li>
               <li className="plan-feature-item">
                 <span className="feature-check">✓</span>
-                <span>Exact address & neighborhood search</span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span>Basic search directory placement</span>
+                <span>Exact address & neighborhood search indexing</span>
               </li>
             </ul>
 
             <Link
-              to={user ? '/business/setup?plan=pro_1m' : '/register?role=vendor&plan=pro_1m'}
-              className="btn btn-outline btn-block"
-              style={{ textAlign: 'center', marginTop: 'auto' }}
+              to={user ? '/business/setup?plan=pro_eoy' : '/register?role=vendor&plan=pro_eoy'}
+              className="btn btn-primary btn-block btn-lg"
+              style={{ textAlign: 'center', marginTop: '24px', fontWeight: 800 }}
             >
-              {user ? 'Set Up 1-Month Listing →' : 'Sign Up for ₦5,000 Plan →'}
+              {user ? 'Claim ₦5,000 Promo Access →' : 'Sign Up for ₦5,000 Promo Plan →'}
             </Link>
-          </div>
-
-          {/* 2 Months Plan — Highlighted */}
-          <div className="plan-card plan-highlight">
-            <div className="plan-badge"><i className="fa-solid fa-fire" style={{ marginRight: '4px' }} /> BEST VALUE • SAVE ₦2,001</div>
-            <div className="plan-head">
-              <h3 className="plan-name">2 Months Vendor Plan</h3>
-              <div className="plan-price-wrap">
-                <span className="plan-price">₦7,999</span>
-                <span className="plan-interval">/ 2 months</span>
-              </div>
-            </div>
-
-            <div className="plan-divider" />
-
-            <ul className="plan-features">
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span>Full 60-day active search listing</span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span><strong>5x Search Visibility Boost</strong></span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span><strong>Top of Search Category Placement</strong></span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span><strong>Official Gold Verified Badge</strong></span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span>Upload multiple place & product photos</span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span>Instant WhatsApp & phone click buttons</span>
-              </li>
-            </ul>
-
-            <Link
-              to={user ? '/business/setup?plan=pro_2m' : '/register?role=vendor&plan=pro_2m'}
-              className="btn btn-primary btn-block"
-              style={{ textAlign: 'center', marginTop: 'auto' }}
-            >
-              {user ? 'Set Up 2-Month Listing →' : 'Sign Up for ₦7,999 Plan →'}
-            </Link>
-          </div>
-
-          {/* 1 Year Plan — Contact Admin */}
-          <div className="plan-card" style={{ border: '2px solid rgba(238, 93, 54, 0.45)', background: 'var(--bg-surface)' }}>
-            <div className="plan-badge" style={{ background: 'var(--slate-petrol)' }}>
-              👑 VIP ANNUAL • BEST RATE
-            </div>
-            <div className="plan-head">
-              <h3 className="plan-name">1 Year VIP Vendor Plan</h3>
-              <div className="plan-price-wrap">
-                <span className="plan-price" style={{ fontSize: '24px' }}>Contact Admin</span>
-                <span className="plan-interval">/ 12 months</span>
-              </div>
-            </div>
-
-            <div className="plan-divider" />
-
-            <ul className="plan-features">
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span>Full 365-day active search listing</span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span><strong>10x Maximum Search Boost</strong></span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span><strong>Top Featured Flyer Spotlight</strong></span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span><strong>Official Diamond VIP Badge</strong></span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span>Dedicated Admin Account Manager</span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span>Direct WhatsApp VIP hotline</span>
-              </li>
-            </ul>
-
-            <a
-              href={`https://wa.me/2347073544811?text=${encodeURIComponent('Hello Dotch Admin, I am interested in subscribing to the 1-Year VIP Vendor Plan on Dotch.')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-primary btn-block"
-              style={{ textAlign: 'center', marginTop: 'auto', background: '#25D366', borderColor: '#25D366' }}
-            >
-              <i className="fa-brands fa-whatsapp" style={{ marginRight: '6px' }} /> Contact Admin on WhatsApp →
-            </a>
           </div>
         </div>
       </section>

@@ -657,7 +657,7 @@ export default function AdminPanel() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {vendors.map((v) => {
                 const isAppr = v.paymentStatus === 'approved' || v.paymentApproved === true
-                const planName = v.selectedPlan === 'pro_2m' ? '2 Months Plan (₦7,999)' : '1 Month Plan (₦5,000)'
+                const planName = 'End of Year Promo (₦5,000)'
                 const isBusy = actionLoadingId === v.uid
 
                 return (

@@ -124,7 +124,6 @@ export function getSuggestedCategories() {
     'Pharmacy & Health',
     'Home & Furniture',
     'Real Estate',
-    'Hotel & Travel',
     'Education & Tutoring',
     'Other',
   ]

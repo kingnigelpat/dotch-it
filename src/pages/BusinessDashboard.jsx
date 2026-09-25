@@ -137,9 +137,8 @@ export default function BusinessDashboard() {
 
   // CASE 1: PAYMENT NOT YET APPROVED
   if (!isApproved) {
-    const isOneYear = profile?.selectedPlan === 'pro_1y' || profile?.selectedPlan === 'annual'
-    const planName = isOneYear ? '1 Year VIP Vendor Plan' : profile?.selectedPlan === 'pro_2m' ? '2 Months Vendor Plan' : '1 Month Vendor Plan'
-    const planAmount = isOneYear ? 'Contact Admin' : profile?.selectedPlan === 'pro_2m' ? '₦7,999' : '₦5,000'
+    const planName = 'End of Year Vendor Promo Plan'
+    const planAmount = '₦5,000'
 
     return (
       <div style={{ maxWidth: '680px', margin: '30px auto', padding: '0 16px' }}>

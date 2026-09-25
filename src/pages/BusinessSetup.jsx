@@ -238,16 +238,8 @@ export default function BusinessSetup() {
             Provide your business information and photos so local customers can discover you on Dotch.
           </p>
         </div>
-        <span
-          className={`badge-pill ${
-            currentTier === 'pro_2m'
-              ? 'badge-vip'
-              : 'badge-pro'
-          }`}
-        >
-          {currentTier === 'pro_2m'
-            ? (<><i className="fa-solid fa-fire" style={{ marginRight: '4px' }} /> 2 Months Plan (₦7,999)</>)
-            : (<><i className="fa-solid fa-bolt" style={{ marginRight: '4px' }} /> 1 Month Plan (₦5,000)</>)}
+        <span className="badge-pill badge-vip">
+          <i className="fa-solid fa-fire" style={{ marginRight: '4px' }} /> End of Year Promo Plan (₦5,000)
         </span>
       </div>
 

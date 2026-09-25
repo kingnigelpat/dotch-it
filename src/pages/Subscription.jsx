@@ -21,7 +21,7 @@ export default function Subscription() {
         <h1 className="subscription-title">Supercharge Your Local Visibility</h1>
         <p className="subscription-subtitle">
           Unlock photos of your place & products, your exact neighborhood location, and direct
-          phone/WhatsApp linking so ready buyers, tourists, and researchers can find and contact you instantly.
+          phone/WhatsApp linking so ready buyers, clients, and researchers can find and contact you instantly.
         </p>
       </div>
 
