@@ -150,8 +150,8 @@ export default function Landing() {
         </p>
       </div>
 
-      {/* Sleek Floating Pill Search Bar */}
-      <div style={{ marginBottom: '14px' }}>
+      {/* TOP: Sleek Floating Pill Search Bar with Location */}
+      <div style={{ marginBottom: '18px' }}>
         <SearchBar
           query={query}
           setQuery={handleQueryChange}
@@ -167,24 +167,7 @@ export default function Landing() {
         />
       </div>
 
-      {/* Category Vibe Pills Strip */}
-      <div className="filter-pill-strip">
-        {VIBE_PILLS.map((pill) => (
-          <button
-            key={pill.id}
-            type="button"
-            className={`filter-pill ${activeFilter === pill.id ? 'active-coral' : ''}`}
-            onClick={() => handleFilterPillClick(pill)}
-          >
-            <span>{pill.label}</span>
-            {activeFilter === pill.id && activeFilter !== 'all' && (
-              <span className="pill-close" onClick={(e) => { e.stopPropagation(); setActiveFilter('all') }}>✕</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* 🚀 High-Impact Promotion Flyer Banner */}
+      {/* 🚀 High-Impact Promotion Flyer Campaign Banner (On top directly under search) */}
       {currentAdList && currentAdList.length > 0 && (() => {
         const flyer = currentAdList[adIndex % currentAdList.length] || currentAdList[0] || SAMPLE_ADVERTS[0]
         const flyerImg = flyer.flyerUrl || flyer.imageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop'
@@ -288,6 +271,23 @@ export default function Landing() {
           </div>
         )
       })()}
+
+      {/* BOTTOM OF ADS: MARKETPLACES & CATEGORIES */}
+      <div className="filter-pill-strip" style={{ marginTop: '18px' }}>
+        {VIBE_PILLS.map((pill) => (
+          <button
+            key={pill.id}
+            type="button"
+            className={`filter-pill ${activeFilter === pill.id ? 'active-coral' : ''}`}
+            onClick={() => handleFilterPillClick(pill)}
+          >
+            <span>{pill.label}</span>
+            {activeFilter === pill.id && activeFilter !== 'all' && (
+              <span className="pill-close" onClick={(e) => { e.stopPropagation(); setActiveFilter('all') }}>✕</span>
+            )}
+          </button>
+        ))}
+      </div>
 
       {/* 🎯 DYNAMIC DISCOVERY STREAMS SELECTOR */}
       <div className="discovery-stream-bar">
@@ -416,7 +416,7 @@ export default function Landing() {
           to={user ? (profile?.role === 'vendor' ? '/business' : '/list-business') : '/list-business'}
           className="purr-pill-cta"
         >
-          <i className="fa-solid fa-store" /> List Your Business (₦5,000 Promo)
+          <i className="fa-solid fa-store" /> List Your Business (100% Free)
         </Link>
       </div>
 

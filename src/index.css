@@ -6636,3 +6636,932 @@ a:hover {
   box-shadow: 0 4px 14px rgba(238, 93, 54, 0.12);
 }
 
+/* ==========================================================================
+   🔥 BOLD CAMPAIGN ADS & REVENUE ENGINE STYLES
+   ========================================================================== */
+
+.campaign-glow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(238, 93, 54, 0.18), rgba(249, 115, 22, 0.1));
+  color: var(--brand-primary);
+  border: 1.5px solid rgba(238, 93, 54, 0.4);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(238, 93, 54, 0.12);
+  animation: glowPulse 2.8s infinite ease-in-out;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(238, 93, 54, 0.12);
+    border-color: rgba(238, 93, 54, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(238, 93, 54, 0.28);
+    border-color: rgba(238, 93, 54, 0.7);
+  }
+}
+
+.campaign-top-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+/* Bold Campaign Booster Card (Business Dashboard & Account) */
+.campaign-booster-card-bold {
+  background: linear-gradient(135deg, rgba(238, 93, 54, 0.1) 0%, rgba(249, 115, 22, 0.04) 50%, rgba(245, 158, 11, 0.06) 100%);
+  border: 2px solid rgba(238, 93, 54, 0.45);
+  border-radius: var(--radius-lg);
+  padding: 26px 28px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  box-shadow: 0 10px 30px rgba(238, 93, 54, 0.1);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.campaign-booster-card-bold:hover {
+  border-color: var(--brand-primary);
+  box-shadow: 0 14px 38px rgba(238, 93, 54, 0.16);
+  transform: translateY(-2px);
+}
+
+.campaign-booster-title-bold {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.campaign-booster-sub-bold {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.btn-launch-bold {
+  background: linear-gradient(135deg, #ee5d36 0%, #f97316 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  padding: 13px 26px !important;
+  border-radius: var(--radius-pill) !important;
+  font-size: 14.5px !important;
+  border: none !important;
+  box-shadow: 0 6px 20px rgba(238, 93, 54, 0.35) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-launch-bold:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 10px 28px rgba(238, 93, 54, 0.45) !important;
+  color: #ffffff !important;
+}
+
+/* Bold Campaign Pricing Grid (Subscription & Account) */
+.subscription-page-v2 {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+
+.subscription-hero-bold {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.subscription-bold-title {
+  font-size: clamp(26px, 4.5vw, 38px);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.25;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.5px;
+}
+
+.subscription-bold-subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+  max-width: 620px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.free-listing-banner-bold {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1.5px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 18px 24px;
+  max-width: 760px;
+  margin: 0 auto 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.plans-grid-bold {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 22px;
+  margin-bottom: 36px;
+}
+
+.plan-card-bold {
+  background: var(--bg-surface);
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 28px 24px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.plan-card-bold:hover {
+  border-color: var(--brand-primary);
+  box-shadow: 0 12px 32px rgba(238, 93, 54, 0.12);
+  transform: translateY(-3px);
+}
+
+.plan-card-bold.featured-plan {
+  border-color: var(--brand-primary);
+  background: linear-gradient(180deg, rgba(238, 93, 54, 0.04) 0%, var(--bg-surface) 100%);
+  box-shadow: 0 14px 36px rgba(238, 93, 54, 0.14);
+}
+
+.plan-bold-badge {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  background: linear-gradient(135deg, #ee5d36, #f97316);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 4px 12px rgba(238, 93, 54, 0.35);
+}
+
+.plan-card-bold-head {
+  margin-bottom: 12px;
+}
+
+.plan-card-bold-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+}
+
+.plan-card-bold-price-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.plan-card-bold-price {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--brand-primary);
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
+.plan-card-bold-interval {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.plan-card-bold-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+  min-height: 38px;
+}
+
+.plan-card-bold-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin-bottom: 18px;
+}
+
+.plan-card-bold-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px 0;
+  flex: 1;
+}
+
+.feature-item-bold {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  line-height: 1.45;
+}
+
+.feature-check-bold {
+  color: var(--accent-emerald);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.btn-plan-action {
+  font-weight: 800 !important;
+  border-radius: var(--radius-pill) !important;
+  padding: 11px 18px !important;
+}
+
+/* Campaign Admin WhatsApp Support Card */
+.campaign-wa-support-card {
+  background: var(--bg-surface);
+  border: 1.5px solid rgba(37, 211, 102, 0.35);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  max-width: 680px;
+  margin: 32px auto 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.08);
+}
+
+.wa-support-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(37, 211, 102, 0.12);
+  color: #25d366;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wa-support-content {
+  flex: 1;
+}
+
+/* ==========================================================================
+   ⚙️ REFINED SETTINGS & PROFILE STYLES (.account-page-v2)
+   ========================================================================== */
+
+.account-page-v2 {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 20px 16px 80px;
+}
+
+.account-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.account-unauth-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 44px 28px;
+  text-align: center;
+  max-width: 520px;
+  margin: 40px auto;
+  box-shadow: var(--shadow-md);
+}
+
+.account-hero-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.account-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.account-avatar-v2 {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3d5a6c 0%, #1e293b 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.account-avatar-v2.vendor {
+  background: linear-gradient(135deg, #ee5d36 0%, #f97316 100%);
+  box-shadow: 0 4px 14px rgba(238, 93, 54, 0.28);
+}
+
+.account-hero-name {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.account-hero-email {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin: 2px 0 0 0;
+}
+
+.account-notice-banner {
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.account-notice-banner.warning {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+/* Segmented Modern Tab Switcher */
+.account-nav-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 5px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.account-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 9px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.account-tab-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-muted);
+}
+
+.account-tab-btn.active {
+  background: var(--brand-primary);
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(238, 93, 54, 0.28);
+}
+
+.account-tab-btn.tab-campaign-bold {
+  font-weight: 800;
+}
+
+.tab-pill-highlight {
+  background: #fef08a;
+  color: #854d0e;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+}
+
+.account-tab-btn.active .tab-pill-highlight {
+  background: #ffffff;
+  color: var(--brand-primary);
+}
+
+/* Account Panel Card */
+.account-card-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 26px 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.bold-campaign-panel {
+  border-color: rgba(238, 93, 54, 0.3);
+  box-shadow: 0 8px 26px rgba(238, 93, 54, 0.08);
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.panel-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.bold-title-gradient {
+  color: var(--brand-primary);
+}
+
+.panel-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Settings Row Item */
+.settings-fields-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.settings-row:first-child {
+  padding-top: 4px;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+
+.settings-row-info {
+  flex: 1;
+  min-width: 220px;
+}
+
+.settings-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.settings-value {
+  font-size: 14.5px;
+  color: var(--text-primary);
+}
+
+.settings-inline-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+/* Settings Business Preview Card */
+.settings-biz-preview-card {
+  background: var(--bg-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.btn-bold-glow {
+  background: linear-gradient(135deg, #ee5d36, #f97316) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(238, 93, 54, 0.3) !important;
+}
+
+/* Upgrade / Free Listing Promotion Card */
+.settings-upgrade-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(238, 93, 54, 0.04) 100%);
+  border: 1.5px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+
+.settings-benefits-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.benefit-item {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* Bold Campaign Showcase inside Account */
+.campaign-packages-showcase-bold {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.campaign-mini-card-bold {
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+}
+
+.campaign-mini-card-bold:hover {
+  border-color: var(--brand-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(238, 93, 54, 0.1);
+}
+
+.campaign-mini-card-bold.featured {
+  border-color: var(--brand-primary);
+  background: linear-gradient(180deg, rgba(238, 93, 54, 0.04) 0%, var(--bg-surface) 100%);
+}
+
+.mini-badge-bold {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--brand-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mini-name-bold {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 4px 0 2px 0;
+  color: var(--text-primary);
+}
+
+.mini-price-bold {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.price-bold-amount {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--brand-primary);
+}
+
+.price-bold-interval {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.mini-desc-bold {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 6px 0 10px 0;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.btn-select-pkg {
+  font-weight: 800 !important;
+  border-radius: var(--radius-pill) !important;
+}
+
+.campaign-admin-wa-banner {
+  background: rgba(37, 211, 102, 0.08);
+  border: 1.5px solid rgba(37, 211, 102, 0.3);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.campaign-row-card-bold {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 10px;
+}
+
+.campaign-row-img-bold {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+/* Bold Campaign Creator Modal */
+.campaign-modal-bold {
+  max-width: 620px !important;
+  border-radius: var(--radius-card) !important;
+  border: 2px solid rgba(238, 93, 54, 0.35) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25) !important;
+}
+
+.bold-header {
+  border-bottom: 1.5px solid var(--border-subtle);
+  padding-bottom: 16px;
+}
+
+.campaign-modal-bold-title {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 6px 0 2px 0;
+  color: var(--text-primary);
+}
+
+.campaign-modal-bold-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.campaign-label-bold {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.bold-grid {
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.campaign-pkg-card-bold {
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.campaign-pkg-card-bold.is-selected {
+  border-color: var(--brand-primary);
+  background: rgba(238, 93, 54, 0.05);
+  box-shadow: 0 4px 14px rgba(238, 93, 54, 0.15);
+}
+
+.pkg-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.pkg-badge-bold {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--brand-primary);
+  text-transform: uppercase;
+}
+
+.pkg-radio-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pkg-radio-circle.active {
+  border-color: var(--brand-primary);
+}
+
+.pkg-radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+}
+
+.pkg-bold-name {
+  font-size: 14px;
+  font-weight: 800;
+  margin: 0 0 4px 0;
+  color: var(--text-primary);
+}
+
+.pkg-bold-price {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.pkg-price-num {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--brand-primary);
+}
+
+.pkg-price-interval {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.pkg-bold-desc {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin: 4px 0 0 0;
+  line-height: 1.35;
+}
+
+.payment-options-grid.bold-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.payment-option-card-bold {
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-option-card-bold.active {
+  border-color: var(--brand-primary);
+  background: rgba(238, 93, 54, 0.05);
+}
+
+.payment-option-card-bold p {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.payment-bold-tag {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--brand-primary);
+}
+
+.wa-payment-callout-bold {
+  background: rgba(37, 211, 102, 0.08);
+  border: 1px dashed rgba(37, 211, 102, 0.4);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-top: 10px;
+}
+
+/* Mobile Bottom Nav Bold Campaigns Tab */
+.nav-tab-campaign-bold {
+  position: relative;
+}
+
+.tab-micro-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background: linear-gradient(135deg, #ee5d36, #f97316);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 2px 6px rgba(238, 93, 54, 0.35);
+}
+
+/* Clean Bank Transfer Card (No typed account numbers) */
+.bank-transfer-card-clean {
+  background: var(--bg-surface);
+  border: 1.5px solid rgba(238, 93, 54, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  text-align: left;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.plan-header-clean {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.plan-tag-clean {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.plan-title-clean {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.plan-amount-clean {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--brand-primary);
+}
+
+.admin-wa-notice-box {
+  background: rgba(37, 211, 102, 0.08);
+  border: 1.5px solid rgba(37, 211, 102, 0.35);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.wa-icon-bubble {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+

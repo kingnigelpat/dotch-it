@@ -2,42 +2,27 @@ const paystackKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || ''
 
 export const isPaystackConfigured = Boolean(paystackKey)
 
+export const LISTING_PLAN_FREE = {
+  id: 'free_forever',
+  name: 'Free Vendor Listing',
+  price: 0,
+  formattedPrice: 'Free Forever',
+  interval: 'No Renewal Fees',
+  badge: '🎉 100% Free For All Vendors',
+  features: [
+    '📸 Full photo uploads of your shop & products',
+    '📍 Exact City & Neighborhood location listing',
+    '📞 Direct Phone & WhatsApp contact buttons (0% commission)',
+    '✓ Verified Business Badge',
+    '⚡ Instant directory search indexing',
+    '🎯 Customer click & WhatsApp inquiry tracking',
+  ],
+  cta: 'List Business for Free',
+  highlight: true,
+}
+
 export const SUBSCRIPTION_PLANS = [
-  {
-    id: 'starter',
-    name: 'Free Basic Tier',
-    price: 0,
-    interval: 'Free Forever',
-    badge: 'Basic Name Listing',
-    features: [
-      'Business name indexed in directory',
-      '❌ No Phone or WhatsApp contact numbers allowed',
-      '❌ No Photo uploads of place or products',
-      '❌ No Location or Area listing',
-      'Basic unverified search presence',
-    ],
-    cta: 'Current Free Tier',
-    highlight: false,
-  },
-  {
-    id: 'pro_eoy',
-    name: 'End of Year Vendor Promo Plan',
-    price: 5000,
-    formattedPrice: '₦5,000',
-    interval: 'till ending of the year',
-    badge: '🔥 End of Year Special Promo • ₦5,000 Flat',
-    features: [
-      '📸 Full Photo uploads of your place & products',
-      '📍 Exact City & Neighborhood location listing',
-      '📞 Direct Phone & WhatsApp number for ready buyers & clients',
-      '⚡ 5x Maximum Search & Directory Visibility Boost',
-      '✓ Verified Gold Vendor Badge',
-      '🌟 Active access till ending of the year',
-      '🎯 Direct customer click & WhatsApp inquiry tracking',
-    ],
-    cta: 'Subscribe for ₦5,000 (End of Year Promo)',
-    highlight: true,
-  },
+  LISTING_PLAN_FREE,
 ]
 
 // Dynamically load Paystack inline script
@@ -57,13 +42,14 @@ function loadPaystackScript() {
 }
 
 /**
- * Initialize Paystack Subscription Checkout
+ * Initialize Paystack Campaign Banner Checkout (e.g. ₦250 for 3 days)
  */
-export async function initializePaystackSubscription({
+export async function initializePaystackCampaignCheckout({
   email,
-  amount, // In Naira (e.g. 5000)
-  planId,
-  businessId,
+  amount, // In Naira (e.g. 250)
+  packageId,
+  packageName,
+  adTitle,
   businessName,
   onSuccess,
   onClose,
@@ -73,14 +59,14 @@ export async function initializePaystackSubscription({
   if (!loaded || !window.PaystackPop || !paystackKey) {
     // If running in development sandbox or without key, offer safe test simulation
     const confirmTest = window.confirm(
-      `[Paystack Test Checkout]\n\nSimulating payment for ${businessName}\nPlan: ${planId}\nAmount: ₦${amount.toLocaleString()}\n\nProceed with simulated payment?`
+      `[Paystack Campaign Checkout]\n\nCampaign: ${packageName} (${adTitle || businessName})\nDuration: 3 Days\nAmount: ₦${amount.toLocaleString()}\n\nProceed with payment simulation?`
     )
     if (confirmTest) {
-      const mockRef = `sim_${Date.now()}_${Math.random().toString(36).substring(7)}`
+      const mockRef = `pay_camp_${Date.now()}_${Math.random().toString(36).substring(7)}`
       onSuccess({
         reference: mockRef,
         status: 'success',
-        planId,
+        packageId,
         amount,
         paidAt: new Date().toISOString(),
       })
@@ -97,18 +83,17 @@ export async function initializePaystackSubscription({
     currency: 'NGN',
     metadata: {
       custom_fields: [
+        { display_name: 'Campaign Package', variable_name: 'package_name', value: packageName },
+        { display_name: 'Ad Title', variable_name: 'ad_title', value: adTitle },
         { display_name: 'Business Name', variable_name: 'business_name', value: businessName },
-        { display_name: 'Plan ID', variable_name: 'plan_id', value: planId },
-        { display_name: 'Business ID', variable_name: 'business_id', value: businessId },
       ],
     },
     callback: function (response) {
-      // response: { reference: string, status: 'success', trans: string, ... }
       if (onSuccess) {
         onSuccess({
           reference: response.reference,
           status: 'success',
-          planId,
+          packageId,
           amount,
           paidAt: new Date().toISOString(),
         })
@@ -121,3 +106,28 @@ export async function initializePaystackSubscription({
 
   handler.openIframe()
 }
+
+/**
+ * Backwards compatibility for initializePaystackSubscription
+ */
+export async function initializePaystackSubscription({
+  email,
+  amount,
+  planId,
+  businessId,
+  businessName,
+  onSuccess,
+  onClose,
+}) {
+  return initializePaystackCampaignCheckout({
+    email,
+    amount,
+    packageId: planId,
+    packageName: planId,
+    adTitle: businessName,
+    businessName,
+    onSuccess,
+    onClose,
+  })
+}
+

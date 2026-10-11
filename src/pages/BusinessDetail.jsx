@@ -5,9 +5,10 @@ import { getBusiness } from '../services/businessService'
 import { formatTo234, normalizeWhatsAppPhone, displayFormattedPhone } from '../utils/phoneUtils'
 import { recordBusinessView, recordWhatsAppClick, recordPhoneClick } from '../services/analyticsService'
 import { applyBusinessSeo } from '../utils/seoUtils'
+import { getCertificateVerificationWhatsAppUrl, BANK_DETAILS } from '../config/bankDetails'
 
 export default function BusinessDetail() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams()
@@ -73,6 +74,33 @@ export default function BusinessDetail() {
     )
   }
 
+  const isOwner = Boolean(user?.uid && business.ownerUid === user.uid)
+  const isAdmin = Boolean(profile?.role === 'admin' || user?.email === 'admin@dotch.ng')
+  const isVerified = Boolean(
+    business.verified === true &&
+    business.status === 'active' &&
+    business.status !== 'pending' &&
+    business.certificateStatus !== 'pending'
+  )
+
+  // A business cannot be listed or viewed publicly until certificate is submitted and verified via WhatsApp
+  if (!isVerified && !isOwner && !isAdmin) {
+    return (
+      <div className="empty-state-box" style={{ maxWidth: '540px', margin: '60px auto', padding: '40px 24px', textAlign: 'center' }}>
+        <div className="empty-state-icon" style={{ fontSize: '48px', marginBottom: '16px' }}>📜</div>
+        <h2 className="empty-state-title" style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px' }}>
+          Listing Pending Verification
+        </h2>
+        <p className="empty-state-subtitle" style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '24px' }}>
+          This business is pending Business/Company Certificate (CAC) verification. Dotch listings cannot go live until verified with Admin on WhatsApp.
+        </p>
+        <Link to="/" className="btn btn-primary">
+          ← Discover Verified Businesses
+        </Link>
+      </div>
+    )
+  }
+
   const rawPhone = normalizeWhatsAppPhone(business.phone || '2348012345678')
   const customMessage = encodeURIComponent(
     `Hello ${business.name}! I found your business on Dotch and would like to inquire about your products/services.`
@@ -95,6 +123,12 @@ export default function BusinessDetail() {
     business.image1Url,
     business.image2Url,
   ].filter(Boolean)
+
+  const certWhatsAppUrl = getCertificateVerificationWhatsAppUrl({
+    businessName: business.name,
+    email: user?.email,
+    phone: business.phone,
+  })
 
   return (
     <div className="business-detail-page purr-container" style={{ paddingBottom: '90px', paddingTop: '10px' }}>
@@ -129,6 +163,48 @@ export default function BusinessDetail() {
           <i className="fa-solid fa-arrow-up-from-bracket" />
         </button>
       </div>
+
+      {/* Warning banner for Owner / Admin if listing is pending certificate */}
+      {!isVerified && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(238, 93, 54, 0.08) 100%)',
+            border: '2px solid rgba(245, 158, 11, 0.45)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '16px 20px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '14px',
+          }}
+        >
+          <div style={{ maxWidth: '620px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.2)', color: 'var(--accent-amber)', fontWeight: 800 }}>
+                <i className="fa-solid fa-lock" style={{ marginRight: '4px' }} /> Unlisted & Inactive
+              </span>
+              <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-primary)' }}>
+                Company Certificate (CAC) Required
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              This profile is hidden from search and public view. Send your business registration / company certificate to Admin on WhatsApp (<strong>{BANK_DETAILS.formattedAdminWhatsApp}</strong>) to unlock public listing.
+            </p>
+          </div>
+
+          <a
+            href={certWhatsAppUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-whatsapp btn-sm"
+            style={{ fontWeight: 800, whiteSpace: 'nowrap' }}
+          >
+            <i className="fa-brands fa-whatsapp" style={{ marginRight: '6px' }} /> Send Certificate on WhatsApp
+          </a>
+        </div>
+      )}
 
       {/* Main Profile Card Container */}
       <div

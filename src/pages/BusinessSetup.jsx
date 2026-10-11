@@ -10,6 +10,7 @@ import { updateUserProfile } from '../services/authService'
 import { uploadImage, fileToBase64 } from '../services/cloudinaryService'
 import { getSuggestedCategories } from '../services/openrouterService'
 import { formatTo234 } from '../utils/phoneUtils'
+import { getCertificateVerificationWhatsAppUrl, BANK_DETAILS } from '../config/bankDetails'
 import PhoneInput from '../components/PhoneInput'
 
 function ImagePicker({ label, file, url, onChange, disabled }) {
@@ -81,6 +82,8 @@ export default function BusinessSetup() {
   const [img1Url, setImg1Url] = useState('')
   const [img2, setImg2] = useState(null)
   const [img2Url, setImg2Url] = useState('')
+  const [certImg, setCertImg] = useState(null)
+  const [certImgUrl, setCertImgUrl] = useState('')
   const [error, setError] = useState('')
   const [uploadWarning, setUploadWarning] = useState('')
   const [uploading, setUploading] = useState(false)
@@ -102,6 +105,7 @@ export default function BusinessSetup() {
         setLogoUrl(b.logoUrl || '')
         setImg1Url(b.image1Url || '')
         setImg2Url(b.image2Url || '')
+        setCertImgUrl(b.certificateUrl || '')
       }
     })
   }, [user?.uid])
@@ -146,6 +150,7 @@ export default function BusinessSetup() {
       let uploadedLogo = logoUrl
       let uploadedImg1 = img1Url
       let uploadedImg2 = img2Url
+      let uploadedCert = certImgUrl
 
       if (logo) {
         const url = await safeUpload(logo, 'Logo')
@@ -159,8 +164,13 @@ export default function BusinessSetup() {
         const url = await safeUpload(img2, 'Product Photo 2')
         if (url) uploadedImg2 = url
       }
+      if (certImg) {
+        const url = await safeUpload(certImg, 'Business Certificate')
+        if (url) uploadedCert = url
+      }
 
       const formattedPhone = formatTo234(phone)
+      const isAlreadyApproved = Boolean(editingId && (isApproved || profile?.certificateVerified))
 
       const businessData = {
         name: name.trim(),
@@ -173,10 +183,12 @@ export default function BusinessSetup() {
         logoUrl: uploadedLogo,
         image1Url: uploadedImg1,
         image2Url: uploadedImg2,
-        verified: Boolean(isApproved),
-        status: isApproved ? 'active' : 'pending',
-        paymentStatus: isApproved ? 'approved' : 'pending',
-        subscriptionTier: currentTier,
+        certificateUrl: uploadedCert,
+        certificateStatus: isAlreadyApproved ? 'verified' : 'pending',
+        verified: isAlreadyApproved,
+        status: isAlreadyApproved ? 'active' : 'pending',
+        paymentStatus: isAlreadyApproved ? 'approved' : 'pending',
+        subscriptionTier: 'free_listing',
         isBlocked: false,
         keywords: [
           name.trim().toLowerCase(),
@@ -191,17 +203,28 @@ export default function BusinessSetup() {
         await createBusiness({ uid: user.uid, data: businessData })
       }
 
-      // Update user profile to reflect business role and selected plan
+      // Update user profile to reflect business role & certificate status
       await updateUserProfile(user.uid, {
         role: 'business',
-        selectedPlan: currentTier,
+        selectedPlan: 'free_listing',
         phone: formattedPhone,
-        paymentStatus: isApproved ? 'approved' : (profile?.paymentStatus || 'pending'),
+        paymentStatus: isAlreadyApproved ? 'approved' : 'pending',
+        certificateStatus: isAlreadyApproved ? 'verified' : 'pending',
       })
 
       if (refreshProfile) await refreshProfile()
 
-      // Direct to business portal / payment flow
+      // If pending verification, open WhatsApp so vendor can send their business/company certificate to admin
+      if (!isAlreadyApproved && typeof window !== 'undefined') {
+        const waCertUrl = getCertificateVerificationWhatsAppUrl({
+          businessName: name.trim(),
+          email: user?.email,
+          phone: formattedPhone,
+        })
+        window.open(waCertUrl, '_blank')
+      }
+
+      // Direct to business portal
       navigate('/business')
     } catch (err) {
       console.error('Error saving business listing:', err)
@@ -238,8 +261,8 @@ export default function BusinessSetup() {
             Provide your business information and photos so local customers can discover you on Dotch.
           </p>
         </div>
-        <span className="badge-pill badge-vip">
-          <i className="fa-solid fa-fire" style={{ marginRight: '4px' }} /> End of Year Promo Plan (₦5,000)
+        <span className="badge-pill" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', fontWeight: 800 }}>
+          <i className="fa-solid fa-circle-check" style={{ marginRight: '4px' }} /> 100% Free Verified Listing
         </span>
       </div>
 
@@ -329,10 +352,39 @@ export default function BusinessSetup() {
           <ImagePicker label="Product / Place Photo 2" file={img2} url={img2Url} onChange={setImg2} disabled={uploading || saving} />
         </div>
 
+        {/* Verification Requirement: Business / Company Certificate */}
+        <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px', marginTop: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '20px' }}>📜</span>
+            <div>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                Business or Company Certificate (CAC) *
+              </h3>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                Required verification document before listing goes live
+              </span>
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(37, 211, 102, 0.08)', border: '1.5px solid rgba(37, 211, 102, 0.35)', borderRadius: 'var(--radius-md)', padding: '14px 16px', marginBottom: '14px' }}>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              🛡️ <strong>WhatsApp Verification Required:</strong> Dotch requires all vendors to send their official Business Registration Certificate or CAC Company Document to Admin on WhatsApp (<strong>{BANK_DETAILS.formattedAdminWhatsApp}</strong>). Your listing will be activated once verified.
+            </p>
+          </div>
+
+          <ImagePicker
+            label="Upload Certificate Document Photo (Optional — or send directly via WhatsApp)"
+            file={certImg}
+            url={certImgUrl}
+            onChange={setCertImg}
+            disabled={uploading || saving}
+          />
+        </div>
+
         <button
           className="btn btn-primary btn-block btn-lg"
           disabled={uploading || saving}
-          style={{ marginTop: '20px' }}
+          style={{ marginTop: '24px', fontWeight: 800 }}
         >
           {uploading ? (
             <>
@@ -344,12 +396,10 @@ export default function BusinessSetup() {
               <span className="btn-spinner" aria-hidden="true" style={{ marginRight: '8px' }} />
               <span>Saving…</span>
             </>
-          ) : editingId ? (
+          ) : editingId && isApproved ? (
             'Save Changes'
-          ) : isApproved ? (
-            'Publish Business Listing'
           ) : (
-            'Save & Continue to Payment →'
+            'Save Listing & Verify Certificate on WhatsApp →'
           )}
         </button>
       </form>

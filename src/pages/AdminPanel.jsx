@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import {
   getAllBusinesses,
+  getAllBusinessesAdmin,
+  getBusinessByOwner,
   createBusiness,
   updateBusiness,
   deleteBusiness,
@@ -147,6 +149,16 @@ export default function AdminPanel() {
     }
   }
 
+  const loadBusinesses = async () => {
+    setLoadingBiz(true)
+    try {
+      const list = await getAllBusinessesAdmin(150)
+      setBusinesses(list || [])
+    } finally {
+      setLoadingBiz(false)
+    }
+  }
+
   const loadAds = async () => {
     setLoadingAds(true)
     try {
@@ -159,10 +171,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (profile?.role === 'admin') {
-      getAllBusinesses(100).then((list) => {
-        setBusinesses(list)
-        setLoadingBiz(false)
-      })
+      loadBusinesses()
       loadVendors()
       loadAds()
     }
@@ -193,13 +202,45 @@ export default function AdminPanel() {
     setError('')
     setSuccess('')
     try {
-      const planToSet = v.selectedPlan || 'pro_1m'
-      await approveVendorPayment(v.uid, planToSet)
-      showSuccess(`Payment approved for ${v.name || v.email}! Their listing creation is now unlocked.`)
+      await approveVendorPayment(v.uid, 'free_listing')
+      const userBiz = await getBusinessByOwner(v.uid)
+      if (userBiz?.id) {
+        await updateBusiness(userBiz.id, {
+          verified: true,
+          status: 'active',
+          certificateStatus: 'verified',
+        })
+      }
+      showSuccess(`Certificate approved for ${v.name || v.email}! Business listing is now live across Nigeria.`)
+      await loadVendors()
+      await loadBusinesses()
+    } catch (err) {
+      console.error('Failed to approve vendor certificate:', err)
+      showError('Could not verify vendor: ' + (err.message || 'Please try again.'))
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  const handleApproveBusinessCert = async (biz) => {
+    setActionLoadingId(biz.id)
+    setError('')
+    setSuccess('')
+    try {
+      await updateBusiness(biz.id, {
+        verified: true,
+        status: 'active',
+        certificateStatus: 'verified',
+      })
+      if (biz.ownerUid) {
+        await approveVendorPayment(biz.ownerUid, 'free_listing')
+      }
+      showSuccess(`Certificate approved for "${biz.name}"! Listing is now active & searchable across Nigeria.`)
+      await loadBusinesses()
       await loadVendors()
     } catch (err) {
-      console.error('Failed to approve vendor payment:', err)
-      showError('Could not approve payment: ' + (err.message || 'Please try again.'))
+      console.error('Failed to approve business certificate:', err)
+      showError('Could not approve certificate: ' + (err.message || 'Please try again.'))
     } finally {
       setActionLoadingId(null)
     }
@@ -207,8 +248,8 @@ export default function AdminPanel() {
 
   const handleRevokeVendor = (v) => {
     setConfirmState({
-      title: `Revoke payment approval for ${v.name || v.email}?`,
-      body: `This will lock listing creation and revert ${v.name || v.email}'s vendor status to pending. Their business listing will be hidden until re-approved.`,
+      title: `Revoke certificate approval for ${v.name || v.email}?`,
+      body: `This will hide ${v.name || v.email}'s business listing from search results until their certificate is re-verified.`,
       confirmLabel: 'Revoke approval',
       onConfirm: async () => {
         setConfirmLoading(true)
@@ -217,12 +258,21 @@ export default function AdminPanel() {
         setSuccess('')
         try {
           await revokeVendorPayment(v.uid)
-          showSuccess(`Listing creation locked for ${v.name || v.email}.`)
+          const userBiz = await getBusinessByOwner(v.uid)
+          if (userBiz?.id) {
+            await updateBusiness(userBiz.id, {
+              verified: false,
+              status: 'pending',
+              certificateStatus: 'pending',
+            })
+          }
+          showSuccess(`Business listing hidden for ${v.name || v.email}.`)
           setConfirmState(null)
           await loadVendors()
+          await loadBusinesses()
         } catch (err) {
-          console.error('Failed to revoke vendor payment:', err)
-          showError('Could not revoke payment: ' + (err.message || 'Please try again.'))
+          console.error('Failed to revoke vendor certificate:', err)
+          showError('Could not revoke approval: ' + (err.message || 'Please try again.'))
         } finally {
           setActionLoadingId(null)
           setConfirmLoading(false)
@@ -636,14 +686,14 @@ export default function AdminPanel() {
           >
             <div>
               <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                <i className="fa-solid fa-building-columns" style={{ marginRight: '5px' }} /> Active Bank Account for Vendor Payments:
+                <i className="fa-brands fa-whatsapp" style={{ color: '#25D366', marginRight: '5px' }} /> Admin WhatsApp Line for Campaign Payments:
               </span>{' '}
               <span style={{ color: 'var(--text-secondary)' }}>
-                {BANK_DETAILS.bankName} • <strong style={{ color: 'var(--brand-primary)', fontFamily: 'monospace' }}>{BANK_DETAILS.accountNumber}</strong> • {BANK_DETAILS.accountName}
+                <strong style={{ color: 'var(--brand-primary)' }}>+234 707 354 4811</strong> • Vendor requests for account number arrive here
               </span>
             </div>
             <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-              Verify transaction alerts in your Paga app before approving
+              Confirm payment receipt on WhatsApp before activating campaigns
             </span>
           </div>
 
@@ -656,16 +706,17 @@ export default function AdminPanel() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {vendors.map((v) => {
-                const isAppr = v.paymentStatus === 'approved' || v.paymentApproved === true
-                const planName = 'End of Year Promo (₦5,000)'
+                const isAppr = v.paymentStatus === 'approved' || v.paymentApproved === true || v.certificateStatus === 'verified'
                 const isBusy = actionLoadingId === v.uid
+                const rawVendorPhone = v.phone ? String(v.phone).replace(/\D/g, '') : ''
+                const waChatVendorUrl = rawVendorPhone ? `https://wa.me/${rawVendorPhone}?text=${encodeURIComponent(`Hello ${v.name || 'Vendor'}, this is Dotch Admin regarding your business certificate (CAC) verification.`)}` : ''
 
                 return (
                   <div
                     key={v.uid}
                     style={{
                       background: 'var(--bg-surface)',
-                      border: '1px solid var(--border-subtle)',
+                      border: isAppr ? '1px solid var(--border-subtle)' : '1.5px solid rgba(245, 158, 11, 0.4)',
                       borderRadius: 'var(--radius-md)',
                       padding: '18px 20px',
                       display: 'flex',
@@ -684,11 +735,11 @@ export default function AdminPanel() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <strong style={{ fontSize: '16px', color: 'var(--text-primary)' }}>{v.name || 'Unnamed Vendor'}</strong>
                           <span className={`badge-pill ${isAppr ? 'explorer-badge' : 'vendor-badge'}`}>
-                            {isAppr ? (<><i className="fa-solid fa-circle-check" style={{ marginRight: '4px' }} /> Approved</>) : (<><i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> Pending</>)}
+                            {isAppr ? (<><i className="fa-solid fa-circle-check" style={{ marginRight: '4px' }} /> Certificate Verified</>) : (<><i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> Pending CAC Certificate</>)}
                           </span>
                         </div>
                         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                          <i className="fa-solid fa-envelope" style={{ marginRight: '4px', opacity: 0.6 }} /> {v.email} • <i className="fa-solid fa-tag" style={{ marginRight: '4px', opacity: 0.6 }} /> {planName}
+                          <i className="fa-solid fa-envelope" style={{ marginRight: '4px', opacity: 0.6 }} /> {v.email} • <span style={{ color: 'var(--accent-emerald)', fontWeight: 700 }}>100% Free Listing</span>
                           {v.phone && (
                             <> • <i className="fa-brands fa-whatsapp" style={{ marginRight: '3px', color: '#25D366' }} /> <strong style={{ color: 'var(--text-primary)' }}>{displayFormattedPhone(v.phone)}</strong></>
                           )}
@@ -697,15 +748,28 @@ export default function AdminPanel() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      {waChatVendorUrl && (
+                        <a
+                          href={waChatVendorUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-outline btn-sm"
+                          style={{ fontWeight: 700 }}
+                        >
+                          <i className="fa-brands fa-whatsapp" style={{ color: '#25D366', marginRight: '4px' }} /> Chat on WhatsApp
+                        </a>
+                      )}
+
                       {!isAppr ? (
                         <button
                           type="button"
                           className="btn btn-primary btn-sm"
                           onClick={() => handleApproveVendor(v)}
                           disabled={isBusy}
+                          style={{ fontWeight: 800 }}
                         >
-                          {isBusy ? 'Processing…' : (<><i className="fa-solid fa-circle-check" style={{ marginRight: '5px' }} /> Approve & Unlock</>)}
+                          {isBusy ? 'Processing…' : (<><i className="fa-solid fa-circle-check" style={{ marginRight: '5px' }} /> Verify Certificate & Go Live</>)}
                         </button>
                       ) : (
                         <button
@@ -715,7 +779,7 @@ export default function AdminPanel() {
                           onClick={() => handleRevokeVendor(v)}
                           disabled={isBusy}
                         >
-                          {isBusy ? 'Processing…' : (<><i className="fa-solid fa-lock" style={{ marginRight: '5px' }} /> Revoke Approval</>)}
+                          {isBusy ? 'Processing…' : (<><i className="fa-solid fa-lock" style={{ marginRight: '5px' }} /> Revoke Listing</>)}
                         </button>
                       )}
                     </div>
@@ -893,12 +957,40 @@ export default function AdminPanel() {
                     <div className="admin-biz-meta">
                       {biz.category} • {biz.city || biz.location || '—'}
                       {biz.phone && (<> • <i className="fa-brands fa-whatsapp" style={{ color: '#25D366', marginRight: '2px' }} /> {displayFormattedPhone(biz.phone)}</>)}
-                      {biz.verified && (<> • <i className="fa-solid fa-circle-check" style={{ color: 'var(--accent-emerald)', marginRight: '2px' }} /> Verified</>)}
+                      {biz.verified && biz.status === 'active' && biz.certificateStatus !== 'pending' ? (
+                        <> • <span style={{ color: 'var(--accent-emerald)', fontWeight: 700 }}><i className="fa-solid fa-circle-check" /> Verified & Live</span></>
+                      ) : (
+                        <> • <span style={{ color: 'var(--accent-amber)', fontWeight: 700 }}><i className="fa-solid fa-hourglass-half" /> Pending CAC Certificate</span></>
+                      )}
                       {biz.featured && (<> • <i className="fa-solid fa-star" style={{ color: '#f59e0b', marginRight: '2px' }} /> Featured</>)}
                       {biz.adminAdded && (<> • <i className="fa-solid fa-shield-halved" style={{ color: 'var(--brand-primary)', marginRight: '2px' }} /> Admin</>)}
                     </div>
                   </div>
                   <div className="admin-biz-actions">
+                    {(!biz.verified || biz.status !== 'active' || biz.certificateStatus === 'pending') && (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleApproveBusinessCert(biz)}
+                        disabled={actionLoadingId === biz.id}
+                        style={{ fontWeight: 800 }}
+                      >
+                        {actionLoadingId === biz.id ? 'Approving…' : (
+                          <><i className="fa-solid fa-circle-check" style={{ marginRight: '4px' }} /> Approve Cert & Go Live</>
+                        )}
+                      </button>
+                    )}
+                    {biz.phone && (
+                      <a
+                        href={`https://wa.me/${String(biz.phone).replace(/\D/g, '')}?text=${encodeURIComponent(`Hello ${biz.name}, this is Dotch Admin regarding your business registration certificate (CAC) verification.`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-outline btn-sm"
+                        style={{ fontWeight: 700 }}
+                      >
+                        <i className="fa-brands fa-whatsapp" style={{ color: '#25D366', marginRight: '4px' }} /> Chat
+                      </a>
+                    )}
                     <button
                       className="btn btn-outline btn-sm"
                       onClick={() => handleEdit(biz)}

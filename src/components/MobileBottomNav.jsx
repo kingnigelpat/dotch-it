@@ -22,6 +22,7 @@ export default function MobileBottomNav() {
 
   return (
     <nav className="mobile-bottom-nav">
+      {/* 1. Home tab */}
       <Link
         to="/"
         className={`nav-tab-item ${isActive('/') ? 'active' : ''}`}
@@ -31,26 +32,30 @@ export default function MobileBottomNav() {
         <span className="nav-tab-label">Home</span>
       </Link>
 
+      {/* 2. Campaign Ads tab - BOLD highlight */}
       <Link
-        to="/dashboard"
-        className={`nav-tab-item ${isActive('/dashboard') ? 'active' : ''}`}
+        to="/subscription"
+        className={`nav-tab-item nav-tab-campaign-bold ${isActive('/subscription') ? 'active' : ''}`}
         onClick={handleNavClick}
       >
-        <span className="nav-tab-icon"><i className="fa-solid fa-magnifying-glass" /></span>
-        <span className="nav-tab-label">Search</span>
+        <span className="nav-tab-icon">
+          <i className="fa-solid fa-bullhorn" />
+          <span className="tab-micro-badge">₦250</span>
+        </span>
+        <span className="nav-tab-label">Campaigns</span>
       </Link>
 
-      {isBusiness && (
-        <Link
-          to="/business"
-          className={`nav-tab-item ${isActive('/business') ? 'active' : ''}`}
-          onClick={handleNavClick}
-        >
-          <span className="nav-tab-icon"><i className="fa-solid fa-chart-line" /></span>
-          <span className="nav-tab-label">Business</span>
-        </Link>
-      )}
+      {/* 3. Business Storefront tab */}
+      <Link
+        to={isBusiness ? '/business' : '/list-business'}
+        className={`nav-tab-item ${isActive('/business') || isActive('/list-business') ? 'active' : ''}`}
+        onClick={handleNavClick}
+      >
+        <span className="nav-tab-icon"><i className="fa-solid fa-store" /></span>
+        <span className="nav-tab-label">{isBusiness ? 'Business' : 'List Store'}</span>
+      </Link>
 
+      {/* 4. Admin tab (if admin) */}
       {isAdmin && (
         <Link
           to="/admin"
@@ -62,6 +67,7 @@ export default function MobileBottomNav() {
         </Link>
       )}
 
+      {/* 5. Settings / Profile tab */}
       <Link
         to="/account"
         className={`nav-tab-item ${isActive('/account') ? 'active' : ''}`}

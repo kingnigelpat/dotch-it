@@ -22,7 +22,7 @@ import { parseQueryAndLocation } from '../utils/searchParser'
 export const BUSINESS_COLLECTION = 'businesses'
 
 // Rich initial sample businesses including popular Hotels & Restaurants across Nigeria
-export const DEMO_BUSINESSES = [
+const RAW_DEMO_BUSINESSES = [
   {
     id: 'demo-1',
     name: 'Kicks Hub Lagos',
@@ -345,6 +345,13 @@ export const DEMO_BUSINESSES = [
   },
 ]
 
+export const DEMO_BUSINESSES = RAW_DEMO_BUSINESSES.map((item) => ({
+  status: 'active',
+  certificateStatus: 'verified',
+  verified: true,
+  ...item,
+}))
+
 export async function createBusiness({ uid, data }) {
   // Enforce one account one business
   const existing = await getBusinessByOwner(uid)
@@ -352,12 +359,18 @@ export async function createBusiness({ uid, data }) {
     throw new Error('One account can only list one business. You already have an active business listing.')
   }
   const ref = doc(collection(db, BUSINESS_COLLECTION))
+  const isVerified = Boolean(
+    data?.verified === true &&
+    data?.certificateStatus === 'verified' &&
+    data?.status === 'active'
+  )
   const payload = {
     ...data,
     phone: formatTo234(data?.phone || ''),
     ownerUid: uid,
-    status: 'active',
-    verified: true,
+    status: isVerified ? 'active' : 'pending',
+    verified: isVerified,
+    certificateStatus: isVerified ? 'verified' : 'pending',
     createdAt: new Date().toISOString(),
   }
   if (db) {
@@ -628,7 +641,12 @@ export async function searchBusinesses({ category, keyword, location, userCoords
         if (data.status === 'deleted' || data.isDeleted) {
           deletedIds.add(d.id)
           addDeletedBizId(d.id)
-        } else if (data.status === 'active' || data.paymentStatus === 'approved' || data.verified === true) {
+        } else if (
+          data.verified === true &&
+          data.status === 'active' &&
+          data.status !== 'pending' &&
+          data.certificateStatus !== 'pending'
+        ) {
           dbResults.push({ id: d.id, ...data, phone: formatTo234(data?.phone || '') })
         }
       })
@@ -778,7 +796,12 @@ export async function getAllBusinesses(max = 50) {
         if (data.status === 'deleted' || data.isDeleted) {
           deletedIds.add(d.id)
           addDeletedBizId(d.id)
-        } else if (data.status === 'active' || data.paymentStatus === 'approved' || data.verified === true) {
+        } else if (
+          data.verified === true &&
+          data.status === 'active' &&
+          data.status !== 'pending' &&
+          data.certificateStatus !== 'pending'
+        ) {
           dbResults.push({ id: d.id, ...data, phone: formatTo234(data?.phone || '') })
         }
       })
@@ -804,6 +827,35 @@ export async function getAllBusinesses(max = 50) {
   const results = combined.slice(0, max)
   cacheService.set(cacheKey, results, 300) // Cache listings for 5 minutes
   return results
+}
+
+/**
+ * Returns all businesses for Admin view (including pending certificate verifications)
+ */
+export async function getAllBusinessesAdmin(max = 150) {
+  const deletedIds = new Set(getDeletedBizIds())
+  let dbResults = []
+  if (db) {
+    try {
+      const q = query(collection(db, BUSINESS_COLLECTION), limit(max))
+      const snap = await getDocs(q)
+      snap.docs.forEach((d) => {
+        const data = d.data()
+        if (!deletedIds.has(d.id) && data.status !== 'deleted' && !data.isDeleted) {
+          dbResults.push({ id: d.id, ...data, phone: formatTo234(data?.phone || '') })
+        }
+      })
+    } catch {
+      // ignore
+    }
+  }
+
+  const existingIds = new Set(dbResults.map((b) => b.id))
+  const combined = [
+    ...dbResults,
+    ...DEMO_BUSINESSES.filter((d) => !existingIds.has(d.id) && !deletedIds.has(d.id) && d.status !== 'deleted'),
+  ]
+  return combined
 }
 
 export async function updateBusinessSubscription(businessId, { planId, reference, amount }) {

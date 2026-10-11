@@ -39,20 +39,18 @@ export default function TermsAndPolicy() {
           }}
         >
           <strong style={{ display: 'block', fontSize: '15px', color: 'var(--text-primary)', marginBottom: '4px' }}>
-            🏦 Official Payment Account Notice:
+            📜 100% Free Listing & WhatsApp Certificate Verification Notice:
           </strong>
           <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-            All vendor subscription fees must be paid only to: <strong>{BANK_DETAILS.bankName}</strong> •{' '}
-            <strong style={{ fontFamily: 'monospace', color: 'var(--brand-primary)' }}>{BANK_DETAILS.accountNumber}</strong> •{' '}
-            {BANK_DETAILS.accountName}. For support and receipts:{' '}
+            Listing your business on Dotch is <strong>100% Free Forever</strong>. The only requirement to activate and publish your listing is sending your official Business Registration Certificate or CAC Company Document to Admin on WhatsApp (<strong>{BANK_DETAILS.formattedAdminWhatsApp}</strong>) to verify your brand and prevent fraudulent listings:{' '}
             <a
-              href={`https://wa.me/${(BANK_DETAILS.adminWhatsApp || '').replace(/[^0-9]/g, '')}`}
+              href={`https://wa.me/${(BANK_DETAILS.adminWhatsApp || '2347073544811').replace(/[^0-9]/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-outline btn-sm"
               style={{ display: 'inline-flex', padding: '2px 8px', fontSize: '12px', marginLeft: '4px' }}
             >
-              Chat on WhatsApp
+              Verify Certificate on WhatsApp
             </a>
           </span>
         </div>

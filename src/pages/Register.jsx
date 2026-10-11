@@ -5,8 +5,6 @@ import { registerUser, friendlyAuthError } from '../services/authService'
 import { useAuth } from '../context/AuthContext'
 import { formatTo234 } from '../utils/phoneUtils'
 
-import { BANK_DETAILS } from '../config/bankDetails'
-
 export default function Register() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -15,7 +13,6 @@ export default function Register() {
 
   const { refreshProfile } = useAuth()
   const [role, setRole] = useState(initialRole) // 'explorer' or 'vendor'
-  const [plan, setPlan] = useState('pro_eoy') // End of Year Promo Plan (₦5,000)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -24,7 +21,7 @@ export default function Register() {
     setLoading(true)
     try {
       const formattedPhone = formatTo234(phone)
-      await registerUser({ name, email, password, phone: formattedPhone, role, plan })
+      await registerUser({ name, email, password, phone: formattedPhone, role, plan: 'free' })
       if (refreshProfile) await refreshProfile()
       navigate(role === 'vendor' || role === 'business' ? '/business' : (redirectUrl || '/'), {
         replace: true,
@@ -41,8 +38,8 @@ export default function Register() {
   return (
     <AuthForm
       title="Create your account"
-      subtitle={isVendor ? 'Register your business on Dotch' : 'Search local spots, stores, dining & services'}
-      submitLabel={isVendor ? 'Register Business & Request Approval' : 'Create Free Account'}
+      subtitle={isVendor ? 'Register your business on Dotch (100% Free Forever)' : 'Search local spots, stores, dining & services'}
+      submitLabel={isVendor ? '🚀 Register & List Business for Free' : 'Create Free Account'}
       error={error}
       loading={loading}
       onSubmit={onSubmit}
@@ -69,7 +66,7 @@ export default function Register() {
             />
             <div className="role-card-content">
               <strong><i className="fa-solid fa-magnifying-glass" style={{ marginRight: '5px' }} /> Search & Explore</strong>
-              <span>Find stores, dining, gadgets & services near you across Nigerian cities</span>
+              <span>Find stores, dining, gadgets & services near you across Nigerian cities (Free)</span>
             </div>
           </label>
 
@@ -85,49 +82,21 @@ export default function Register() {
               onChange={() => setRole('vendor')}
             />
             <div className="role-card-content">
-              <strong><i className="fa-solid fa-store" style={{ marginRight: '5px' }} /> List My Business</strong>
-              <span>Register your shop, dining spot, or service (1 account = 1 business)</span>
+              <strong><i className="fa-solid fa-store" style={{ marginRight: '5px' }} /> List My Business (Free)</strong>
+              <span>Register your shop, dining spot, or service with photos & WhatsApp line (100% Free)</span>
             </div>
           </label>
         </div>
       </div>
 
       {isVendor && (
-        <div style={{ marginBottom: '20px', padding: '16px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)', border: '1.5px solid rgba(238, 93, 54, 0.25)' }}>
-          <label className="role-label" style={{ marginBottom: '8px', color: 'var(--brand-primary)', fontWeight: 800 }}>
-            ⚡ Special End of Year Vendor Promo:
-          </label>
-          <div
-            style={{
-              padding: '14px 16px',
-              borderRadius: 'var(--radius-md)',
-              border: '2px solid var(--brand-primary)',
-              background: 'var(--brand-light)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  name="vendorPlan"
-                  value="pro_eoy"
-                  checked={true}
-                  readOnly
-                />
-                <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>End of Year Promo Plan</strong>
-              </div>
-              <span style={{ fontSize: '18px', fontWeight: 900, color: 'var(--brand-primary)' }}>₦5,000</span>
-            </div>
-            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-              🔥 Special Promo: Get full active listing & direct WhatsApp inquiries till the ending of the year for just ₦5,000 flat!
-            </p>
+        <div style={{ marginBottom: '20px', padding: '16px', background: 'var(--brand-light, rgba(238, 93, 54, 0.08))', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '18px' }}>🎉</span>
+            <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>100% Free Business Listing</strong>
           </div>
-
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px', marginBottom: 0, lineHeight: 1.4 }}>
-            <i className="fa-solid fa-lock" style={{ marginRight: '4px' }} /> <strong>Verification Policy:</strong> Business posting is unlocked immediately upon admin payment verification.
+          <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+            Listing your business, uploading storefront photos, and receiving customer WhatsApp inquiries is completely free with zero commission. Boost your reach anytime with campaign banners from just ₦250!
           </p>
         </div>
       )}

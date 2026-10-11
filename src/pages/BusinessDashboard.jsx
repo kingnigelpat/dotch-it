@@ -10,8 +10,10 @@ import {
   formatEventType,
 } from '../services/analyticsService'
 import BusinessCard from '../components/BusinessCard'
-import BankTransferCard from '../components/BankTransferCard'
 import ConfirmDialog from '../components/ConfirmDialog'
+import CampaignCreatorModal from '../components/CampaignCreatorModal'
+import { getUserAds } from '../services/adService'
+import { getCertificateVerificationWhatsAppUrl, BANK_DETAILS } from '../config/bankDetails'
 
 function getProfileStatus(business) {
   const dateStr = business?.updatedAt || business?.createdAt
@@ -59,7 +61,8 @@ export default function BusinessDashboard() {
   const [refreshing, setRefreshing] = useState(false)
   const [copiedShortlink, setCopiedShortlink] = useState(false)
 
-  const isApproved = profile?.paymentStatus === 'approved' || profile?.paymentApproved === true || profile?.role === 'admin'
+  const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false)
+  const [userAds, setUserAds] = useState([])
 
   const [analytics, setAnalytics] = useState({
     profileViews: 0,
@@ -84,6 +87,10 @@ export default function BusinessDashboard() {
         }
       })
       .finally(() => setLoading(false))
+
+    getUserAds(user.uid)
+      .then((ads) => setUserAds(ads || []))
+      .catch((e) => console.warn('Could not load user ads:', e))
   }, [user?.uid])
 
   // Real-time Firestore subscription to analytics & activity events
@@ -135,68 +142,24 @@ export default function BusinessDashboard() {
 
   if (loading) return <div className="center-loading">Loading business portal…</div>
 
-  // CASE 1: PAYMENT NOT YET APPROVED
-  if (!isApproved) {
-    const planName = 'End of Year Vendor Promo Plan'
-    const planAmount = '₦5,000'
-
-    return (
-      <div style={{ maxWidth: '680px', margin: '30px auto', padding: '0 16px' }}>
-        <div className="empty-state-box" style={{ padding: '32px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: '36px', marginBottom: '12px' }}><i className="fa-solid fa-hourglass-half" style={{ color: 'var(--accent-amber, #f59e0b)' }} /></div>
-          <span className="badge-pill vendor-badge" style={{ marginBottom: '12px', display: 'inline-flex' }}>
-            Payment Verification Pending
-          </span>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
-            Activation In Progress
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto 20px' }}>
-            Welcome, <strong>{profile?.name || user.email}</strong>! In accordance with Dotch quality standards, your listing is verified once our admin team confirms your payment receipt.
-          </p>
-
-          {!business && (
-            <div style={{ marginBottom: '24px', padding: '14px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-              <p style={{ fontSize: '13.5px', color: 'var(--text-primary)', margin: '0 0 10px' }}>
-                You haven't added your business information yet.
-              </p>
-              <Link to="/business/setup" className="btn btn-outline btn-sm">
-                <i className="fa-solid fa-pen-to-square" style={{ marginRight: '5px' }} /> Fill in Business Information & Photos
-              </Link>
-            </div>
-          )}
-
-          <BankTransferCard
-            planName={planName}
-            planAmount={planAmount}
-            userEmail={user.email}
-            userName={profile?.name || ''}
-            onRefresh={handleRefreshStatus}
-            refreshing={refreshing}
-            showStatusCheck={true}
-          />
-        </div>
-      </div>
-    )
-  }
-
-  // CASE 2: PAYMENT APPROVED BUT NO BUSINESS PROFILE CREATED YET
+  // CASE: NO BUSINESS PROFILE CREATED YET
   if (!business) {
     return (
-      <div className="empty-state-box" style={{ maxWidth: '600px', margin: '40px auto', padding: '36px 20px' }}>
-        <div className="empty-state-icon"><i className="fa-solid fa-store" style={{ fontSize: '32px', color: 'var(--brand-primary)' }} /></div>
+      <div className="empty-state-box" style={{ maxWidth: '600px', margin: '40px auto', padding: '36px 20px', textAlign: 'center' }}>
+        <div className="empty-state-icon"><i className="fa-solid fa-store" style={{ fontSize: '36px', color: 'var(--brand-primary)' }} /></div>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
           <span className="badge-pill" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', fontWeight: 800 }}>
-            <i className="fa-solid fa-circle-check" style={{ marginRight: '4px' }} /> Payment Approved & Verified
+            🎉 100% Free Forever
           </span>
         </div>
         <h2 className="empty-state-title" style={{ fontSize: '22px', marginBottom: '8px' }}>
-          Ready to Publish Your Business
+          Set Up Your Business Profile
         </h2>
         <p className="empty-state-subtitle" style={{ maxWidth: '440px', margin: '0 auto 24px' }}>
-          Your payment is approved! Set up your business profile now to start receiving inquiries directly on WhatsApp.
+          Welcome, <strong>{profile?.name || user?.email}</strong>! Add your business description, storefront photos, and WhatsApp hotline to get discovered by ready customers.
         </p>
-        <Link to="/business/setup" className="btn btn-primary btn-lg">
-          <i className="fa-solid fa-rocket" style={{ marginRight: '5px' }} /> Set Up Business Profile Now
+        <Link to="/business/setup" className="btn btn-primary btn-lg" style={{ fontWeight: 800 }}>
+          <i className="fa-solid fa-rocket" style={{ marginRight: '5px' }} /> Set Up Free Business Profile
         </Link>
       </div>
     )
@@ -220,18 +183,38 @@ export default function BusinessDashboard() {
 
   const profileStatus = getProfileStatus(business)
 
+  const isVerified = Boolean(business.verified === true && business.status === 'active')
+  const waCertUrl = getCertificateVerificationWhatsAppUrl({
+    businessName: business.name,
+    email: user?.email,
+    phone: business.phone,
+  })
+
   return (
     <div className="business-dashboard">
-      {/* Header with Approved Status & Actions */}
+      {/* Header with Status & Actions */}
       <div className="results-header" style={{ marginBottom: '24px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span className="badge-pill" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', fontWeight: 800, fontSize: '12px' }}>
-              <i className="fa-solid fa-circle-check" style={{ marginRight: '3px' }} /> Payment Approved
-            </span>
-            <span className="badge-pill" style={{ background: 'rgba(37, 99, 235, 0.12)', color: 'var(--brand-primary)', fontWeight: 800, fontSize: '12px' }}>
-              <i className="fa-solid fa-circle" style={{ fontSize: '8px', marginRight: '4px' }} /> Listing Active
-            </span>
+            {isVerified ? (
+              <>
+                <span className="badge-pill" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', fontWeight: 800, fontSize: '12px' }}>
+                  <i className="fa-solid fa-circle-check" style={{ marginRight: '3px' }} /> Certificate Verified (100% Free)
+                </span>
+                <span className="badge-pill" style={{ background: 'rgba(37, 99, 235, 0.12)', color: 'var(--brand-primary)', fontWeight: 800, fontSize: '12px' }}>
+                  <i className="fa-solid fa-circle" style={{ fontSize: '8px', marginRight: '4px' }} /> Listing Live & Searchable
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', fontWeight: 800, fontSize: '12px' }}>
+                  <i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> Pending Certificate Verification
+                </span>
+                <span className="badge-pill" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-rose)', fontWeight: 800, fontSize: '12px' }}>
+                  <i className="fa-solid fa-lock" style={{ marginRight: '4px' }} /> Hidden from Public Search
+                </span>
+              </>
+            )}
           </div>
           <h1 style={{ fontSize: '24px', margin: 0 }}>Business Dashboard</h1>
           <p className="results-meta">Manage your business profile and presence on Dotch</p>
@@ -242,7 +225,7 @@ export default function BusinessDashboard() {
             <i className="fa-solid fa-pen-to-square" style={{ marginRight: '4px' }} /> Edit Profile
           </Link>
           <Link to={`/business/${business.id}`} className="btn btn-primary btn-sm">
-            <i className="fa-solid fa-eye" style={{ marginRight: '4px' }} /> View Live Profile
+            <i className="fa-solid fa-eye" style={{ marginRight: '4px' }} /> View Profile
           </Link>
           <button
             type="button"
@@ -255,50 +238,117 @@ export default function BusinessDashboard() {
         </div>
       </div>
 
-      {/* Business Status & Visibility Overview Card */}
-      <div
-        style={{
-          background: 'var(--bg-surface)',
-          border: '1.5px solid rgba(16, 185, 129, 0.3)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '24px',
-          marginBottom: '28px',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent-emerald)' }}>
-              <i className="fa-solid fa-circle" style={{ fontSize: '8px', marginRight: '5px' }} /> Verified Listing Status
-            </span>
-            <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '4px 0 6px', color: 'var(--text-primary)' }}>
-              {business.name} is Live & Discoverable
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '600px', margin: 0, lineHeight: 1.5 }}>
-              Your business is active in the Dotch directory across Nigerian cities. Customers can search for your products and services and connect directly on WhatsApp with zero middleman fees.
-            </p>
-          </div>
+      {/* CASE A: PENDING CERTIFICATE VERIFICATION BANNER */}
+      {!isVerified && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(238, 93, 54, 0.04) 100%)',
+            border: '2px solid rgba(245, 158, 11, 0.4)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '24px 26px',
+            marginBottom: '28px',
+            boxShadow: '0 6px 20px rgba(245, 158, 11, 0.08)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ maxWidth: '580px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', fontWeight: 800 }}>
+                  <i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> Certificate Required
+                </span>
+                <span className="badge-pill" style={{ background: 'rgba(37, 211, 102, 0.12)', color: '#16a34a', fontWeight: 800 }}>
+                  WhatsApp Verification Backend
+                </span>
+              </div>
 
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block' }}>Location</span>
-            <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
-              <i className="fa-solid fa-location-dot" style={{ marginRight: '4px' }} /> {business.location || business.city || 'Lagos'}
-            </strong>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 8px', color: 'var(--text-primary)' }}>
+                Send Your Business / Company Certificate to Unlock Listing
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.55, margin: '0 0 16px' }}>
+                Your business details for <strong>{business.name}</strong> are saved! However, to prevent fraud and protect buyers across Nigeria, businesses cannot appear in search results until your <strong>Business Registration Certificate or Company Certificate (CAC)</strong> is sent to Admin on WhatsApp for verification.
+              </p>
+
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <a
+                  href={waCertUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-whatsapp btn-lg"
+                  style={{ fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <i className="fa-brands fa-whatsapp" style={{ fontSize: '18px' }} />
+                  <span>Send Certificate on WhatsApp ({BANK_DETAILS.formattedAdminWhatsApp})</span>
+                </a>
+
+                <button
+                  type="button"
+                  className="btn btn-outline btn-lg"
+                  onClick={handleRefreshStatus}
+                  disabled={refreshing}
+                  style={{ fontWeight: 700 }}
+                >
+                  {refreshing ? 'Checking status…' : '🔄 Check If Approved'}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '16px', minWidth: '220px', textAlign: 'center' }}>
+              <div style={{ fontSize: '30px', marginBottom: '6px' }}>📜</div>
+              <strong style={{ fontSize: '13.5px', color: 'var(--text-primary)', display: 'block' }}>WhatsApp Verification</strong>
+              <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                Admin reviews documents and activates listings in 5–15 minutes.
+              </small>
+            </div>
           </div>
         </div>
+      )}
 
-        <div style={{ display: 'flex', gap: '16px', marginTop: '18px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            <strong>Category:</strong> {business.category || 'General'}
+      {/* CASE B: VERIFIED BUSINESS STATUS CARD */}
+      {isVerified && (
+        <div
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1.5px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '24px',
+            marginBottom: '28px',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent-emerald)' }}>
+                <i className="fa-solid fa-circle" style={{ fontSize: '8px', marginRight: '5px' }} /> Verified Listing Status
+              </span>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '4px 0 6px', color: 'var(--text-primary)' }}>
+                {business.name} is Live & Discoverable
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '600px', margin: 0, lineHeight: 1.5 }}>
+                Your business is verified and active in the Dotch directory across Nigerian cities. Customers can search for your products and services and connect directly on WhatsApp with zero middleman fees.
+              </p>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block' }}>Location</span>
+              <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
+                <i className="fa-solid fa-location-dot" style={{ marginRight: '4px' }} /> {business.location || business.city || 'Lagos'}
+              </strong>
+            </div>
           </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            <strong>WhatsApp Hotline:</strong> {business.phone ? (<><i className="fa-solid fa-circle-check" style={{ color: 'var(--accent-emerald)', marginRight: '3px' }} /> Connected</>) : 'Not set'}
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            <strong>Photo Gallery:</strong> {(business.image1Url || business.image2Url) ? (<><i className="fa-solid fa-circle-check" style={{ color: 'var(--accent-emerald)', marginRight: '3px' }} /> Active</>) : 'No photos added yet'}
+
+          <div style={{ display: 'flex', gap: '16px', marginTop: '18px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <strong>Category:</strong> {business.category || 'General'}
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <strong>WhatsApp Hotline:</strong> {business.phone ? (<><i className="fa-solid fa-circle-check" style={{ color: 'var(--accent-emerald)', marginRight: '3px' }} /> Connected</>) : 'Not set'}
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <strong>Photo Gallery:</strong> {(business.image1Url || business.image2Url) ? (<><i className="fa-solid fa-circle-check" style={{ color: 'var(--accent-emerald)', marginRight: '3px' }} /> Active</>) : 'No photos added yet'}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 1. Your DOTCH Activity (Private to Business Owner) */}
       <div style={{ marginBottom: '28px' }}>
@@ -523,6 +573,34 @@ export default function BusinessDashboard() {
         </p>
       </div>
 
+      {/* 4. High-Impact Campaign Banners Booster Card */}
+      <div className="campaign-booster-card-bold">
+        <div style={{ maxWidth: '540px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span className="campaign-glow-pill">
+              ⚡ Flash Micro-Campaign • ₦250 for 3 Days
+            </span>
+            <span className="campaign-top-badge">
+              🔥 Top Homepage Hero Carousel
+            </span>
+          </div>
+          <h3 className="campaign-booster-title-bold">
+            Supercharge Your Inquiries with Campaign Banners
+          </h3>
+          <p className="campaign-booster-sub-bold">
+            Put your brand banner or promotional flyer at the very top of the homepage hero carousel for just <strong>₦250 for 3 days</strong>. Guaranteed top placement to get you hundreds of views and direct WhatsApp chats.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-primary btn-lg btn-launch-bold"
+          onClick={() => setIsCampaignModalOpen(true)}
+        >
+          🚀 Launch Campaign Banner (₦250) →
+        </button>
+      </div>
+
       {/* Live Search Result Card Preview */}
       <div style={{ marginBottom: '16px' }}>
         <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '12px' }}>
@@ -545,6 +623,15 @@ export default function BusinessDashboard() {
         onConfirm={handleDelete}
         onCancel={() => !deleting && setIsConfirmOpen(false)}
         isLoading={deleting}
+      />
+
+      <CampaignCreatorModal
+        isOpen={isCampaignModalOpen}
+        onClose={() => setIsCampaignModalOpen(false)}
+        currentUser={user}
+        userProfile={profile}
+        business={business}
+        onSuccess={(newAd) => setUserAds((prev) => [newAd, ...prev])}
       />
     </div>
   )

@@ -33,9 +33,9 @@ export async function registerUser({ email, password, name, phone = '', role, pl
     email,
     phone: formatTo234(phone),
     role,
-    paymentStatus: isVendor ? 'pending' : 'none',
-    paymentApproved: false,
-    selectedPlan: plan || (isVendor ? 'pro_1m' : 'free'),
+    paymentStatus: 'free',
+    paymentApproved: true,
+    selectedPlan: 'free',
     createdAt: serverTimestamp(),
   })
 

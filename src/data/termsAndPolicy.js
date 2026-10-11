@@ -4,30 +4,31 @@ export const TERMS_AND_POLICY = {
   sections: [
     {
       id: 'listing-policy',
-      title: '1. Account & Listing Policy',
+      title: '1. 100% Free Business Listing Policy',
       content: [
+        'Business listings on Dotch are 100% Free Forever for all Nigerian vendors, shops, artisans, and service providers.',
         'Each vendor account is permitted to register and maintain one (1) verified business listing (1 Account = 1 Business).',
         'Businesses must be legitimately operating within Nigeria and provide authentic contact information (phone, WhatsApp, neighborhood/area).',
-        'Misleading, duplicate, prohibited, or fraudulent listings will be permanently deactivated without refund.',
+        'Misleading, duplicate, prohibited, or fraudulent listings will be permanently deactivated.',
       ],
     },
     {
-      id: 'payment-verification',
-      title: '2. Payment & Activation Terms',
+      id: 'campaign-ads',
+      title: '2. Campaign Ads & Payment Policy',
       content: [
-        'Listing privileges (photos, location discovery, direct WhatsApp linking) are unlocked upon admin verification of your bank transfer receipt.',
-        'Official payments must be transferred only to our verified Paga account: 0966048427 (UMUTITE NIGEL EDESIRI). Dotch is not responsible for funds sent to any unauthorized accounts.',
-        'Proof of transfer must be sent via WhatsApp to our official admin line (+2347073544811) with your registered account email.',
-        'Account verification and activation are typically completed within 5 to 10 minutes following confirmation of funds.',
+        'Dotch charges exclusively for optional, high-impact Campaign Ads (homepage carousel spotlight banners and promotional flyers starting at ₦250).',
+        'To launch a campaign ad, vendors message the official Admin directly on WhatsApp (+234 707 354 4811) to obtain the verified payment account number.',
+        'Payment receipts submitted via WhatsApp are verified and live within 5 to 10 minutes.',
+        'Campaign ads run for the exact number of days selected (3 days, 7 days, or 30 days) and terminate automatically upon expiration.',
       ],
     },
     {
       id: 'refund-policy',
-      title: '3. Subscription Duration & Refund Policy',
+      title: '3. Campaign Ad Terms & Inquiries',
       content: [
-        '1 Month Plan covers 30 active calendar days from the date of approval. 2 Months Plan covers 60 active calendar days.',
-        'Subscription fees cover directory indexing, hosting, and platform marketing visibility. Once a listing is verified and published to the directory, subscription fees are non-refundable.',
-        'If payment was made in error and the account has not been activated, you may request a refund within 24 hours by contacting admin on WhatsApp.',
+        'Flash campaigns run for the designated active calendar duration from time of activation.',
+        'Campaign fees cover prime directory spotlighting and placement. Once an ad campaign is verified and published to the live hero feed, campaign fees are non-refundable.',
+        'Vendors can renew or launch new campaigns anytime directly from their Business Dashboard or Settings.',
       ],
     },
     {
@@ -36,7 +37,7 @@ export const TERMS_AND_POLICY = {
       content: [
         'Dotch charges 0% commission on any sales, reservations, or bookings conducted between vendors and customers.',
         'All client transactions, agreements, payments, and product deliveries occur directly between the buyer and the vendor via WhatsApp, phone, or in-person.',
-        'Vendors agree to represent their products and services honestly and provide good service to buyers arriving from the Dotch platform.',
+        'Vendors agree to represent their products and services honestly and provide quality service to buyers arriving from the Dotch platform.',
       ],
     },
   ],

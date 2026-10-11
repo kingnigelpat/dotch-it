@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import SearchBar from '../components/SearchBar'
 import BusinessCard from '../components/BusinessCard'
 import { getActiveAds, SAMPLE_ADVERTS } from '../services/adService'
 import { getAllBusinesses, DEMO_BUSINESSES } from '../services/businessService'
@@ -42,6 +43,29 @@ export default function AuthenticatedHome() {
   const [radarRadius, setRadarRadius] = useState(5)
   const [visibleCount, setVisibleCount] = useState(12)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+
+  const [query, setQuery] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('dotch_last_search_query') || '' : ''))
+  const [location, setLocation] = useState(() => (typeof window !== 'undefined' ? sessionStorage.getItem('dotch_last_search_loc') || 'Lagos' : 'Lagos'))
+
+  const handleQueryChange = (newQ) => {
+    setQuery(newQ)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('dotch_last_search_query', newQ)
+    }
+  }
+
+  const handleSearch = (customQuery) => {
+    const q = customQuery !== undefined ? customQuery : query
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('dotch_last_search_query', q)
+      sessionStorage.setItem('dotch_last_search_loc', location)
+    }
+    if (q.trim()) {
+      navigate(`/dashboard?q=${encodeURIComponent(q)}&loc=${encodeURIComponent(location)}`)
+    } else {
+      navigate(`/dashboard?loc=${encodeURIComponent(location)}`)
+    }
+  }
 
   const categories = getSuggestedCategories()
   const autoRotateRef = useRef(null)
@@ -190,28 +214,21 @@ export default function AuthenticatedHome() {
         </p>
       </div>
 
-      {/* Sleek Search Bar Shortcut */}
-      <div style={{ marginBottom: '18px' }}>
-        <div
-          className="purr-search-box"
-          onClick={() => navigate('/dashboard')}
-          role="button"
-          tabIndex={0}
-          style={{ cursor: 'pointer' }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') navigate('/dashboard')
+      {/* TOP: Search Bar with Integrated Location Selector */}
+      <div style={{ marginBottom: '20px' }}>
+        <SearchBar
+          query={query}
+          setQuery={handleQueryChange}
+          onSearch={() => handleSearch()}
+          location={location}
+          setLocation={(newLoc) => {
+            setLocation(newLoc)
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('dotch_last_search_loc', newLoc)
+            }
           }}
-        >
-          <span style={{ color: 'var(--text-muted)', fontSize: '15px', marginRight: '10px' }}>
-            <i className="fa-solid fa-magnifying-glass" />
-          </span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '14px', flex: 1 }}>
-            Search restaurants, streetwear, gadgets in Lagos…
-          </span>
-          <div className="purr-search-btn">
-            <i className="fa-solid fa-arrow-right" />
-          </div>
-        </div>
+          autoFocus={false}
+        />
       </div>
 
       {/* SECTION 1: DOTCH SPOTLIGHT HERO CAROUSEL */}

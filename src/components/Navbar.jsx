@@ -36,10 +36,12 @@ export default function Navbar() {
             <i className="fa-solid fa-house" /> Home
           </Link>
           <Link
-            to="/dashboard"
-            className={`nav-link ${location.pathname === '/dashboard' ? 'nav-link-active' : ''}`}
+            to="/subscription"
+            className={`nav-link ${location.pathname === '/subscription' ? 'nav-link-active' : ''}`}
+            style={{ fontWeight: 700 }}
           >
-            <i className="fa-solid fa-magnifying-glass" /> Search
+            <i className="fa-solid fa-bullhorn" style={{ color: 'var(--brand-primary)', marginRight: '4px' }} /> Campaigns
+            <span className="badge-pill badge-vip" style={{ fontSize: '10px', padding: '1px 6px', marginLeft: '4px' }}>₦250</span>
           </Link>
 
           {isBusiness && (

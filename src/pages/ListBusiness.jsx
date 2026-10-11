@@ -124,27 +124,26 @@ export default function ListBusiness() {
         </div>
       </section>
 
-      {/* Pricing Section — Tell Them Price */}
+      {/* Free Listing Plan Section */}
       <section className="list-biz-section" style={{ marginTop: '56px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <span className="section-eyebrow">SPECIAL PROMO PRICING</span>
+          <span className="section-eyebrow">100% FREE FOR ALL VENDORS</span>
           <h2 style={{ fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 800, color: 'var(--text-primary)' }}>
-            End of Year Vendor Promo Plan
+            Free Forever Business Listing
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px', marginTop: '6px' }}>
-            One simple promo price till ending of the year. No hidden charges.
+            Zero listing fees. Zero monthly subscriptions. Zero middleman commissions.
           </p>
         </div>
 
         <div style={{ maxWidth: '560px', margin: '0 auto' }}>
-          {/* End of Year Promo Plan Card */}
           <div className="plan-card plan-highlight" style={{ padding: '32px 28px' }}>
-            <div className="plan-badge"><i className="fa-solid fa-fire" style={{ marginRight: '4px' }} /> END OF YEAR SPECIAL PROMO</div>
+            <div className="plan-badge"><i className="fa-solid fa-gift" style={{ marginRight: '4px' }} /> 100% FREE FOREVER</div>
             <div className="plan-head">
-              <h3 className="plan-name" style={{ fontSize: '22px' }}>End of Year Vendor Promo Plan</h3>
+              <h3 className="plan-name" style={{ fontSize: '22px' }}>Standard Verified Vendor Listing</h3>
               <div className="plan-price-wrap">
-                <span className="plan-price" style={{ fontSize: '36px' }}>₦5,000</span>
-                <span className="plan-interval">/ till ending of the year</span>
+                <span className="plan-price" style={{ fontSize: '36px' }}>₦0</span>
+                <span className="plan-interval">/ Free Forever</span>
               </div>
             </div>
 
@@ -153,37 +152,41 @@ export default function ListBusiness() {
             <ul className="plan-features">
               <li className="plan-feature-item">
                 <span className="feature-check">✓</span>
-                <span><strong>Active search listing till ending of the year</strong></span>
+                <span><strong>Active search listing across Nigerian cities</strong></span>
               </li>
               <li className="plan-feature-item">
                 <span className="feature-check">✓</span>
-                <span><strong>5x Maximum Search Visibility Boost</strong></span>
+                <span><strong>Official Verified Business Profile & Green Badge</strong></span>
               </li>
               <li className="plan-feature-item">
                 <span className="feature-check">✓</span>
-                <span><strong>Official Gold Verified Vendor Badge</strong></span>
-              </li>
-              <li className="plan-feature-item">
-                <span className="feature-check">✓</span>
-                <span>Upload place & product photos</span>
+                <span>Upload storefront, place & product photos</span>
               </li>
               <li className="plan-feature-item">
                 <span className="feature-check">✓</span>
                 <span>Direct WhatsApp & phone hotline buttons (0% commission)</span>
               </li>
               <li className="plan-feature-item">
+                <span className="feature-check">📜</span>
+                <span><strong>Certificate Verification:</strong> Send CAC/Company Certificate to Admin on WhatsApp (+234 707 354 4811) to unlock</span>
+              </li>
+              <li className="plan-feature-item">
                 <span className="feature-check">✓</span>
-                <span>Exact address & neighborhood search indexing</span>
+                <span>Real-time customer view & WhatsApp click tracking</span>
               </li>
             </ul>
 
             <Link
-              to={user ? '/business/setup?plan=pro_eoy' : '/register?role=vendor&plan=pro_eoy'}
+              to={user ? '/business/setup' : '/register?role=vendor'}
               className="btn btn-primary btn-block btn-lg"
               style={{ textAlign: 'center', marginTop: '24px', fontWeight: 800 }}
             >
-              {user ? 'Claim ₦5,000 Promo Access →' : 'Sign Up for ₦5,000 Promo Plan →'}
+              {user ? '✨ Register Business Profile (100% Free) →' : '🚀 Register Business 100% Free →'}
             </Link>
+
+            <div style={{ marginTop: '16px', padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-sm)', textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              🛡️ <strong>Scam-Free Guarantee:</strong> Only businesses with verified CAC or company certificates sent via WhatsApp are listed in public search.
+            </div>
           </div>
         </div>
       </section>
