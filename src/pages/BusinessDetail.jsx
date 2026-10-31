@@ -76,26 +76,21 @@ export default function BusinessDetail() {
 
   const isOwner = Boolean(user?.uid && business.ownerUid === user.uid)
   const isAdmin = Boolean(profile?.role === 'admin' || user?.email === 'admin@dotch.ng')
-  const isVerified = Boolean(
-    business.verified === true &&
-    business.status === 'active' &&
-    business.status !== 'pending' &&
-    business.certificateStatus !== 'pending'
-  )
+  const isVerified = Boolean(business.verified === true)
+  const isDeleted = Boolean(business.status === 'deleted' || business.isDeleted)
 
-  // A business cannot be listed or viewed publicly until certificate is submitted and verified via WhatsApp
-  if (!isVerified && !isOwner && !isAdmin) {
+  if (isDeleted && !isAdmin) {
     return (
       <div className="empty-state-box" style={{ maxWidth: '540px', margin: '60px auto', padding: '40px 24px', textAlign: 'center' }}>
-        <div className="empty-state-icon" style={{ fontSize: '48px', marginBottom: '16px' }}>📜</div>
+        <div className="empty-state-icon" style={{ fontSize: '48px', marginBottom: '16px' }}>🗑️</div>
         <h2 className="empty-state-title" style={{ fontSize: '22px', fontWeight: 800, marginBottom: '8px' }}>
-          Listing Pending Verification
+          Listing Removed
         </h2>
         <p className="empty-state-subtitle" style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '24px' }}>
-          This business is pending Business/Company Certificate (CAC) verification. Dotch listings cannot go live until verified with Admin on WhatsApp.
+          This business listing has been removed from Dotch.
         </p>
-        <Link to="/" className="btn btn-primary">
-          ← Discover Verified Businesses
+        <Link to="/dashboard" className="btn btn-primary">
+          ← Back to Search Engine
         </Link>
       </div>
     )
@@ -183,26 +178,35 @@ export default function BusinessDetail() {
           <div style={{ maxWidth: '620px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.2)', color: 'var(--accent-amber)', fontWeight: 800 }}>
-                <i className="fa-solid fa-lock" style={{ marginRight: '4px' }} /> Unlisted & Inactive
+                <i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> 72-Hour Verification Window
               </span>
               <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-primary)' }}>
-                Company Certificate (CAC) Required
+                Meet Admin ({BANK_DETAILS.formattedAdminWhatsApp})
               </span>
             </div>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              This profile is hidden from search and public view. Send your business registration / company certificate to Admin on WhatsApp (<strong>{BANK_DETAILS.formattedAdminWhatsApp}</strong>) to unlock public listing.
+              Your listing is active! To receive your official verified checkmark, please meet or contact the Admin on WhatsApp or Phone (<strong>07073544811</strong>) within 72 hours of listing.
             </p>
           </div>
 
-          <a
-            href={certWhatsAppUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-whatsapp btn-sm"
-            style={{ fontWeight: 800, whiteSpace: 'nowrap' }}
-          >
-            <i className="fa-brands fa-whatsapp" style={{ marginRight: '6px' }} /> Send Certificate on WhatsApp
-          </a>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <a
+              href={certWhatsAppUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-whatsapp btn-sm"
+              style={{ fontWeight: 800, whiteSpace: 'nowrap' }}
+            >
+              <i className="fa-brands fa-whatsapp" style={{ marginRight: '6px' }} /> WhatsApp Admin
+            </a>
+            <a
+              href="tel:07073544811"
+              className="btn btn-primary btn-sm"
+              style={{ fontWeight: 800, whiteSpace: 'nowrap' }}
+            >
+              <i className="fa-solid fa-phone" style={{ marginRight: '6px' }} /> Call 07073544811
+            </a>
+          </div>
         </div>
       )}
 

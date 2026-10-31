@@ -4,6 +4,7 @@ import { ToastProvider } from './context/ToastContext'
 import Navbar from './components/Navbar'
 import MobileBottomNav from './components/MobileBottomNav'
 import Landing from './pages/Landing'
+import AiDiscover from './pages/AiDiscover'
 import AuthenticatedHome from './pages/AuthenticatedHome'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -62,11 +63,13 @@ export default function App() {
         <SetupNotice />
         <main className="main">
           <Routes>
-          <Route path="/" element={user ? <AuthenticatedHome /> : <Landing />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/discover" element={<AiDiscover />} />
+          <Route path="/browse" element={<FinderDashboard />} />
+          <Route path="/dashboard" element={<Navigate to="/discover" replace />} />
+          <Route path="/search" element={<Navigate to="/discover" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
-          <Route path="/dashboard" element={<FinderDashboard />} />
           <Route path="/list-business" element={<ListBusiness />} />
           <Route path="/account" element={<Account />} />
           <Route path="/subscription" element={<Subscription />} />

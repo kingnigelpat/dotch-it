@@ -30,45 +30,49 @@ export default function Navbar() {
         {/* Desktop Navigation Links */}
         <nav className="nav-links desktop-only">
           <Link
-            to="/"
-            className={`nav-link ${location.pathname === '/' ? 'nav-link-active' : ''}`}
+            to="/discover"
+            className={`nav-link ${location.pathname === '/discover' ? 'nav-link-active' : ''}`}
           >
-            <i className="fa-solid fa-house" /> Home
+            <i className="fa-solid fa-sparkles" /> AI Discover
           </Link>
-          <Link
-            to="/subscription"
-            className={`nav-link ${location.pathname === '/subscription' ? 'nav-link-active' : ''}`}
-            style={{ fontWeight: 700 }}
-          >
-            <i className="fa-solid fa-bullhorn" style={{ color: 'var(--brand-primary)', marginRight: '4px' }} /> Campaigns
-            <span className="badge-pill badge-vip" style={{ fontSize: '10px', padding: '1px 6px', marginLeft: '4px' }}>₦250</span>
-          </Link>
-
-          {isBusiness && (
-            <Link
-              to="/business"
-              className={`nav-link ${location.pathname.startsWith('/business') ? 'nav-link-active' : ''}`}
-            >
-              <i className="fa-solid fa-chart-line" /> Business
-            </Link>
-          )}
-
-          {isAdmin && (
-            <Link
-              to="/admin"
-              className={`nav-link ${location.pathname === '/admin' ? 'nav-link-active' : ''}`}
-              style={{ color: 'var(--brand-primary)', fontWeight: 800 }}
-            >
-              <i className="fa-solid fa-shield-halved" /> Admin
-            </Link>
-          )}
 
           <Link
-            to="/account"
-            className={`nav-link ${location.pathname === '/account' ? 'nav-link-active' : ''}`}
+            to="/browse"
+            className={`nav-link ${location.pathname === '/browse' ? 'nav-link-active' : ''}`}
+            style={{ fontSize: '13px', opacity: 0.85 }}
           >
-            <i className="fa-solid fa-gear" /> Settings
+            <i className="fa-solid fa-store" /> Browse
           </Link>
+
+          {user && (
+            <>
+              {isBusiness && (
+                <Link
+                  to="/business"
+                  className={`nav-link ${location.pathname.startsWith('/business') ? 'nav-link-active' : ''}`}
+                >
+                  <i className="fa-solid fa-chart-line" /> Business
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className={`nav-link ${location.pathname === '/admin' ? 'nav-link-active' : ''}`}
+                  style={{ color: 'var(--brand-primary)', fontWeight: 800 }}
+                >
+                  <i className="fa-solid fa-shield-halved" /> Admin
+                </Link>
+              )}
+
+              <Link
+                to="/account"
+                className={`nav-link ${location.pathname === '/account' ? 'nav-link-active' : ''}`}
+              >
+                <i className="fa-solid fa-gear" /> Settings
+              </Link>
+            </>
+          )}
 
           {/* Theme Toggle Button */}
           <button

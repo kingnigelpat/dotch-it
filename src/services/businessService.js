@@ -12,345 +12,17 @@ import {
   orderBy,
   limit,
 } from 'firebase/firestore'
-import { fetchOsmBusinesses } from './osmService'
 import { cacheService } from '../utils/cacheService'
 import { NIGERIA_LOCATIONS } from '../data/nigeriaLocations'
 import { calculateDistanceKm, getCoordsForLocationString } from './geolocationService'
 import { formatTo234 } from '../utils/phoneUtils'
 import { parseQueryAndLocation } from '../utils/searchParser'
+import { SAMPLE_SELLERS } from '../data/sampleSellers'
 
 export const BUSINESS_COLLECTION = 'businesses'
 
-// Rich initial sample businesses including popular Hotels & Restaurants across Nigeria
-const RAW_DEMO_BUSINESSES = [
-  {
-    id: 'demo-1',
-    name: 'Kicks Hub Lagos',
-    category: 'Fashion & Clothing',
-    description: 'Original Nike, Adidas & Jordan sneakers. Fast delivery across Lagos & nationwide.',
-    price: '₦85,000 - ₦140,000',
-    location: 'Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '4.9',
-    phone: '+2347073544811',
-    logoUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=400&auto=format&fit=crop',
-    keywords: ['nike', 'shoes', 'sneakers', 'jordan', 'kicks', 'lagos', 'fashion'],
-  },
-  {
-    id: 'slot-ikeja-gadgets',
-    name: 'Slot Systems Ikeja',
-    category: 'Electronics',
-    description: 'Official iPhones, Samsungs, MacBooks & tech accessories with manufacturer warranty & instant Lagos delivery.',
-    price: '₦120,000 - ₦1,850,000',
-    location: 'Computer Village, Ikeja, Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '4.9',
-    phone: '+2349062083582',
-    logoUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1563770660941-20978e870e26?w=400&auto=format&fit=crop',
-    keywords: ['iphone', 'macbook', 'slot', 'tech', 'ikeja', 'computer village', 'gadgets', 'phones'],
-  },
-  {
-    id: 'luxe-beauty-spa',
-    name: 'Luxe Beauty & Spa Lounge',
-    category: 'Beauty',
-    description: 'Premium organic facial treatment, hair braiding, luxury manicures & full body massage therapy.',
-    price: '₦15,000 - ₦75,000',
-    location: 'Lekki Phase 1, Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '4.9',
-    phone: '+2348035541199',
-    logoUrl: 'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&auto=format&fit=crop',
-    keywords: ['beauty', 'spa', 'massage', 'nails', 'hair', 'lekki', 'lagos', 'facial'],
-  },
-  {
-    id: 'rest-yellow-chilli-lagos',
-    name: 'Yellow Chilli Restaurant & Bar',
-    category: 'Restaurant',
-    description: 'Gourmet pan-African fine dining serving legendary Jollof Rice, Seafood Okro, Prawns & signature cocktails.',
-    price: '₦8,000 - ₦30,000',
-    location: 'Victoria Island, Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '4.9',
-    phone: '+2348133934758',
-    logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&auto=format&fit=crop',
-    keywords: ['restaurant', 'yellow chilli', 'african food', 'jollof', 'lagos', 'vi', 'dining', 'food', 'okro'],
-  },
-  {
-    id: 'rest-nkoyo-abuja',
-    name: 'Nkoyo Restaurant & Grill',
-    category: 'Restaurant',
-    description: 'Authentic Nigerian cuisine, spicy grills, and aromatic herbal dishes served in an elegant ethnic wooden lounge.',
-    price: '₦7,500 - ₦25,000',
-    location: 'Maitama, Abuja',
-    city: 'Abuja',
-    verified: true,
-    rating: '4.8',
-    phone: '+2348153221279',
-    logoUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop',
-    keywords: ['restaurant', 'nkoyo', 'abuja', 'maitama', 'african dish', 'grill', 'food', 'suya', 'dining'],
-  },
-  {
-    id: 'autochek-workshop-abuja',
-    name: 'Autochek Certified Auto Workshop',
-    category: 'Auto',
-    description: 'Computerized diagnostic scan, wheel balancing, engine overhaul & genuine OEM auto spare parts.',
-    price: '₦15,000 - ₦180,000',
-    location: 'Wuse 2, Abuja',
-    city: 'Abuja',
-    verified: true,
-    rating: '4.8',
-    phone: '+2347080610000',
-    logoUrl: 'https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=400&auto=format&fit=crop',
-    keywords: ['auto', 'mechanic', 'car repair', 'diagnostics', 'wuse', 'abuja', 'spare parts'],
-  },
-  {
-    id: 'rest-shiro-lagos',
-    name: 'Shiro Lagos Fine Dining & Lounge',
-    category: 'Restaurant',
-    description: 'Pan-Asian fine dining right on the beach featuring fresh sushi, dim sum, teppanyaki & breathtaking ocean sunsets.',
-    price: '₦15,000 - ₦60,000',
-    location: 'Landmark Beach, Victoria Island, Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '4.9',
-    phone: '+2348186298888',
-    logoUrl: 'https://images.unsplash.com/photo-1578474846511-04ba529f0b88?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&auto=format&fit=crop',
-    keywords: ['restaurant', 'shiro', 'sushi', 'asian', 'fine dining', 'beachfront', 'lagos', 'vi', 'food'],
-  },
-  {
-    id: 'royal-threads-ph',
-    name: 'Royal Threads Clothing & Accessories',
-    category: 'Fashion & Clothing',
-    description: 'Bespoke native agbada, tailored suits, Ankara dresses & designer accessories for men & women.',
-    price: '₦25,000 - ₦150,000',
-    location: 'GRA Phase 2, Port Harcourt',
-    city: 'Port Harcourt',
-    verified: true,
-    rating: '4.8',
-    phone: '+2348055559500',
-    logoUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&auto=format&fit=crop',
-    keywords: ['fashion', 'suits', 'native', 'agbada', 'port harcourt', 'ph', 'gra', 'clothing'],
-  },
-  {
-    id: 'rest-bole-king-ph',
-    name: 'Bole King Restaurant & Lounge',
-    category: 'Restaurant',
-    description: 'Famous Port Harcourt bole (roasted plantain) & roasted fish experience served with fiery pepper sauce & fresh palm wine.',
-    price: '₦4,500 - ₦18,000',
-    location: 'GRA Phase 2, Port Harcourt',
-    city: 'Port Harcourt',
-    verified: true,
-    rating: '4.9',
-    phone: '+2348179670902',
-    logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&auto=format&fit=crop',
-    keywords: ['restaurant', 'bole', 'bole king', 'port harcourt', 'ph', 'roasted plantain', 'fish', 'food', 'gra'],
-  },
-  {
-    id: 'hubmart-supermarket-asaba',
-    name: 'Hubmart Supermarket & Bakery',
-    category: 'Supermarket & Grocery',
-    description: 'Fresh groceries, imported snacks, fresh bread, household essentials & wholesale provisions.',
-    price: '₦1,000 - ₦50,000',
-    location: 'GRA, Asaba',
-    city: 'Asaba',
-    verified: true,
-    rating: '4.7',
-    phone: '+2348115599988',
-    logoUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?w=400&auto=format&fit=crop',
-    keywords: ['supermarket', 'groceries', 'bakery', 'asaba', 'delta', 'provisions'],
-  },
-  {
-    id: 'rest-amala-sky-ibadan',
-    name: 'Amala Sky Restaurant (Bodija)',
-    category: 'Restaurant',
-    description: 'Legendary Ibadan indigenous Amala, silky Gbegiri, Ewedu, Ogunfe (goat meat) and bush meat cooked to perfection.',
-    price: '₦2,500 - ₦10,000',
-    location: 'Bodija, Ibadan',
-    city: 'Ibadan',
-    verified: true,
-    rating: '4.9',
-    phone: '+2347073544811',
-    logoUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&auto=format&fit=crop',
-    keywords: ['restaurant', 'amala', 'amala sky', 'ibadan', 'bodija', 'gbegiri', 'ewedu', 'goat meat', 'food', 'swallow'],
-  },
-  {
-    id: 'central-tech-ibadan',
-    name: 'Central Laptop & Phone Hub',
-    category: 'Electronics',
-    description: 'Sales and fast repairs of HP, Dell, MacBook, iPhone & Samsung smartphones with warranty.',
-    price: '₦45,000 - ₦650,000',
-    location: 'Ring Road, Ibadan',
-    city: 'Ibadan',
-    verified: true,
-    rating: '4.7',
-    phone: '+2349060757189',
-    logoUrl: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&auto=format&fit=crop',
-    keywords: ['tech', 'laptops', 'phones', 'repair', 'ibadan', 'ring road', 'electronics'],
-  },
-  {
-    id: 'rest-hardrock-lagos',
-    name: 'Hard Rock Cafe Lagos',
-    category: 'Restaurant',
-    description: 'World-famous music-themed restaurant with live performance stage, legendary burgers, ribs & oceanfront lounge.',
-    price: '₦10,000 - ₦45,000',
-    location: 'Oniru, Victoria Island, Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '4.8',
-    phone: '+2349081988888',
-    logoUrl: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&auto=format&fit=crop',
-    keywords: ['restaurant', 'hard rock', 'cafe', 'burgers', 'cocktails', 'live music', 'lagos', 'oniru', 'food'],
-  },
-  {
-    id: 'rest-theplace-lekki',
-    name: 'The Place Restaurant & Bar',
-    category: 'Restaurant',
-    description: 'Top Nigerian food joint known for delicious local dishes, grilled chicken, fiery asun, fried rice and great music.',
-    price: '₦3,500 - ₦15,000',
-    location: 'Lekki, Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '4.8',
-    phone: '+2347086990485',
-    logoUrl: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop',
-    keywords: ['restaurant', 'the place', 'lekki', 'lagos', 'asun', 'jollof', 'grill', 'food', 'chicken'],
-  },
-  {
-    id: 'rest-kilimanjaro-enugu',
-    name: 'Kilimanjaro Restaurant',
-    category: 'Restaurant',
-    description: 'Popular Nigerian fast casual restaurant serving steaming Jollof, Fried Rice, Crispy Chicken, Asun & pastries.',
-    price: '₦3,000 - ₦12,000',
-    location: 'Polo Park Mall, Enugu',
-    city: 'Enugu',
-    verified: true,
-    rating: '4.7',
-    phone: '+2348100393579',
-    logoUrl: 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&auto=format&fit=crop',
-    keywords: ['restaurant', 'kilimanjaro', 'enugu', 'fast food', 'jollof', 'fried chicken', 'food', 'rice'],
-  },
-  {
-    id: 'demo-2',
-    name: 'Gourmet Slice Pizza & Grill',
-    category: 'Restaurant',
-    description: 'Authentic wood-fired pizzas, gourmet burgers, and fresh pasta in Lekki.',
-    price: '₦7,500 - ₦22,000',
-    location: 'Lekki, Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '4.8',
-    phone: '+2347073544811',
-    logoUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop',
-    keywords: ['pizza', 'restaurant', 'food', 'burgers', 'lekki', 'dinner'],
-  },
-  {
-    id: 'demo-3',
-    name: 'iFix Tech & Gadget Repair',
-    category: 'Electronics & Tech',
-    description: 'Certified iPhone, Samsung & MacBook screen replacement and hardware repair.',
-    price: '₦15,000 - ₦95,000',
-    location: 'Ikeja, Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '5.0',
-    phone: '+2347073544811',
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&auto=format&fit=crop',
-    keywords: ['iphone', 'repair', 'screen', 'apple', 'phone', 'ikeja', 'macbook'],
-  },
-  {
-    id: 'demo-4',
-    name: 'Royal Crown Barbershop & Spa',
-    category: 'Beauty & Salon',
-    description: 'Premium haircutting, beard grooming, facial massage, and executive lounge.',
-    price: '₦6,000 - ₦25,000',
-    location: 'Victoria Island, Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '4.9',
-    phone: '+2347073544811',
-    logoUrl: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=600&auto=format&fit=crop',
-    keywords: ['barber', 'barbershop', 'haircut', 'salon', 'grooming', 'vi'],
-  },
-  {
-    id: 'demo-5',
-    name: 'Sweet Artisan Cakes & Bakery',
-    category: 'Food & Drink',
-    description: 'Custom birthday cakes, wedding cakes, pastries and dessert tables.',
-    price: '₦25,000 - ₦180,000',
-    location: 'Asaba',
-    city: 'Asaba',
-    verified: true,
-    rating: '4.8',
-    phone: '+2347073544811',
-    logoUrl: 'https://images.unsplash.com/photo-1535141192574-5d4897c13136?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop',
-    keywords: ['cakes', 'birthday', 'bakery', 'pastries', 'asaba', 'dessert'],
-  },
-  {
-    id: 'demo-bags-lagos',
-    name: 'Luxe Leather & Handbag Gallery Lagos',
-    category: 'Fashion & Clothing',
-    description: 'Luxury designer handbags, leather tote bags, shoulder bags, travel duffels & corporate briefcases. Express delivery across Lagos & nationwide.',
-    price: '₦28,000 - ₦145,000',
-    location: 'Lekki Phase 1, Lagos',
-    city: 'Lagos',
-    verified: true,
-    rating: '4.9',
-    phone: '+2347073544811',
-    logoUrl: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&auto=format&fit=crop',
-    keywords: ['bag', 'bags', 'handbag', 'handbags', 'tote', 'leather', 'purse', 'fashion', 'accessories', 'lagos', 'lekki'],
-  },
-]
-
-export const DEMO_BUSINESSES = RAW_DEMO_BUSINESSES.map((item) => ({
-  status: 'active',
-  certificateStatus: 'verified',
-  verified: true,
-  ...item,
-}))
+// Realistic sample sellers across categories, plus any real stores registered
+export const DEMO_BUSINESSES = [...SAMPLE_SELLERS]
 
 export async function createBusiness({ uid, data }) {
   // Enforce one account one business
@@ -361,17 +33,19 @@ export async function createBusiness({ uid, data }) {
   const ref = doc(collection(db, BUSINESS_COLLECTION))
   const isVerified = Boolean(
     data?.verified === true &&
-    data?.certificateStatus === 'verified' &&
-    data?.status === 'active'
+    data?.certificateStatus === 'verified'
   )
+  const now = new Date()
+  const deadline = new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString()
   const payload = {
     ...data,
     phone: formatTo234(data?.phone || ''),
     ownerUid: uid,
-    status: isVerified ? 'active' : 'pending',
+    status: 'active',
     verified: isVerified,
-    certificateStatus: isVerified ? 'verified' : 'pending',
-    createdAt: new Date().toISOString(),
+    certificateStatus: isVerified ? 'verified' : 'pending_72h',
+    createdAt: data?.createdAt || now.toISOString(),
+    verificationDeadline: data?.verificationDeadline || deadline,
   }
   if (db) {
     try {
@@ -641,12 +315,7 @@ export async function searchBusinesses({ category, keyword, location, userCoords
         if (data.status === 'deleted' || data.isDeleted) {
           deletedIds.add(d.id)
           addDeletedBizId(d.id)
-        } else if (
-          data.verified === true &&
-          data.status === 'active' &&
-          data.status !== 'pending' &&
-          data.certificateStatus !== 'pending'
-        ) {
+        } else if (data.status !== 'blocked' && !data.isBlocked) {
           dbResults.push({ id: d.id, ...data, phone: formatTo234(data?.phone || '') })
         }
       })
@@ -655,14 +324,25 @@ export async function searchBusinesses({ category, keyword, location, userCoords
     }
   }
 
-  // Merge DB results with demo results (excluding any deleted IDs)
-  const validDbResults = dbResults.filter((b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id))
-  const all = [
-    ...validDbResults,
-    ...DEMO_BUSINESSES.filter((d) => !deletedIds.has(d.id) && d.status !== 'deleted'),
-  ]
+  // Also include any real business saved in local storage (e.g. newly created by owner offline or pending sync)
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('dotch_biz_')) {
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          const item = JSON.parse(raw)
+          if (item?.id && !deletedIds.has(item.id) && !dbResults.some((b) => b.id === item.id)) {
+            dbResults.push({ ...item, phone: formatTo234(item.phone || '') })
+          }
+        }
+      }
+    }
+  } catch (e) {}
 
-  let filtered = all
+  // Filter out any deleted or blocked stores
+  const validDbResults = dbResults.filter((b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id))
+  let filtered = validDbResults
 
   if (category) {
     const catLower = category.toLowerCase()
@@ -715,30 +395,6 @@ export async function searchBusinesses({ category, keyword, location, userCoords
 
       return false
     })
-  }
-
-  // If local results are few, attempt to find real Overpass OpenStreetMap POIs ONLY for the requested location.
-  if (
-    filtered.length < 5 &&
-    effectiveLocation &&
-    effectiveLocation !== 'Everywhere' &&
-    effectiveLocation !== 'All of Nigeria' &&
-    effectiveLocation !== 'All Locations'
-  ) {
-    try {
-      const targetCity = effectiveLocation.trim()
-      const osmPlaces = await fetchOsmBusinesses({
-        city: targetCity,
-        category: category || effectiveKeyword || 'all',
-        limit: 15,
-      })
-      const validOsm = (osmPlaces || []).filter((o) => isLocationMatch(o, targetCity))
-      const existingNames = new Set(filtered.map((b) => b.name.toLowerCase()))
-      const newOsm = validOsm.filter((o) => !existingNames.has(o.name.toLowerCase()))
-      filtered = [...filtered, ...newOsm]
-    } catch {
-      // ignore osm fallback errors
-    }
   }
 
   // Calculate distance if user GPS coordinates or location is available
@@ -796,12 +452,7 @@ export async function getAllBusinesses(max = 50) {
         if (data.status === 'deleted' || data.isDeleted) {
           deletedIds.add(d.id)
           addDeletedBizId(d.id)
-        } else if (
-          data.verified === true &&
-          data.status === 'active' &&
-          data.status !== 'pending' &&
-          data.certificateStatus !== 'pending'
-        ) {
+        } else if (data.status !== 'blocked' && !data.isBlocked) {
           dbResults.push({ id: d.id, ...data, phone: formatTo234(data?.phone || '') })
         }
       })
@@ -810,12 +461,24 @@ export async function getAllBusinesses(max = 50) {
     }
   }
 
+  // Include locally stored real listings
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('dotch_biz_')) {
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          const item = JSON.parse(raw)
+          if (item?.id && !deletedIds.has(item.id) && !dbResults.some((b) => b.id === item.id)) {
+            dbResults.push({ ...item, phone: formatTo234(item.phone || '') })
+          }
+        }
+      }
+    }
+  } catch (e) {}
+
   const validDbResults = dbResults.filter((b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id))
-  const existingIds = new Set(validDbResults.map((b) => b.id))
-  const combined = [
-    ...validDbResults,
-    ...DEMO_BUSINESSES.filter((d) => !existingIds.has(d.id) && !deletedIds.has(d.id) && d.status !== 'deleted'),
-  ]
+  const combined = validDbResults
   
   // Sort priority tiers first
   combined.sort((a, b) => {
@@ -850,12 +513,8 @@ export async function getAllBusinessesAdmin(max = 150) {
     }
   }
 
-  const existingIds = new Set(dbResults.map((b) => b.id))
-  const combined = [
-    ...dbResults,
-    ...DEMO_BUSINESSES.filter((d) => !existingIds.has(d.id) && !deletedIds.has(d.id) && d.status !== 'deleted'),
-  ]
-  return combined
+  const validDbResults = dbResults.filter((b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id))
+  return validDbResults
 }
 
 export async function updateBusinessSubscription(businessId, { planId, reference, amount }) {

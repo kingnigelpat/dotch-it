@@ -3,7 +3,12 @@ import { useAuth } from '../context/AuthContext'
 
 export default function MobileBottomNav() {
   const location = useLocation()
-  const { profile } = useAuth()
+  const { user, profile } = useAuth()
+
+  // Do not show bottom nav on landing page or for logged-out visitors
+  if (!user || location.pathname === '/') {
+    return null
+  }
 
   const isActive = (path) => {
     if (path === '/' && location.pathname === '/') return true
@@ -25,14 +30,24 @@ export default function MobileBottomNav() {
       {/* 1. Home tab */}
       <Link
         to="/"
-        className={`nav-tab-item ${isActive('/') ? 'active' : ''}`}
+        className={`nav-tab-item ${location.pathname === '/' ? 'active' : ''}`}
         onClick={handleNavClick}
       >
         <span className="nav-tab-icon"><i className="fa-solid fa-house" /></span>
         <span className="nav-tab-label">Home</span>
       </Link>
 
-      {/* 2. Campaign Ads tab - BOLD highlight */}
+      {/* 2. AI Discover tab */}
+      <Link
+        to="/discover"
+        className={`nav-tab-item ${location.pathname.startsWith('/discover') ? 'active' : ''}`}
+        onClick={handleNavClick}
+      >
+        <span className="nav-tab-icon"><i className="fa-solid fa-sparkles" /></span>
+        <span className="nav-tab-label">Discover</span>
+      </Link>
+
+      {/* 3. Campaign Ads tab */}
       <Link
         to="/subscription"
         className={`nav-tab-item nav-tab-campaign-bold ${isActive('/subscription') ? 'active' : ''}`}
@@ -40,12 +55,12 @@ export default function MobileBottomNav() {
       >
         <span className="nav-tab-icon">
           <i className="fa-solid fa-bullhorn" />
-          <span className="tab-micro-badge">₦250</span>
+          <span className="tab-micro-badge">Ads</span>
         </span>
         <span className="nav-tab-label">Campaigns</span>
       </Link>
 
-      {/* 3. Business Storefront tab */}
+      {/* 4. Business Storefront tab */}
       <Link
         to={isBusiness ? '/business' : '/list-business'}
         className={`nav-tab-item ${isActive('/business') || isActive('/list-business') ? 'active' : ''}`}

@@ -171,6 +171,8 @@ export default function BusinessSetup() {
 
       const formattedPhone = formatTo234(phone)
       const isAlreadyApproved = Boolean(editingId && (isApproved || profile?.certificateVerified))
+      const now = new Date()
+      const deadline = new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString()
 
       const businessData = {
         name: name.trim(),
@@ -184,11 +186,12 @@ export default function BusinessSetup() {
         image1Url: uploadedImg1,
         image2Url: uploadedImg2,
         certificateUrl: uploadedCert,
-        certificateStatus: isAlreadyApproved ? 'verified' : 'pending',
+        certificateStatus: isAlreadyApproved ? 'verified' : 'pending_72h',
         verified: isAlreadyApproved,
-        status: isAlreadyApproved ? 'active' : 'pending',
+        status: 'active', // Real listings are active immediately on Dotch
         paymentStatus: isAlreadyApproved ? 'approved' : 'pending',
         subscriptionTier: 'free_listing',
+        verificationDeadline: deadline,
         isBlocked: false,
         keywords: [
           name.trim().toLowerCase(),
@@ -209,12 +212,12 @@ export default function BusinessSetup() {
         selectedPlan: 'free_listing',
         phone: formattedPhone,
         paymentStatus: isAlreadyApproved ? 'approved' : 'pending',
-        certificateStatus: isAlreadyApproved ? 'verified' : 'pending',
+        certificateStatus: isAlreadyApproved ? 'verified' : 'pending_72h',
       })
 
       if (refreshProfile) await refreshProfile()
 
-      // If pending verification, open WhatsApp so vendor can send their business/company certificate to admin
+      // Redirect vendor to admin on WhatsApp (07073544811) to inform them to meet the admin for 72hr verification
       if (!isAlreadyApproved && typeof window !== 'undefined') {
         const waCertUrl = getCertificateVerificationWhatsAppUrl({
           businessName: name.trim(),
@@ -224,8 +227,8 @@ export default function BusinessSetup() {
         window.open(waCertUrl, '_blank')
       }
 
-      // Direct to business portal
-      navigate('/business')
+      // Direct to business portal with 72h confirmation notice
+      navigate('/business?posted=72h')
     } catch (err) {
       console.error('Error saving business listing:', err)
       setError(err.message || 'Could not save business listing. Please try again.')

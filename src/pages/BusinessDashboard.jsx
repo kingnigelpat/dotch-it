@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { getBusinessByOwner, deleteBusiness } from '../services/businessService'
@@ -13,7 +13,12 @@ import BusinessCard from '../components/BusinessCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import CampaignCreatorModal from '../components/CampaignCreatorModal'
 import { getUserAds } from '../services/adService'
-import { getCertificateVerificationWhatsAppUrl, BANK_DETAILS } from '../config/bankDetails'
+import {
+  get72HourVerificationWhatsAppUrl,
+  ADMIN_PHONE_DISPLAY,
+  ADMIN_TEL_HREF,
+  BANK_DETAILS,
+} from '../config/bankDetails'
 
 function getProfileStatus(business) {
   const dateStr = business?.updatedAt || business?.createdAt
@@ -183,8 +188,20 @@ export default function BusinessDashboard() {
 
   const profileStatus = getProfileStatus(business)
 
-  const isVerified = Boolean(business.verified === true && business.status === 'active')
-  const waCertUrl = getCertificateVerificationWhatsAppUrl({
+  const [searchParams] = useSearchParams()
+  const postedJustNow = searchParams.get('posted') === '72h'
+
+  const getRemainingHours = () => {
+    if (!business?.verificationDeadline && !business?.createdAt) return 72
+    const target = business?.verificationDeadline
+      ? new Date(business.verificationDeadline).getTime()
+      : new Date(business.createdAt).getTime() + 72 * 60 * 60 * 1000
+    const diffHours = Math.max(0, Math.round((target - Date.now()) / (1000 * 60 * 60)))
+    return diffHours
+  }
+
+  const remainingHours = getRemainingHours()
+  const waCertUrl = get72HourVerificationWhatsAppUrl({
     businessName: business.name,
     email: user?.email,
     phone: business.phone,
@@ -192,28 +209,48 @@ export default function BusinessDashboard() {
 
   return (
     <div className="business-dashboard">
+      {/* 72-Hour Success Alert if just posted */}
+      {postedJustNow && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(37, 99, 235, 0.08) 100%)',
+            border: '1.5px solid rgba(16, 185, 129, 0.35)',
+            borderRadius: 'var(--radius-md)',
+            padding: '16px 20px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          <span style={{ fontSize: '24px' }}>🎉</span>
+          <div style={{ flex: 1 }}>
+            <strong style={{ fontSize: '15px', color: 'var(--text-primary)', display: 'block' }}>
+              Your business listing is now live on Dotch!
+            </strong>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              Buyers can now search and find you. In the next <strong>72 hours</strong>, inform and meet the Admin at <strong>{ADMIN_PHONE_DISPLAY}</strong> for official verification.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Header with Status & Actions */}
       <div className="results-header" style={{ marginBottom: '24px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span className="badge-pill" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', fontWeight: 800, fontSize: '12px' }}>
+              <i className="fa-solid fa-circle" style={{ fontSize: '8px', marginRight: '4px' }} /> Listing Live & Searchable
+            </span>
+
             {isVerified ? (
-              <>
-                <span className="badge-pill" style={{ background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent-emerald)', fontWeight: 800, fontSize: '12px' }}>
-                  <i className="fa-solid fa-circle-check" style={{ marginRight: '3px' }} /> Certificate Verified (100% Free)
-                </span>
-                <span className="badge-pill" style={{ background: 'rgba(37, 99, 235, 0.12)', color: 'var(--brand-primary)', fontWeight: 800, fontSize: '12px' }}>
-                  <i className="fa-solid fa-circle" style={{ fontSize: '8px', marginRight: '4px' }} /> Listing Live & Searchable
-                </span>
-              </>
+              <span className="badge-pill" style={{ background: 'rgba(37, 99, 235, 0.12)', color: 'var(--brand-primary)', fontWeight: 800, fontSize: '12px' }}>
+                <i className="fa-solid fa-circle-check" style={{ marginRight: '3px' }} /> Admin Verified
+              </span>
             ) : (
-              <>
-                <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', fontWeight: 800, fontSize: '12px' }}>
-                  <i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> Pending Certificate Verification
-                </span>
-                <span className="badge-pill" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-rose)', fontWeight: 800, fontSize: '12px' }}>
-                  <i className="fa-solid fa-lock" style={{ marginRight: '4px' }} /> Hidden from Public Search
-                </span>
-              </>
+              <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', fontWeight: 800, fontSize: '12px' }}>
+                <i className="fa-solid fa-clock" style={{ marginRight: '4px' }} /> 72-Hour Verification Active ({remainingHours}h remaining)
+              </span>
             )}
           </div>
           <h1 style={{ fontSize: '24px', margin: 0 }}>Business Dashboard</h1>
@@ -238,7 +275,7 @@ export default function BusinessDashboard() {
         </div>
       </div>
 
-      {/* CASE A: PENDING CERTIFICATE VERIFICATION BANNER */}
+      {/* 72-HOUR ADMIN VERIFICATION BANNER */}
       {!isVerified && (
         <div
           style={{
@@ -251,21 +288,21 @@ export default function BusinessDashboard() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ maxWidth: '580px' }}>
+            <div style={{ maxWidth: '620px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', fontWeight: 800 }}>
-                  <i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> Certificate Required
+                  <i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> 72-Hour Verification Window
                 </span>
                 <span className="badge-pill" style={{ background: 'rgba(37, 211, 102, 0.12)', color: '#16a34a', fontWeight: 800 }}>
-                  WhatsApp Verification Backend
+                  Admin Hotline: {ADMIN_PHONE_DISPLAY}
                 </span>
               </div>
 
               <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 8px', color: 'var(--text-primary)' }}>
-                Send Your Business / Company Certificate to Unlock Listing
+                Meet the Admin for Verification ({remainingHours} Hours Remaining)
               </h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.55, margin: '0 0 16px' }}>
-                Your business details for <strong>{business.name}</strong> are saved! However, to prevent fraud and protect buyers across Nigeria, businesses cannot appear in search results until your <strong>Business Registration Certificate or Company Certificate (CAC)</strong> is sent to Admin on WhatsApp for verification.
+                Your business listing for <strong>{business.name}</strong> is live and searchable on Dotch! You have <strong>72 hours</strong> from listing to contact and meet the Admin for physical in-person or document verification to receive your permanent official verification checkmark.
               </p>
 
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -277,7 +314,16 @@ export default function BusinessDashboard() {
                   style={{ fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                 >
                   <i className="fa-brands fa-whatsapp" style={{ fontSize: '18px' }} />
-                  <span>Send Certificate on WhatsApp ({BANK_DETAILS.formattedAdminWhatsApp})</span>
+                  <span>WhatsApp Admin ({ADMIN_PHONE_DISPLAY})</span>
+                </a>
+
+                <a
+                  href={ADMIN_TEL_HREF}
+                  className="btn btn-primary btn-lg"
+                  style={{ fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <i className="fa-solid fa-phone" style={{ fontSize: '16px' }} />
+                  <span>Call Admin ({ADMIN_PHONE_DISPLAY})</span>
                 </a>
 
                 <button
@@ -287,16 +333,17 @@ export default function BusinessDashboard() {
                   disabled={refreshing}
                   style={{ fontWeight: 700 }}
                 >
-                  {refreshing ? 'Checking status…' : '🔄 Check If Approved'}
+                  {refreshing ? 'Checking status…' : '🔄 Check If Verified'}
                 </button>
               </div>
             </div>
 
             <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '16px', minWidth: '220px', textAlign: 'center' }}>
-              <div style={{ fontSize: '30px', marginBottom: '6px' }}>📜</div>
-              <strong style={{ fontSize: '13.5px', color: 'var(--text-primary)', display: 'block' }}>WhatsApp Verification</strong>
-              <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                Admin reviews documents and activates listings in 5–15 minutes.
+              <div style={{ fontSize: '32px', marginBottom: '6px' }}>🛡️</div>
+              <strong style={{ fontSize: '14px', color: 'var(--text-primary)', display: 'block' }}>Admin Verification</strong>
+              <small style={{ color: 'var(--text-muted)', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                Direct Nigeria Contact:<br />
+                <strong style={{ color: 'var(--brand-primary)' }}>{ADMIN_PHONE_DISPLAY}</strong>
               </small>
             </div>
           </div>
