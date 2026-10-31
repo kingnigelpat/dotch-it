@@ -1,345 +1,323 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import SearchIntent from '../components/SearchIntent'
 import BusinessCard from '../components/BusinessCard'
-import EmptyState from '../components/EmptyState'
-import UnifiedAiSearch from '../components/UnifiedAiSearch'
-import { searchBusinesses, getAllBusinesses } from '../services/businessService'
-import { getActiveAds } from '../services/adService'
-import { understandSearch, getSuggestedCategories } from '../services/openrouterService'
-import { parseQueryAndLocation } from '../utils/searchParser'
-import { aiVoice } from '../utils/aiVoiceAssistant'
+import { getAllSellers } from '../services/aiDiscoveryService'
 
+const CATEGORIES = [
+  'All',
+  'Tech & Gadgets',
+  'Fashion & Apparel',
+  'Bakery & Food',
+  'Automotive',
+  'Footwear & Streetwear',
+  'Solar & Renewable Energy',
+  'Health & Beauty',
+  'Restaurants & Catering',
+  'Services & Salons',
+  'Security & Automation',
+]
+
+/**
+ * Marketplace & Business Catalog (/browse)
+ * 
+ * Clean, direct listing of all verified Nigerian businesses.
+ * No AI voice, no speech synthesis, no voice assistant — just a clean business directory.
+ */
 export default function FinderDashboard() {
   const { user, profile } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const urlQ = searchParams.get('q')
-  const initialQ = urlQ !== null ? urlQ : (typeof window !== 'undefined' ? sessionStorage.getItem('dotch_last_search_query') || '' : '')
-  const urlLoc = searchParams.get('loc')
-  const initialLoc = urlLoc !== null ? urlLoc : (typeof window !== 'undefined' ? sessionStorage.getItem('dotch_last_search_loc') || 'Lagos' : 'Lagos')
+  const initialCat = searchParams.get('cat') || 'All'
+  const initialQ = searchParams.get('q') || ''
 
-  const [query, setQuery] = useState(initialQ)
-  const [location, setLocation] = useState(initialLoc)
-  const [activeCategory, setActiveCategory] = useState('')
-  const [results, setResults] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [hasSearched, setHasSearched] = useState(Boolean(initialQ))
-  const [aiIntent, setAiIntent] = useState('')
-  const [ads, setAds] = useState([])
-  const [showAllPlaces, setShowAllPlaces] = useState(false)
-  const categories = getSuggestedCategories()
+  const [businesses, setBusinesses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filterText, setFilterText] = useState(initialQ)
+  const [selectedCategory, setSelectedCategory] = useState(initialCat)
+  const [selectedCity, setSelectedCity] = useState('All')
 
-  // Load genuine active adverts (strictly real ones from Firestore)
+  // Load all businesses on mount
   useEffect(() => {
-    getActiveAds()
-      .then((activeAds) => {
-        if (activeAds && activeAds.length > 0) {
-          setAds(activeAds)
-        }
-      })
-      .catch(() => {})
-  }, [])
-
-  const handleQueryChange = (val) => {
-    setQuery(val)
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('dotch_last_search_query', val)
-    }
-  }
-
-  const executeSearch = useCallback(
-    async (overrideQuery, overrideLocation, overrideCat) => {
-      const q = overrideQuery !== undefined ? overrideQuery : query
-      const loc = overrideLocation !== undefined ? overrideLocation : location
-      const cat = overrideCat !== undefined ? overrideCat : activeCategory
-
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('dotch_last_search_query', q)
-        sessionStorage.setItem('dotch_last_search_loc', loc)
-      }
-
-      const isEverywhere =
-        !loc || loc === 'Everywhere' || loc === 'All Locations' || loc === 'All of Nigeria'
-
-      const { keyword: cleanKeyword, location: resolvedLoc, detectedLocation } = parseQueryAndLocation(q, isEverywhere ? '' : loc)
-      const effectiveLoc = resolvedLoc || (isEverywhere ? '' : loc)
-      const effectiveIsEverywhere =
-        !effectiveLoc ||
-        effectiveLoc === 'Everywhere' ||
-        effectiveLoc === 'All Locations' ||
-        effectiveLoc === 'All of Nigeria'
-
-      if (detectedLocation && isEverywhere) {
-        setLocation(detectedLocation)
-      }
-
-      setLoading(true)
-      setHasSearched(true)
-      setSearchParams({
-        ...(cleanKeyword ? { q: cleanKeyword } : (q.trim() ? { q: q.trim() } : {})),
-        loc: effectiveIsEverywhere ? 'Everywhere' : effectiveLoc,
-        ...(cat ? { cat } : {}),
-      })
-
-      try {
-        let parsedIntent = ''
-        if (q.trim()) {
-          const ai = await understandSearch(q.trim(), effectiveIsEverywhere ? 'Nigeria' : effectiveLoc)
-          parsedIntent = detectedLocation
-            ? `Looking for: ${cleanKeyword || q.trim()} · 📍 ${detectedLocation}`
-            : (ai.intent || q.trim())
-          setAiIntent(parsedIntent)
-        } else {
-          setAiIntent('')
-        }
-
-        const realBusinesses = await searchBusinesses({
-          category: cat,
-          keyword: cleanKeyword || q.trim(),
-          location: effectiveIsEverywhere ? '' : effectiveLoc,
-        })
-
-        setResults(realBusinesses || [])
-
-        // If voice assistant is enabled, speak search results summary gently
-        if (typeof window !== 'undefined' && sessionStorage.getItem('dotch_ai_voice_enabled') === 'true') {
-          if (realBusinesses.length > 0) {
-            aiVoice.speak(`I found ${realBusinesses.length} verified business${realBusinesses.length > 1 ? 'es' : ''} for your search.`)
-          } else {
-            aiVoice.speak(`No verified business found yet for ${cleanKeyword || q}. You can be the first to list one!`)
-          }
-        }
-      } catch (err) {
-        console.error('Search error:', err)
-      } finally {
-        setLoading(false)
-      }
-    },
-    [query, location, activeCategory, setSearchParams]
-  )
-
-  // Run search if an initial query exists in URL or session
-  useEffect(() => {
-    if (initialQ) {
-      executeSearch(initialQ, initialLoc)
-    }
-  }, [])
-
-  const handleVoiceQueryReceived = (spokenText) => {
-    setQuery(spokenText)
-    executeSearch(spokenText, location, activeCategory)
-  }
-
-  const handlePromptChipClick = (chipText) => {
-    setQuery(chipText)
-    executeSearch(chipText, location, activeCategory)
-  }
-
-  const handleCategorySelect = (cat) => {
-    const nextCat = activeCategory === cat ? '' : cat
-    setActiveCategory(nextCat)
-    executeSearch(query, location, nextCat)
-  }
-
-  const handleLoadAllStores = async () => {
+    let isMounted = true
     setLoading(true)
-    setShowAllPlaces(true)
-    setHasSearched(true)
-    try {
-      const allReal = await getAllBusinesses(60)
-      setResults(allReal || [])
-    } finally {
-      setLoading(false)
+
+    getAllSellers()
+      .then((data) => {
+        if (isMounted) {
+          setBusinesses(data || [])
+        }
+      })
+      .catch((err) => {
+        console.warn('Error loading businesses:', err)
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
     }
+  }, [])
+
+  // Filter businesses by search text, category, and city
+  const filteredBusinesses = useMemo(() => {
+    const q = filterText.trim().toLowerCase()
+    return businesses.filter((b) => {
+      // Category match
+      if (selectedCategory !== 'All') {
+        const bCat = (b.category || '').toLowerCase()
+        const targetCat = selectedCategory.toLowerCase()
+        if (!bCat.includes(targetCat) && !targetCat.includes(bCat)) {
+          return false
+        }
+      }
+
+      // City filter
+      if (selectedCity !== 'All') {
+        const bLoc = `${b.location || ''} ${b.city || ''} ${b.state || ''}`.toLowerCase()
+        if (!bLoc.includes(selectedCity.toLowerCase())) {
+          return false
+        }
+      }
+
+      // Text search match (name, description, city, tags)
+      if (q) {
+        const bName = (b.name || '').toLowerCase()
+        const bDesc = (b.description || '').toLowerCase()
+        const bLoc = `${b.location || ''} ${b.city || ''} ${b.state || ''}`.toLowerCase()
+        const bTags = Array.isArray(b.tags)
+          ? b.tags.map((t) => String(t).toLowerCase())
+          : (b.keywords || []).map((k) => String(k).toLowerCase())
+
+        const matches =
+          bName.includes(q) ||
+          bDesc.includes(q) ||
+          bLoc.includes(q) ||
+          bTags.some((t) => t.includes(q))
+
+        if (!matches) return false
+      }
+
+      return true
+    })
+  }, [businesses, filterText, selectedCategory, selectedCity])
+
+  const handleCategoryChange = (cat) => {
+    setSelectedCategory(cat)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (cat !== 'All') next.set('cat', cat)
+      else next.delete('cat')
+      return next
+    })
+  }
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value
+    setFilterText(val)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (val.trim()) next.set('q', val.trim())
+      else next.delete('q')
+      return next
+    })
   }
 
   return (
-    <div className="ai-search-page purr-container" style={{ paddingBottom: '90px', paddingTop: '10px' }}>
+    <div className="marketplace-catalog-page purr-container" style={{ padding: '24px 16px 80px 16px', maxWidth: '1280px', margin: '0 auto' }}>
       {/* Top Header Bar */}
-      <div className="purr-topbar">
-        <Link to="/" className="purr-circle-btn" title="Back to Home">
-          <i className="fa-solid fa-chevron-left" />
-        </Link>
-        <div style={{ textAlign: 'center' }}>
-          <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)', display: 'block' }}>
-            Dotch AI Discovery
-          </span>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            📍 {location || 'Everywhere in Nigeria'}
-          </span>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <Link
-          to={user ? (profile?.role === 'vendor' ? '/business' : '/list-business') : '/list-business'}
+          to="/discover"
           className="btn btn-outline btn-sm"
-          style={{ fontSize: '12px', fontWeight: 700, borderRadius: 'var(--radius-pill)' }}
+          style={{ borderRadius: 'var(--radius-pill)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
-          <i className="fa-solid fa-store" style={{ marginRight: '4px' }} /> List Store
+          <i className="fa-solid fa-arrow-left" />
+          <span>AI Search Engine</span>
         </Link>
-      </div>
 
-      {/* Unified AI Discovery Engine */}
-      <div className="ai-search-hero-wrap">
-        <UnifiedAiSearch
-          query={query}
-          setQuery={handleQueryChange}
-          onSearch={(customQ) => executeSearch(customQ !== undefined ? customQ : query, location, activeCategory)}
-          location={location}
-          setLocation={(newLoc) => {
-            setLocation(newLoc)
-            if (hasSearched) executeSearch(query, newLoc, activeCategory)
-          }}
-          loading={loading}
-        />
-
-        {/* AI Intent Summary */}
-        {hasSearched && aiIntent && (
-          <div style={{ textAlign: 'center', margin: '14px 0 10px 0' }}>
-            <SearchIntent intent={aiIntent} location={location} query={query} />
-          </div>
-        )}
-
-        {/* Category Filters */}
-        <div className="filter-pill-strip" style={{ marginTop: '16px', marginBottom: '12px' }}>
-          <button
-            type="button"
-            className={`filter-pill ${activeCategory === '' ? 'active-coral' : ''}`}
-            onClick={() => handleCategorySelect('')}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Link
+            to={user ? (profile?.role === 'vendor' || profile?.role === 'business' ? '/business' : '/business/setup') : '/list-business'}
+            className="btn btn-primary btn-sm"
+            style={{ borderRadius: 'var(--radius-pill)', fontWeight: 700 }}
           >
-            <span>All Categories</span>
-          </button>
-          {categories.map((c) => {
-            const isActive = activeCategory === c
-            return (
-              <button
-                key={c}
-                type="button"
-                className={`filter-pill ${isActive ? 'active-coral' : ''}`}
-                onClick={() => handleCategorySelect(c)}
-              >
-                <span>{c}</span>
-                {isActive && <span className="pill-close">✕</span>}
-              </button>
-            )
-          })}
+            <i className="fa-solid fa-store" style={{ marginRight: '6px' }} />
+            List Your Business
+          </Link>
         </div>
       </div>
 
-      {/* SURROUNDING ADS: Cleanly positioned around the AI interface */}
-      {ads && ads.length > 0 && (
-        <div className="ai-framing-ads-wrap" style={{ margin: '18px 0' }}>
-          {ads.slice(0, 2).map((ad) => {
-            const rawPhone = ad.phone ? String(ad.phone).replace(/\D/g, '') : '2347073544811'
-            const waUrl = `https://wa.me/${rawPhone}?text=${encodeURIComponent(`Hello ${ad.businessName || 'Vendor'}! I saw your verified spotlight on Dotch and want to make an inquiry.`)}`
-            return (
-              <div key={ad.id} className="ai-ad-spotlight-card">
-                <div className="ai-ad-badge">
-                  <span className="live-pulse-dot" style={{ background: '#f59e0b' }} />
-                  <span>Sponsored Spotlight</span>
-                </div>
-                <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-                  {ad.imageUrl && (
-                    <img
-                      src={ad.imageUrl}
-                      alt={ad.title}
-                      style={{ width: '70px', height: '70px', borderRadius: '10px', objectFit: 'cover' }}
-                    />
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      {ad.title}
-                    </h4>
-                    <p style={{ margin: '0 0 6px 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      {ad.businessName} • {ad.targetReach || location}
-                    </p>
-                    <a
-                      href={waUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-primary"
-                      style={{ fontSize: '11px', padding: '4px 10px' }}
-                    >
-                      <i className="fa-brands fa-whatsapp" style={{ marginRight: '4px' }} /> Chat on WhatsApp
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
+      {/* Directory Title & Subtitle */}
+      <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+        <h1 style={{ fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
+          Browse All Businesses
+        </h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '15px', maxWidth: '580px', margin: '0 auto' }}>
+          Explore genuine, verified Nigerian stores, vendors, and services with zero middlemen.
+        </p>
+      </div>
 
-      {/* RESULTS DISPLAY — Not an endless scroll, only shows when searched or explicitly requested */}
-      {loading && (
-        <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--brand-primary)' }}>
-          <i className="fa-solid fa-circle-notch fa-spin fa-2x" />
-          <div style={{ marginTop: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-            AI is searching genuine verified businesses near {location}…
-          </div>
-        </div>
-      )}
-
-      {!loading && hasSearched && (
-        <div className="ai-search-results-section">
-          <div className="purr-section-header" style={{ margin: '20px 0 16px 0' }}>
-            <div>
-              <h2 className="purr-section-title" style={{ fontSize: '18px' }}>
-                {query ? `AI Results for “${query}”` : `${activeCategory || 'Verified Stores'} in ${location}`}
-              </h2>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Real businesses verified by Admin • 0% middlemen
-              </span>
-            </div>
-
-            <span className="filter-pill" style={{ fontSize: '12px', padding: '4px 12px', cursor: 'default' }}>
-              {results.length} {results.length === 1 ? 'store found' : 'stores found'}
-            </span>
-          </div>
-
-          {results.length === 0 ? (
-            <EmptyState
-              location={location}
-              query={query}
-              onSelectEverywhere={() => {
-                setLocation('Everywhere')
-                executeSearch(query, 'Everywhere', activeCategory)
-              }}
-            />
-          ) : (
-            <div
+      {/* Search & Filter Bar (Text Only, No Voice) */}
+      <div style={{ maxWidth: '680px', margin: '0 auto 20px auto' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-pill)',
+            padding: '6px 16px',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <i className="fa-solid fa-magnifying-glass" style={{ color: 'var(--text-muted)', marginRight: '12px', fontSize: '15px' }} />
+          <input
+            type="text"
+            value={filterText}
+            onChange={handleSearchChange}
+            placeholder="Filter businesses by name, keyword, or city..."
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              fontSize: '15px',
+              color: 'var(--text-primary)',
+              padding: '8px 0',
+            }}
+          />
+          {filterText && (
+            <button
+              type="button"
+              onClick={() => setFilterText('')}
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
-                gap: '18px',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                fontSize: '14px',
               }}
+              title="Clear filter"
             >
-              {results.map((b) => (
-                <BusinessCard key={b.id} business={b} />
-              ))}
-            </div>
+              ✕
+            </button>
           )}
         </div>
+      </div>
+
+      {/* Category Pills Strip */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          overflowX: 'auto',
+          paddingBottom: '12px',
+          marginBottom: '24px',
+          scrollbarWidth: 'none',
+          justifyContent: 'flex-start',
+        }}
+      >
+        {CATEGORIES.map((cat) => {
+          const isActive = selectedCategory === cat
+          return (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => handleCategoryChange(cat)}
+              style={{
+                padding: '7px 16px',
+                borderRadius: 'var(--radius-pill)',
+                fontSize: '13px',
+                fontWeight: isActive ? 700 : 500,
+                border: isActive ? '1px solid var(--brand-primary)' : '1px solid var(--border-subtle)',
+                background: isActive ? 'var(--brand-primary)' : 'var(--bg-surface)',
+                color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.18s ease',
+              }}
+            >
+              {cat}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Results Count Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', padding: '0 4px' }}>
+        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
+          {filteredBusinesses.length} {filteredBusinesses.length === 1 ? 'Business' : 'Businesses'} Listed
+        </span>
+        {selectedCategory !== 'All' && (
+          <button
+            type="button"
+            onClick={() => handleCategoryChange('All')}
+            style={{ background: 'transparent', border: 'none', color: 'var(--brand-primary)', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Show All Categories
+          </button>
+        )}
+      </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--brand-primary)' }}>
+          <i className="fa-solid fa-circle-notch fa-spin fa-2x" />
+          <div style={{ marginTop: '14px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+            Loading businesses across Nigeria…
+          </div>
+        </div>
       )}
 
-      {/* If user has NOT searched yet: Show an intentional invite rather than an endless scroll */}
-      {!loading && !hasSearched && (
-        <div className="ai-empty-prompt-state">
-          <div className="ai-empty-icon">
-            <i className="fa-solid fa-sparkles" />
-          </div>
-          <h3>What would you like to find today?</h3>
-          <p>
-            Type your inquiry above, tap the microphone to speak, or browse all currently verified Nigerian stores.
+      {/* Business Cards Grid */}
+      {!loading && filteredBusinesses.length > 0 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
+            gap: '20px',
+          }}
+        >
+          {filteredBusinesses.map((b) => (
+            <BusinessCard key={b.id} business={b} />
+          ))}
+        </div>
+      )}
+
+      {/* Empty Filter State */}
+      {!loading && filteredBusinesses.length === 0 && (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '50px 20px',
+            background: 'var(--bg-surface)',
+            border: '1px dashed var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)',
+            maxWidth: '520px',
+            margin: '20px auto',
+          }}
+        >
+          <div style={{ fontSize: '36px', marginBottom: '12px' }}>🏪</div>
+          <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+            No businesses match your filter
+          </h3>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '18px' }}>
+            Try resetting your search filter or selecting a different category.
           </p>
           <button
             type="button"
-            className="btn btn-outline btn-md"
-            onClick={handleLoadAllStores}
-            style={{ fontWeight: 700 }}
+            className="btn btn-outline btn-sm"
+            onClick={() => {
+              setFilterText('')
+              setSelectedCategory('All')
+            }}
           >
-            <i className="fa-solid fa-store" style={{ marginRight: '6px' }} />
-            Browse All Real Verified Businesses
+            Reset Filters
           </button>
         </div>
       )}
