@@ -113,20 +113,20 @@ export default function AiDiscoveryOrb({ isThinking = false, isTyping = false })
     // 3. Floating Geometric Energy Cage (Dual Wireframes)
     const wireGeo1 = new THREE.IcosahedronGeometry(1.95, 2)
     const wireMat1 = new THREE.MeshBasicMaterial({
-      color: 0x38bdf8, // Cyan energy rim
+      color: 0x0284c7, // Cyan blue energy rim
       wireframe: true,
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.42,
     })
     const wireMesh1 = new THREE.Mesh(wireGeo1, wireMat1)
     orbGroup.add(wireMesh1)
 
     const wireGeo2 = new THREE.OctahedronGeometry(2.15, 2)
     const wireMat2 = new THREE.MeshBasicMaterial({
-      color: 0xf59e0b, // Warm gold accent
+      color: 0xd97706, // Amber gold accent
       wireframe: true,
       transparent: true,
-      opacity: 0.2,
+      opacity: 0.38,
     })
     const wireMesh2 = new THREE.Mesh(wireGeo2, wireMat2)
     orbGroup.add(wireMesh2)
@@ -145,24 +145,23 @@ export default function AiDiscoveryOrb({ isThinking = false, isTyping = false })
     const particleGeometry = new THREE.BufferGeometry()
     particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3))
     const particleMaterial = new THREE.PointsMaterial({
-      color: 0xfde047,
-      size: 0.05,
+      color: 0xe11d48, // Radiant coral rose
+      size: 0.06,
       transparent: true,
-      opacity: 0.75,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.85,
     })
     const particleSystem = new THREE.Points(particleGeometry, particleMaterial)
     orbGroup.add(particleSystem)
 
     // 5. Dynamic Lights
-    const ambientLight = new THREE.AmbientLight(0x221814, 1.8)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4)
     scene.add(ambientLight)
 
     const mainPointLight = new THREE.PointLight(0xff7744, 3.2, 12)
     mainPointLight.position.set(3.5, 3.0, 4.0)
     scene.add(mainPointLight)
 
-    const cyanRimLight = new THREE.PointLight(0x38bdf8, 2.2, 12)
+    const cyanRimLight = new THREE.PointLight(0x0284c7, 2.4, 12)
     cyanRimLight.position.set(-3.5, -2.5, 3.5)
     scene.add(cyanRimLight)
 
