@@ -17,12 +17,10 @@ import { NIGERIA_LOCATIONS } from '../data/nigeriaLocations'
 import { calculateDistanceKm, getCoordsForLocationString } from './geolocationService'
 import { formatTo234 } from '../utils/phoneUtils'
 import { parseQueryAndLocation } from '../utils/searchParser'
-import { SAMPLE_SELLERS } from '../data/sampleSellers'
-
 export const BUSINESS_COLLECTION = 'businesses'
 
-// Realistic sample sellers across categories, plus any real stores registered
-export const DEMO_BUSINESSES = [...SAMPLE_SELLERS]
+// All fake demo stores removed — only real stores registered by vendors/admin are displayed
+export const DEMO_BUSINESSES = []
 
 export async function createBusiness({ uid, data }) {
   // Enforce one account one business

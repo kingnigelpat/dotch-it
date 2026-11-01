@@ -7,7 +7,7 @@ import NotifyModal from '../components/NotifyModal'
 import SponsoredBanner from '../components/ads/SponsoredBanner'
 import SponsoredSideColumn from '../components/ads/SponsoredSideColumn'
 import SponsoredBottomStrip from '../components/ads/SponsoredBottomStrip'
-import { searchSellers } from '../services/aiDiscoveryService'
+import { searchSellers, getAllSellers } from '../services/aiDiscoveryService'
 import { getSponsoredSellerForSlot } from '../data/adSlots'
 
 const DEFAULT_GREETING = "Welcome. What kind of business are you looking for?"
@@ -42,12 +42,20 @@ export default function AiDiscover() {
   const [results, setResults] = useState([])
   const [aiGreeting, setAiGreeting] = useState(DEFAULT_GREETING)
   const [notifyModalOpen, setNotifyModalOpen] = useState(false)
+  const [realSellers, setRealSellers] = useState([])
 
-  // Sponsored Ads for slots surrounding the AI interface
-  const topAdSeller = getSponsoredSellerForSlot('topBanner')
-  const leftAdSeller = getSponsoredSellerForSlot('leftColumn')
-  const rightAdSeller = getSponsoredSellerForSlot('rightColumn')
-  const bottomAdSeller = getSponsoredSellerForSlot('bottomStrip')
+  // Load genuine businesses to find real sponsored partners
+  useEffect(() => {
+    getAllSellers()
+      .then((data) => setRealSellers(data || []))
+      .catch(() => setRealSellers([]))
+  }, [])
+
+  // Sponsored Ads for slots surrounding the AI interface (only genuine sellers)
+  const topAdSeller = getSponsoredSellerForSlot('topBanner', realSellers)
+  const leftAdSeller = getSponsoredSellerForSlot('leftColumn', realSellers)
+  const rightAdSeller = getSponsoredSellerForSlot('rightColumn', realSellers)
+  const bottomAdSeller = getSponsoredSellerForSlot('bottomStrip', realSellers)
 
   const typingTimerRef = useRef(null)
   const resultsRef = useRef(null)
@@ -151,15 +159,17 @@ export default function AiDiscover() {
 
   return (
     <div className="ai-discovery-page">
-      {/* 1. TOP SPONSORED BANNER AD: Above the AI interface */}
-      <div className="ai-ads-top-wrap">
-        <SponsoredBanner seller={topAdSeller} />
-      </div>
+      {/* 1. TOP SPONSORED BANNER AD: Above the AI interface (only if genuine sponsored sellers exist) */}
+      {topAdSeller && (
+        <div className="ai-ads-top-wrap">
+          <SponsoredBanner seller={topAdSeller} />
+        </div>
+      )}
 
       {/* 2. MAIN WORKSPACE WITH SURROUNDING SIDE ADS */}
       <div className="ai-discovery-layout">
         {/* Left Desktop Ad Column */}
-        <SponsoredSideColumn seller={leftAdSeller} side="left" />
+        {leftAdSeller && <SponsoredSideColumn seller={leftAdSeller} side="left" />}
 
         {/* Center Hero AI Interface */}
         <main className="ai-discovery-center">
@@ -325,13 +335,15 @@ export default function AiDiscover() {
         </main>
 
         {/* Right Desktop Ad Column */}
-        <SponsoredSideColumn seller={rightAdSeller} side="right" />
+        {rightAdSeller && <SponsoredSideColumn seller={rightAdSeller} side="right" />}
       </div>
 
       {/* 4. BOTTOM SPONSORED STRIP AD */}
-      <div className="ai-ads-bottom-wrap">
-        <SponsoredBottomStrip seller={bottomAdSeller} />
-      </div>
+      {bottomAdSeller && (
+        <div className="ai-ads-bottom-wrap">
+          <SponsoredBottomStrip seller={bottomAdSeller} />
+        </div>
+      )}
 
       {/* Notification Signup Modal */}
       <NotifyModal

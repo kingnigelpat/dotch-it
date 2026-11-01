@@ -1,74 +1,56 @@
 /**
  * Sponsored Ad Slots Configuration
  * 
- * Edit this file to configure or re-assign which sponsored sellers appear in:
- * - Top Banner (displayed above the AI discovery interface)
- * - Left Column (desktop side column)
- * - Right Column (desktop side column)
- * - Bottom Strip (strip below the AI search and results)
- * 
- * Each ad automatically pulls from sellers inside the app with `isSponsored: true`.
+ * Configures sponsored placements around the AI discovery interface.
+ * Pulls strictly from real businesses in the database with `isSponsored: true`.
+ * If no real sponsored sellers are active, slots safely remain hidden.
  */
 
-import { SAMPLE_SELLERS } from './sampleSellers'
-
 export const AD_SLOT_CONFIG = {
-  // Banner at the very top of the AI discovery screen
   topBanner: {
     slotId: 'slot_top_banner',
-    sellerId: 'apex-gadgets-ikeja',
     badge: 'Sponsored',
     ctaText: 'Visit Store',
   },
-
-  // Desktop Left Side Column Ad
   leftColumn: {
     slotId: 'slot_left_column',
-    sellerId: 'zainab-luxury-couture',
     badge: 'Sponsored',
-    ctaText: 'Explore Collection',
+    ctaText: 'Visit',
   },
-
-  // Desktop Right Side Column Ad
   rightColumn: {
     slotId: 'slot_right_column',
-    sellerId: 'urban-kicks-lagos',
     badge: 'Sponsored',
-    ctaText: 'Shop Sneakers',
+    ctaText: 'Visit',
   },
-
-  // Strip at the bottom of the page
   bottomStrip: {
     slotId: 'slot_bottom_strip',
-    sellerId: 'golden-crust-bakery',
     badge: 'Sponsored',
-    ctaText: 'Order Now',
+    ctaText: 'Visit',
   },
 }
 
 /**
- * Resolves a sponsored seller object for a given slot.
- * Falls back to any available sponsored seller if specific ID isn't found.
+ * Resolves a real sponsored seller for a given slot from genuine businesses.
+ * Returns null if no real sponsored seller exists.
  */
-export function getSponsoredSellerForSlot(slotKey) {
+export function getSponsoredSellerForSlot(slotKey, sellers = []) {
   const cfg = AD_SLOT_CONFIG[slotKey]
-  if (!cfg) return null
+  if (!cfg || !Array.isArray(sellers) || sellers.length === 0) return null
 
-  // 1. Look for seller by configured ID
-  const match = SAMPLE_SELLERS.find((s) => s.id === cfg.sellerId && s.isSponsored)
-  if (match) {
-    return {
-      ...match,
-      slotBadge: cfg.badge || 'Sponsored',
-      ctaText: cfg.ctaText || 'Visit',
-    }
-  }
+  // Find real businesses that are sponsored
+  const sponsored = sellers.filter((s) => Boolean(s.isSponsored || s.sponsored) && s.status !== 'deleted')
+  if (sponsored.length === 0) return null
 
-  // 2. Fallback to any sponsored seller
-  const fallback = SAMPLE_SELLERS.find((s) => s.isSponsored) || SAMPLE_SELLERS[0]
-  return fallback ? {
-    ...fallback,
-    slotBadge: cfg.badge || 'Sponsored',
-    ctaText: cfg.ctaText || 'Visit',
-  } : null
+  // Distribute across slots
+  const slotKeys = Object.keys(AD_SLOT_CONFIG)
+  const slotIndex = slotKeys.indexOf(slotKey)
+  const match = sponsored[slotIndex % sponsored.length]
+
+  return match
+    ? {
+        ...match,
+        slotBadge: cfg.badge || 'Sponsored',
+        ctaText: cfg.ctaText || 'Visit',
+      }
+    : null
 }

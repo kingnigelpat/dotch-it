@@ -10,7 +10,6 @@
 
 import { db } from '../firebase'
 import { collection, getDocs, query as fsQuery, where } from 'firebase/firestore'
-import { SAMPLE_SELLERS } from '../data/sampleSellers'
 import { getDeletedBizIds } from './businessService'
 
 const STOP_WORDS = new Set([
@@ -20,20 +19,13 @@ const STOP_WORDS = new Set([
 ])
 
 /**
- * Fetches all available sellers from Firestore and merges with Sample Sellers
+ * Fetches all real genuine businesses from Firestore and local storage
  */
 export async function getAllSellers() {
   const deletedIds = new Set(getDeletedBizIds())
   const sellerMap = new Map()
 
-  // 1. First add all curated sample sellers
-  for (const seller of SAMPLE_SELLERS) {
-    if (!deletedIds.has(seller.id) && seller.status !== 'deleted' && !seller.isDeleted) {
-      sellerMap.set(seller.id, { ...seller })
-    }
-  }
-
-  // 2. Fetch real businesses from Firestore if available
+  // 1. Fetch real businesses from Firestore if available
   if (db) {
     try {
       const col = collection(db, 'businesses')
