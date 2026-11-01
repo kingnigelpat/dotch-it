@@ -39,13 +39,6 @@ export async function registerUser({ email, password, name, phone = '', role, pl
     createdAt: serverTimestamp(),
   })
 
-  // Trigger Firebase email verification in background
-  try {
-    await sendEmailVerification(userCred.user)
-  } catch (verifyErr) {
-    console.warn('Initial email verification request error:', verifyErr)
-  }
-
   return userCred.user
 }
 

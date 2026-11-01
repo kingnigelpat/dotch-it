@@ -5,7 +5,7 @@ import { getBusiness } from '../services/businessService'
 import { formatTo234, normalizeWhatsAppPhone, displayFormattedPhone } from '../utils/phoneUtils'
 import { recordBusinessView, recordWhatsAppClick, recordPhoneClick } from '../services/analyticsService'
 import { applyBusinessSeo } from '../utils/seoUtils'
-import { getCertificateVerificationWhatsAppUrl, BANK_DETAILS } from '../config/bankDetails'
+import { getBusinessVerificationMailtoUrl, ADMIN_EMAIL, BANK_DETAILS } from '../config/bankDetails'
 
 export default function BusinessDetail() {
   const { user, profile } = useAuth()
@@ -119,7 +119,7 @@ export default function BusinessDetail() {
     business.image2Url,
   ].filter(Boolean)
 
-  const certWhatsAppUrl = getCertificateVerificationWhatsAppUrl({
+  const certEmailUrl = getBusinessVerificationMailtoUrl({
     businessName: business.name,
     email: user?.email,
     phone: business.phone,
@@ -159,7 +159,7 @@ export default function BusinessDetail() {
         </button>
       </div>
 
-      {/* Warning banner for Owner / Admin if listing is pending certificate */}
+      {/* Warning banner for Owner / Admin if listing is pending proof of business */}
       {!isVerified && (
         <div
           style={{
@@ -178,33 +178,24 @@ export default function BusinessDetail() {
           <div style={{ maxWidth: '620px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.2)', color: 'var(--accent-amber)', fontWeight: 800 }}>
-                <i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> 72-Hour Verification Window
+                <i className="fa-solid fa-file-shield" style={{ marginRight: '4px' }} /> Proof of Business Required
               </span>
               <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-primary)' }}>
-                Meet Admin ({BANK_DETAILS.formattedAdminWhatsApp})
+                Email CAC / Proof to {ADMIN_EMAIL}
               </span>
             </div>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Your listing is active! To receive your official verified checkmark, please meet or contact the Admin on WhatsApp or Phone (<strong>07073544811</strong>) within 72 hours of listing.
+              Your listing is active! To receive your official verified badge, please email your CAC report or proof of business document to <strong>{ADMIN_EMAIL}</strong>.
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <a
-              href={certWhatsAppUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-whatsapp btn-sm"
-              style={{ fontWeight: 800, whiteSpace: 'nowrap' }}
-            >
-              <i className="fa-brands fa-whatsapp" style={{ marginRight: '6px' }} /> WhatsApp Admin
-            </a>
-            <a
-              href="tel:07073544811"
+              href={certEmailUrl}
               className="btn btn-primary btn-sm"
               style={{ fontWeight: 800, whiteSpace: 'nowrap' }}
             >
-              <i className="fa-solid fa-phone" style={{ marginRight: '6px' }} /> Call 07073544811
+              <i className="fa-solid fa-envelope" style={{ marginRight: '6px' }} /> Email CAC Proof
             </a>
           </div>
         </div>

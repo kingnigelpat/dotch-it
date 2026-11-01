@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { recordBuyerNotifyRequest } from '../services/leadService'
+import { ADMIN_EMAIL, ADMIN_PHONE_DISPLAY, BANK_DETAILS } from '../config/bankDetails'
 
 /**
- * Modal to collect buyer contact when no sellers currently match their search
+ * Modal to collect buyer contact when no sellers currently match their search.
+ * Persists the lead directly to Firestore so the admin can review buyer demand in the Admin Panel.
  */
 export default function NotifyModal({ isOpen, onClose, query = '' }) {
   const [contact, setContact] = useState('')
@@ -10,27 +13,24 @@ export default function NotifyModal({ isOpen, onClose, query = '' }) {
 
   if (!isOpen) return null
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!contact.trim()) return
 
     setLoading(true)
-    setTimeout(() => {
-      try {
-        const raw = localStorage.getItem('dotch_notify_requests')
-        const list = raw ? JSON.parse(raw) : []
-        list.push({
-          contact: contact.trim(),
-          query: query.trim(),
-          createdAt: new Date().toISOString(),
-        })
-        localStorage.setItem('dotch_notify_requests', JSON.stringify(list))
-      } catch (err) {
-        console.warn('LocalStorage error:', err)
-      }
-      setLoading(false)
+    try {
+      await recordBuyerNotifyRequest({
+        contact: contact.trim(),
+        query: query.trim(),
+      })
       setSubmitted(true)
-    }, 400)
+    } catch (err) {
+      console.warn('Notify request submission warning:', err)
+      // Even if offline/network error, still show success state
+      setSubmitted(true)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleResetAndClose = () => {
@@ -38,6 +38,9 @@ export default function NotifyModal({ isOpen, onClose, query = '' }) {
     setContact('')
     onClose()
   }
+
+  const adminWaPrompt = `Hello Dotch Admin, I was searching on Dotch for "${query || 'a product'}" and would like assistance finding verified sellers.`
+  const adminWaUrl = `https://wa.me/2347073544811?text=${encodeURIComponent(adminWaPrompt)}`
 
   return (
     <div className="notify-modal-overlay" onClick={handleResetAndClose}>
@@ -83,18 +86,30 @@ export default function NotifyModal({ isOpen, onClose, query = '' }) {
         ) : (
           <div className="notify-modal-success">
             <div className="notify-success-icon">✓</div>
-            <h3 className="notify-modal-title">You’re on the VIP Alert List!</h3>
+            <h3 className="notify-modal-title">Request Sent to Admin!</h3>
             <p className="notify-modal-desc">
-              We’ve recorded your request for <strong>&ldquo;{query}&rdquo;</strong>. You will be the very first to know when a verified seller joins.
+              We’ve recorded your request for <strong>&ldquo;{query}&rdquo;</strong>. The Dotch sourcing team (<strong>{ADMIN_EMAIL}</strong>) has been alerted and will notify you as soon as verified sellers join.
             </p>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={handleResetAndClose}
-              style={{ marginTop: '16px', borderRadius: 'var(--radius-pill)', padding: '8px 24px' }}
-            >
-              Done
-            </button>
+
+            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <a
+                href={adminWaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-whatsapp btn-sm"
+                style={{ fontWeight: 800 }}
+              >
+                <i className="fa-brands fa-whatsapp" style={{ marginRight: '6px' }} /> Urgent? Chat Admin on WhatsApp
+              </a>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={handleResetAndClose}
+                style={{ borderRadius: 'var(--radius-pill)', padding: '8px 24px' }}
+              >
+                Done
+              </button>
+            </div>
           </div>
         )}
       </div>

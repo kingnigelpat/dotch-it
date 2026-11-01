@@ -10,7 +10,7 @@ import { updateUserProfile } from '../services/authService'
 import { uploadImage, fileToBase64 } from '../services/cloudinaryService'
 import { getSuggestedCategories } from '../services/openrouterService'
 import { formatTo234 } from '../utils/phoneUtils'
-import { getCertificateVerificationWhatsAppUrl, BANK_DETAILS } from '../config/bankDetails'
+import { getBusinessVerificationMailtoUrl, ADMIN_EMAIL, BANK_DETAILS } from '../config/bankDetails'
 import PhoneInput from '../components/PhoneInput'
 
 function ImagePicker({ label, file, url, onChange, disabled }) {
@@ -217,18 +217,8 @@ export default function BusinessSetup() {
 
       if (refreshProfile) await refreshProfile()
 
-      // Redirect vendor to admin on WhatsApp (07073544811) to inform them to meet the admin for 72hr verification
-      if (!isAlreadyApproved && typeof window !== 'undefined') {
-        const waCertUrl = getCertificateVerificationWhatsAppUrl({
-          businessName: name.trim(),
-          email: user?.email,
-          phone: formattedPhone,
-        })
-        window.open(waCertUrl, '_blank')
-      }
-
-      // Direct to business portal with 72h confirmation notice
-      navigate('/business?posted=72h')
+      // Direct to business portal with verification notice
+      navigate('/business?posted=verify_email')
     } catch (err) {
       console.error('Error saving business listing:', err)
       setError(err.message || 'Could not save business listing. Please try again.')
@@ -361,22 +351,30 @@ export default function BusinessSetup() {
             <span style={{ fontSize: '20px' }}>📜</span>
             <div>
               <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-                Business or Company Certificate (CAC) *
+                Proof of Business Verification (CAC Report or Document)
               </h3>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                Required verification document before listing goes live
+                Send your CAC report or business registration document to get verified
               </span>
             </div>
           </div>
 
-          <div style={{ background: 'rgba(37, 211, 102, 0.08)', border: '1.5px solid rgba(37, 211, 102, 0.35)', borderRadius: 'var(--radius-md)', padding: '14px 16px', marginBottom: '14px' }}>
-            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              🛡️ <strong>WhatsApp Verification Required:</strong> Dotch requires all vendors to send their official Business Registration Certificate or CAC Company Document to Admin on WhatsApp (<strong>{BANK_DETAILS.formattedAdminWhatsApp}</strong>). Your listing will be activated once verified.
+          <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1.5px solid rgba(59, 130, 246, 0.35)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '14px' }}>
+            <p style={{ margin: '0 0 10px 0', fontSize: '13.5px', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+              📧 <strong>Send Proof to Our Gmail:</strong> To get your business verified, simply send your proof of business (either a CAC report or any other official business registration document) to our email at <strong style={{ color: 'var(--brand-primary)' }}>{ADMIN_EMAIL}</strong>.
             </p>
+            <a
+              href={getBusinessVerificationMailtoUrl({ businessName: name, email: user?.email, phone })}
+              className="btn btn-outline btn-sm"
+              style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <i className="fa-solid fa-envelope" />
+              <span>Email Proof to {ADMIN_EMAIL}</span>
+            </a>
           </div>
 
           <ImagePicker
-            label="Upload Certificate Document Photo (Optional — or send directly via WhatsApp)"
+            label="Upload Document Photo (Optional — or email directly to championsmail18@gmail.com)"
             file={certImg}
             url={certImgUrl}
             onChange={setCertImg}
@@ -402,7 +400,7 @@ export default function BusinessSetup() {
           ) : editingId && isApproved ? (
             'Save Changes'
           ) : (
-            'Save Listing & Verify Certificate on WhatsApp →'
+            'Save Listing & Proceed to Email Proof →'
           )}
         </button>
       </form>

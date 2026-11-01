@@ -6,12 +6,12 @@ import { updateUserProfile, resetPassword } from '../services/authService'
 import { getBusinessByOwner, updateBusiness } from '../services/businessService'
 import { getUserAds, CAMPAIGN_PACKAGES } from '../services/adService'
 import { formatTo234, displayFormattedPhone } from '../utils/phoneUtils'
-import { BANK_DETAILS, getPaymentWhatsAppUrl } from '../config/bankDetails'
+import { BANK_DETAILS, getPaymentWhatsAppUrl, getBusinessVerificationMailtoUrl, ADMIN_EMAIL } from '../config/bankDetails'
 import PhoneInput from '../components/PhoneInput'
 import CampaignCreatorModal from '../components/CampaignCreatorModal'
 
 export default function Account() {
-  const { user, profile, logout, refreshProfile, reloadUser, sendVerification, theme, toggleTheme } = useAuth()
+  const { user, profile, logout, refreshProfile, reloadUser, theme, toggleTheme } = useAuth()
   const { showSuccess, showError } = useToast()
   const navigate = useNavigate()
 
@@ -176,8 +176,6 @@ export default function Account() {
     )
   }
 
-  const isEmailVerified = Boolean(user.emailVerified)
-
   return (
     <div className="account-page-v2">
       <div className="account-shell">
@@ -215,41 +213,6 @@ export default function Account() {
             </button>
           </div>
         </div>
-
-        {/* EMAIL VERIFICATION CALLOUT IF UNVERIFIED */}
-        {!isEmailVerified && (
-          <div className="account-notice-banner warning">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '20px' }}>✉️</span>
-              <div>
-                <strong style={{ fontSize: '13.5px', color: 'var(--text-primary)' }}>Email Verification Needed</strong>
-                <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                  Verify <strong>{user.email}</strong> to secure your account and receive listing notifications.
-                </p>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="btn btn-outline btn-sm"
-                onClick={handleSendVerification}
-                disabled={verifySent}
-                style={{ fontSize: '12px', fontWeight: 700 }}
-              >
-                {verifySent ? '✓ Sent to Inbox' : 'Send Email'}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={handleCheckVerification}
-                disabled={checkingVerify}
-                style={{ fontSize: '12px' }}
-              >
-                {checkingVerify ? 'Checking…' : '🔄 Refresh'}
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* SETTINGS SEGMENTED TAB NAVIGATION */}
         <div className="account-nav-tabs">
@@ -340,21 +303,16 @@ export default function Account() {
                     <span
                       className="badge-pill"
                       style={{
-                        background: isEmailVerified ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                        color: isEmailVerified ? 'var(--accent-emerald)' : 'var(--accent-amber)',
+                        background: 'rgba(16, 185, 129, 0.12)',
+                        color: 'var(--accent-emerald)',
                         fontSize: '11px',
                         fontWeight: 700,
                       }}
                     >
-                      {isEmailVerified ? '✓ Verified' : '⚠️ Unverified'}
+                      ✓ Active Account
                     </span>
                   </div>
                 </div>
-                {!isEmailVerified && (
-                  <button type="button" className="btn btn-outline btn-sm" onClick={handleSendVerification}>
-                    Verify Now
-                  </button>
-                )}
               </div>
 
               {/* Phone / WhatsApp Row */}
@@ -469,13 +427,15 @@ export default function Account() {
                         {(!business.verified || business.status === 'pending') && (
                           <div style={{ marginTop: '8px' }}>
                             <a
-                              href={`https://wa.me/2347073544811?text=${encodeURIComponent(`Hello Dotch Admin, I am submitting my Business/Company Certificate (CAC) for "${business.name}" to verify and unlock my listing.`)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn btn-whatsapp btn-sm"
+                              href={getBusinessVerificationMailtoUrl({
+                                businessName: business.name,
+                                email: user.email,
+                                phone: business.phone,
+                              })}
+                              className="btn btn-primary btn-sm"
                               style={{ fontWeight: 800, fontSize: '12px' }}
                             >
-                              <i className="fa-brands fa-whatsapp" /> Send Certificate on WhatsApp (+234 707 354 4811)
+                              <i className="fa-solid fa-envelope" style={{ marginRight: '5px' }} /> Email CAC Proof to {ADMIN_EMAIL}
                             </a>
                           </div>
                         )}

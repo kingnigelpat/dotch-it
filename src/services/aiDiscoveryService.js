@@ -10,7 +10,7 @@
 
 import { db } from '../firebase'
 import { collection, getDocs, query as fsQuery, where } from 'firebase/firestore'
-import { getDeletedBizIds } from './businessService'
+import { getDeletedBizIds, isMockBusiness } from './businessService'
 
 const STOP_WORDS = new Set([
   'in', 'at', 'near', 'around', 'and', 'the', 'for', 'with', 'to', 'of', 'on', 'a', 'an',
@@ -68,7 +68,7 @@ export async function getAllSellers() {
     }
   } catch (e) {}
 
-  return Array.from(sellerMap.values())
+  return Array.from(sellerMap.values()).filter((s) => !isMockBusiness(s))
 }
 
 /**

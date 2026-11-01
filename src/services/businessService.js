@@ -22,6 +22,53 @@ export const BUSINESS_COLLECTION = 'businesses'
 // All fake demo stores removed — only real stores registered by vendors/admin are displayed
 export const DEMO_BUSINESSES = []
 
+export const KNOWN_MOCK_NAMES = [
+  'apex gadgets & laptops',
+  'zainab luxury fabrics & couture',
+  'golden crust artisan bakery',
+  'autofix pro diagnostics & repair',
+  'urban kicks & streetwear',
+  'nova solar & energy solutions',
+  'glow & co organic skincare & spa',
+  'bukka royale african restaurant',
+  'prime cuts luxury grooming lounge',
+  'nexus smart home & cctv security',
+  'eko grand hotel & suites',
+  'naija spice kitchen',
+  'zinox tech & phone repair hub',
+]
+
+export const KNOWN_MOCK_IDS = [
+  'apex-gadgets',
+  'zainab-luxury-fabrics',
+  'golden-crust-bakery',
+  'autofix-pro',
+  'urban-kicks',
+  'nova-solar-energy',
+  'glow-natural-skincare',
+  'bukka-royale-cuisine',
+  'prime-cuts-lounge',
+  'nexus-smart-security',
+]
+
+/**
+ * Returns true if a business is a fake / mock demo business
+ */
+export function isMockBusiness(b) {
+  if (!b) return false
+  if (b.isDemo === true || b.isMock === true || b.isFake === true) return true
+  if (b.ownerUid === 'demo-vendor' || b.ownerUid === 'seed-admin') return true
+
+  const id = String(b.id || '').toLowerCase()
+  if (KNOWN_MOCK_IDS.includes(id)) return true
+  if (id.startsWith('mock_') || id.startsWith('sample_') || id.startsWith('demo_')) return true
+
+  const name = String(b.name || '').trim().toLowerCase()
+  if (KNOWN_MOCK_NAMES.some((mn) => name.includes(mn) || mn.includes(name))) return true
+
+  return false
+}
+
 export async function createBusiness({ uid, data }) {
   // Enforce one account one business
   const existing = await getBusinessByOwner(uid)
@@ -207,17 +254,21 @@ export function addDeletedBizId(id) {
 export async function deleteBusiness(id) {
   if (!id) return
 
-  // 1. Persist one tombstone in Firestore
+  // 1. Permanently delete document from Firestore
   if (db) {
     try {
       const ref = doc(db, BUSINESS_COLLECTION, id)
-      await setDoc(
-        ref,
-        { status: 'deleted', isDeleted: true, deletedAt: new Date().toISOString() },
-        { merge: true }
-      )
+      await deleteDoc(ref)
     } catch (err) {
-      console.warn('Could not persist tombstone in Firestore:', err)
+      console.warn('Could not deleteDoc in Firestore, marking as deleted:', err)
+      try {
+        const ref = doc(db, BUSINESS_COLLECTION, id)
+        await setDoc(
+          ref,
+          { status: 'deleted', isDeleted: true, deletedAt: new Date().toISOString() },
+          { merge: true }
+        )
+      } catch (e) {}
     }
   }
 
@@ -242,6 +293,51 @@ export async function deleteBusiness(id) {
 
   cacheService.clear('all_businesses_')
   cacheService.clear('search_')
+}
+
+/**
+ * Permanently purge all mock / demo businesses from Firestore and local cache
+ */
+export async function purgeMockBusinesses() {
+  const purged = []
+  if (db) {
+    try {
+      const col = collection(db, BUSINESS_COLLECTION)
+      const snap = await getDocs(col)
+      for (const d of snap.docs) {
+        const data = d.data()
+        const b = { id: d.id, ...data }
+        if (isMockBusiness(b)) {
+          await deleteDoc(d.ref)
+          addDeletedBizId(d.id)
+          purged.push(b.name || d.id)
+        }
+      }
+    } catch (err) {
+      console.warn('Error purging mock businesses from Firestore:', err)
+    }
+  }
+
+  // Also purge mock businesses from localStorage
+  try {
+    if (typeof window !== 'undefined') {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i)
+        if (k && (k.startsWith('dotch_biz_') || k.startsWith('dotch_owner_biz_'))) {
+          try {
+            const item = JSON.parse(localStorage.getItem(k) || '{}')
+            if (isMockBusiness(item)) {
+              localStorage.removeItem(k)
+            }
+          } catch {}
+        }
+      }
+    }
+  } catch (e) {}
+
+  cacheService.clear('all_businesses_')
+  cacheService.clear('search_')
+  return purged
 }
 
 /**
@@ -338,8 +434,10 @@ export async function searchBusinesses({ category, keyword, location, userCoords
     }
   } catch (e) {}
 
-  // Filter out any deleted or blocked stores
-  const validDbResults = dbResults.filter((b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id))
+  // Filter out any deleted, blocked, or mock demo stores
+  const validDbResults = dbResults.filter(
+    (b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id) && !isMockBusiness(b)
+  )
   let filtered = validDbResults
 
   if (category) {
@@ -475,7 +573,9 @@ export async function getAllBusinesses(max = 50) {
     }
   } catch (e) {}
 
-  const validDbResults = dbResults.filter((b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id))
+  const validDbResults = dbResults.filter(
+    (b) => b.status !== 'deleted' && !b.isDeleted && !deletedIds.has(b.id) && !isMockBusiness(b)
+  )
   const combined = validDbResults
   
   // Sort priority tiers first
@@ -503,7 +603,8 @@ export async function getAllBusinessesAdmin(max = 150) {
       snap.docs.forEach((d) => {
         const data = d.data()
         if (!deletedIds.has(d.id) && data.status !== 'deleted' && !data.isDeleted) {
-          dbResults.push({ id: d.id, ...data, phone: formatTo234(data?.phone || '') })
+          const isMock = isMockBusiness({ id: d.id, ...data })
+          dbResults.push({ id: d.id, ...data, isMock, phone: formatTo234(data?.phone || '') })
         }
       })
     } catch {

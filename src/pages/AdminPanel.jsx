@@ -9,6 +9,7 @@ import {
   createBusiness,
   updateBusiness,
   deleteBusiness,
+  purgeMockBusinesses,
 } from '../services/businessService'
 import {
   getAllVendors,
@@ -16,13 +17,18 @@ import {
   revokeVendorPayment,
 } from '../services/authService'
 import { getSuggestedCategories } from '../services/openrouterService'
-import { BANK_DETAILS } from '../config/bankDetails'
+import { BANK_DETAILS, ADMIN_EMAIL } from '../config/bankDetails'
 import {
   getAllAdsAdmin,
   createAd,
   updateAd,
   deleteAd,
 } from '../services/adService'
+import {
+  getAllBuyerLeads,
+  deleteBuyerLead,
+  updateBuyerLeadStatus,
+} from '../services/leadService'
 import { uploadImage, fileToBase64 } from '../services/cloudinaryService'
 import { formatTo234, displayFormattedPhone } from '../utils/phoneUtils'
 import PhoneInput from '../components/PhoneInput'
@@ -62,48 +68,60 @@ const EMPTY_FORM = {
   verified: true,
 }
 
-const SEED_BUSINESSES = [
+const POPULAR_SAMPLES = [
   {
-    name: 'Eko Grand Hotel & Suites',
-    category: 'Hotel & Travel',
-    location: 'Victoria Island, Lagos',
-    city: 'Lagos',
-    phone: '+2348092772700',
-    price: '₦45,000 / night',
-    description: 'Luxury rooms, ocean view swimming pool, 24/7 power, and high-speed Wi-Fi in the heart of VI.',
-    logoUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&auto=format&fit=crop',
-    featured: true,
-    verified: true,
+    label: 'Hotel / Suites Template',
+    icon: 'fa-solid fa-hotel',
+    data: {
+      name: '',
+      category: 'Hotel & Travel',
+      location: 'Victoria Island, Lagos',
+      city: 'Lagos',
+      phone: '',
+      price: '₦45,000 / night',
+      description: 'Luxury guest rooms, swimming pool, 24/7 power, and high-speed Wi-Fi.',
+      logoUrl: '',
+      image1Url: '',
+      image2Url: '',
+      featured: false,
+      verified: true,
+    },
   },
   {
-    name: 'Naija Spice Kitchen',
-    category: 'Restaurant',
-    location: 'Wuse 2, Abuja',
-    city: 'Abuja',
-    phone: '+2347073544811',
-    price: '₦2,500 – ₦8,000',
-    description: 'Authentic Nigerian delicacies: Jollof rice, pounded yam, seafood okra, pepper soup, and chilled drinks.',
-    logoUrl: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&auto=format&fit=crop',
-    featured: true,
-    verified: true,
+    label: 'Restaurant Template',
+    icon: 'fa-solid fa-utensils',
+    data: {
+      name: '',
+      category: 'Restaurant',
+      location: 'Wuse 2, Abuja',
+      city: 'Abuja',
+      phone: '',
+      price: '₦2,500 – ₦8,000',
+      description: 'Authentic local delicacies: Jollof rice, pounded yam, seafood okra, pepper soup, and chilled drinks.',
+      logoUrl: '',
+      image1Url: '',
+      image2Url: '',
+      featured: false,
+      verified: true,
+    },
   },
   {
-    name: 'Zinox Tech & Phone Repair Hub',
-    category: 'Electronics & Tech',
-    location: 'Computer Village, Ikeja, Lagos',
-    city: 'Lagos',
-    phone: '+2349062083582',
-    price: 'Free diagnostic check',
-    description: 'Same-day iPhone, Samsung, and MacBook screen and board repairs with genuine replacement parts and warranty.',
-    logoUrl: 'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=200&auto=format&fit=crop',
-    image1Url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop',
-    image2Url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&auto=format&fit=crop',
-    featured: true,
-    verified: true,
+    label: 'Tech Hub Template',
+    icon: 'fa-solid fa-laptop',
+    data: {
+      name: '',
+      category: 'Electronics & Tech',
+      location: 'Computer Village, Ikeja, Lagos',
+      city: 'Lagos',
+      phone: '',
+      price: 'Free diagnostic check',
+      description: 'Smartphone, laptop, and MacBook repairs with genuine replacement parts and warranty.',
+      logoUrl: '',
+      image1Url: '',
+      image2Url: '',
+      featured: false,
+      verified: true,
+    },
   },
 ]
 
@@ -134,6 +152,11 @@ export default function AdminPanel() {
   const [editingAdId, setEditingAdId] = useState(null)
   const [showAdForm, setShowAdForm] = useState(false)
   const [savingAd, setSavingAd] = useState(false)
+
+  // Buyer Search Requests & Leads states
+  const [leads, setLeads] = useState([])
+  const [loadingLeads, setLoadingLeads] = useState(false)
+  const [purgingMocks, setPurgingMocks] = useState(false)
 
   // Shared Confirm Dialog state
   const [confirmState, setConfirmState] = useState(null)
@@ -169,11 +192,58 @@ export default function AdminPanel() {
     }
   }
 
+  const loadLeads = async () => {
+    setLoadingLeads(true)
+    try {
+      const list = await getAllBuyerLeads(100)
+      setLeads(list || [])
+    } finally {
+      setLoadingLeads(false)
+    }
+  }
+
+  const handlePurgeMocks = async () => {
+    if (!window.confirm('Delete all mock / fake businesses from Firestore? This cannot be undone.')) return
+    setPurgingMocks(true)
+    try {
+      const purged = await purgeMockBusinesses()
+      showSuccess(`Successfully removed ${purged.length} mock businesses from Firestore!`)
+      await loadBusinesses()
+    } catch (err) {
+      console.error('Failed to purge mock businesses:', err)
+      showError('Failed to purge mock businesses: ' + err.message)
+    } finally {
+      setPurgingMocks(false)
+    }
+  }
+
+  const handleDeleteLead = async (leadId) => {
+    try {
+      await deleteBuyerLead(leadId)
+      setLeads(prev => prev.filter(l => l.id !== leadId))
+      showSuccess('Buyer lead removed.')
+    } catch (err) {
+      showError('Could not delete lead.')
+    }
+  }
+
+  const handleToggleLeadStatus = async (lead) => {
+    const nextStatus = lead.status === 'contacted' ? 'pending' : 'contacted'
+    try {
+      await updateBuyerLeadStatus(lead.id, nextStatus)
+      setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: nextStatus } : l))
+      showSuccess(`Lead marked as ${nextStatus}.`)
+    } catch (err) {
+      showError('Could not update lead status.')
+    }
+  }
+
   useEffect(() => {
     if (profile?.role === 'admin') {
       loadBusinesses()
       loadVendors()
       loadAds()
+      loadLeads()
     }
   }, [profile])
 
@@ -605,6 +675,19 @@ export default function AdminPanel() {
             <i className="fa-solid fa-users" style={{ marginRight: '4px' }} /> Total Vendors
           </div>
         </div>
+        <div style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)',
+          padding: '16px 20px',
+          textAlign: 'center',
+          cursor: 'pointer',
+        }} onClick={() => setActiveTab('leads')}>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--brand-primary)' }}>{leads.length}</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            <i className="fa-solid fa-bell" style={{ marginRight: '4px' }} /> Buyer Leads
+          </div>
+        </div>
       </div>
 
       {/* Success / Error Messages */}
@@ -644,6 +727,14 @@ export default function AdminPanel() {
           style={{ fontWeight: 700 }}
         >
           <i className="fa-solid fa-building" style={{ marginRight: '5px' }} /> Directory Listings ({businesses.length})
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm ${activeTab === 'leads' ? 'btn-primary' : 'btn-outline'}`}
+          onClick={() => setActiveTab('leads')}
+          style={{ fontWeight: 700 }}
+        >
+          <i className="fa-solid fa-bell" style={{ marginRight: '5px' }} /> Buyer Search Leads ({leads.length})
         </button>
       </div>
 
@@ -931,9 +1022,58 @@ export default function AdminPanel() {
           )}
 
           {/* Business List */}
-          <h2 className="admin-section-title">
-            All Businesses ({businesses.length})
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <h2 className="admin-section-title" style={{ margin: 0 }}>
+              All Businesses ({businesses.length})
+            </h2>
+            {businesses.some(b => b.isMock) && (
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                onClick={handlePurgeMocks}
+                disabled={purgingMocks}
+                style={{ fontWeight: 800 }}
+              >
+                {purgingMocks ? 'Purging…' : (<><i className="fa-solid fa-trash-can" style={{ marginRight: '5px' }} /> Purge All Fake Businesses</>)}
+              </button>
+            )}
+          </div>
+
+          {/* Alert banner if fake/mock businesses are detected */}
+          {businesses.some(b => b.isMock) && (
+            <div
+              style={{
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(245, 158, 11, 0.08) 100%)',
+                border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px 20px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+              }}
+            >
+              <div>
+                <strong style={{ fontSize: '15px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <i className="fa-solid fa-triangle-exclamation" /> {businesses.filter(b => b.isMock).length} Fake / Demo Businesses Found in Firestore
+                </strong>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  These are old sample test stores. Click &ldquo;Purge All Fake Businesses&rdquo; to permanently remove them so only real registered vendor businesses remain.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                onClick={handlePurgeMocks}
+                disabled={purgingMocks}
+                style={{ fontWeight: 800 }}
+              >
+                {purgingMocks ? 'Purging…' : (<><i className="fa-solid fa-trash-can" style={{ marginRight: '5px' }} /> Purge All Fake Businesses</>)}
+              </button>
+            </div>
+          )}
 
           {loadingBiz ? (
             <div className="center-loading">Loading businesses…</div>
@@ -944,7 +1084,7 @@ export default function AdminPanel() {
           ) : (
             <div className="admin-business-list">
               {businesses.map((biz) => (
-                <div key={biz.id} className="admin-biz-row">
+                <div key={biz.id} className="admin-biz-row" style={biz.isMock ? { border: '1.5px dashed rgba(239, 68, 68, 0.5)' } : {}}>
                   {biz.logoUrl && (
                     <img
                       src={biz.logoUrl}
@@ -953,7 +1093,14 @@ export default function AdminPanel() {
                     />
                   )}
                   <div className="admin-biz-info">
-                    <div className="admin-biz-name">{biz.name}</div>
+                    <div className="admin-biz-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {biz.name}
+                      {biz.isMock && (
+                        <span className="badge-pill" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 800, fontSize: '10px' }}>
+                          ⚠️ Fake / Mock Demo
+                        </span>
+                      )}
+                    </div>
                     <div className="admin-biz-meta">
                       {biz.category} • {biz.city || biz.location || '—'}
                       {biz.phone && (<> • <i className="fa-brands fa-whatsapp" style={{ color: '#25D366', marginRight: '2px' }} /> {displayFormattedPhone(biz.phone)}</>)}
@@ -1321,6 +1468,181 @@ export default function AdminPanel() {
                         onClick={() => handleDeleteAd(ad)}
                       >
                         <i className="fa-solid fa-trash-can" style={{ marginRight: '4px' }} /> Delete
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 4: BUYER SEARCH ALERTS & LEADS */}
+      {activeTab === 'leads' && (
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <h2 className="admin-section-title" style={{ margin: 0 }}>
+                Buyer Search Requests & Leads ({leads.length})
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', marginTop: '4px' }}>
+                Every time a buyer clicks &ldquo;Notify Me&rdquo; on Dotch when a product is unlisted, their query and contact arrive here in real-time.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={loadLeads}
+              disabled={loadingLeads}
+            >
+              {loadingLeads ? 'Refreshing…' : (<><i className="fa-solid fa-arrows-rotate" style={{ marginRight: '5px' }} /> Refresh Leads</>)}
+            </button>
+          </div>
+
+          <div
+            style={{
+              background: 'rgba(59, 130, 246, 0.08)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px 18px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '10px',
+              fontSize: '13.5px',
+            }}
+          >
+            <div>
+              <strong style={{ color: 'var(--text-primary)' }}>
+                <i className="fa-solid fa-lightbulb" style={{ color: 'var(--brand-primary)', marginRight: '6px' }} />
+                High-Value Commercial Leads:
+              </strong>{' '}
+              <span style={{ color: 'var(--text-secondary)' }}>
+                These are active buyers searching to make purchases. Reach out directly on WhatsApp or Email to match them with verified sellers!
+              </span>
+            </div>
+            <span style={{ color: 'var(--brand-primary)', fontWeight: 700 }}>
+              Mail destination: {ADMIN_EMAIL}
+            </span>
+          </div>
+
+          {loadingLeads ? (
+            <div className="center-loading">Loading buyer requests…</div>
+          ) : leads.length === 0 ? (
+            <div className="empty-state-box" style={{ padding: '36px', textAlign: 'center' }}>
+              <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔔</div>
+              <h3>No Buyer Notification Requests Yet</h3>
+              <p style={{ color: 'var(--text-secondary)', maxWidth: '440px', margin: '0 auto' }}>
+                When buyers search for items that aren&rsquo;t listed yet and tap &ldquo;Notify Me&rdquo;, their WhatsApp numbers, emails, and exact search queries will be saved here.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {leads.map((lead) => {
+                const isContacted = lead.status === 'contacted'
+                const isEmail = String(lead.contact).includes('@')
+                const rawDigits = String(lead.contact).replace(/\D/g, '')
+                const waDigits = rawDigits.startsWith('234')
+                  ? rawDigits
+                  : `234${rawDigits.replace(/^0/, '')}`
+                const waUrl = !isEmail && rawDigits
+                  ? `https://wa.me/${waDigits}?text=${encodeURIComponent(`Hello! Dotch Admin here regarding your search on Dotch for "${lead.query}". We can help connect you with verified sellers!`)}`
+                  : ''
+                const mailtoUrl = isEmail
+                  ? `mailto:${lead.contact}?subject=${encodeURIComponent(`Your search for ${lead.query} on Dotch`)}&body=${encodeURIComponent(`Hello,\n\nWe saw you were searching for "${lead.query}" on Dotch.\n\nWe have options and verified sellers to assist you.\n\nBest regards,\nDotch Team (${ADMIN_EMAIL})`)}`
+                  : ''
+
+                return (
+                  <div
+                    key={lead.id}
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: isContacted ? '1px solid var(--border-subtle)' : '1.5px solid rgba(59, 130, 246, 0.4)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '18px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '14px',
+                      boxShadow: 'var(--shadow-sm)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <span
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: '50%',
+                          background: isContacted ? 'var(--bg-muted)' : 'rgba(59, 130, 246, 0.12)',
+                          color: isContacted ? 'var(--text-muted)' : 'var(--brand-primary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '18px',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <i className={isEmail ? 'fa-solid fa-envelope' : 'fa-brands fa-whatsapp'} />
+                      </span>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Searching for:</span>
+                          <strong style={{ fontSize: '16px', color: 'var(--text-primary)' }}>&ldquo;{lead.query}&rdquo;</strong>
+                          <span className={`badge-pill ${isContacted ? 'explorer-badge' : 'vendor-badge'}`}>
+                            {isContacted ? '✓ Contacted' : '⚡ New Lead'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                          <strong>Contact:</strong>{' '}
+                          <span style={{ color: 'var(--brand-primary)', fontWeight: 700 }}>{lead.contact}</span>
+                          {lead.createdAt && (
+                            <> • <i className="fa-regular fa-clock" style={{ marginLeft: '4px', marginRight: '3px' }} /> {new Date(lead.createdAt).toLocaleString()}</>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      {!isEmail && waUrl && (
+                        <a
+                          href={waUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-whatsapp btn-sm"
+                          style={{ fontWeight: 800 }}
+                        >
+                          <i className="fa-brands fa-whatsapp" style={{ marginRight: '4px' }} /> Chat on WhatsApp
+                        </a>
+                      )}
+                      {isEmail && mailtoUrl && (
+                        <a
+                          href={mailtoUrl}
+                          className="btn btn-primary btn-sm"
+                          style={{ fontWeight: 800 }}
+                        >
+                          <i className="fa-solid fa-envelope" style={{ marginRight: '4px' }} /> Email Buyer
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => handleToggleLeadStatus(lead)}
+                        title={isContacted ? 'Mark as Pending' : 'Mark as Contacted'}
+                      >
+                        {isContacted ? 'Mark Pending' : '✓ Mark Contacted'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        style={{ color: 'var(--accent-rose)' }}
+                        onClick={() => handleDeleteLead(lead.id)}
+                        title="Delete Lead"
+                      >
+                        <i className="fa-solid fa-trash-can" />
                       </button>
                     </div>
                   </div>

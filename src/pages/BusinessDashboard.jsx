@@ -14,7 +14,8 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import CampaignCreatorModal from '../components/CampaignCreatorModal'
 import { getUserAds } from '../services/adService'
 import {
-  get72HourVerificationWhatsAppUrl,
+  getBusinessVerificationMailtoUrl,
+  ADMIN_EMAIL,
   ADMIN_PHONE_DISPLAY,
   ADMIN_TEL_HREF,
   BANK_DETAILS,
@@ -189,7 +190,7 @@ export default function BusinessDashboard() {
   const profileStatus = getProfileStatus(business)
 
   const [searchParams] = useSearchParams()
-  const postedJustNow = searchParams.get('posted') === '72h'
+  const postedJustNow = searchParams.get('posted') === '72h' || searchParams.get('posted') === 'verify_email'
 
   const getRemainingHours = () => {
     if (!business?.verificationDeadline && !business?.createdAt) return 72
@@ -201,7 +202,7 @@ export default function BusinessDashboard() {
   }
 
   const remainingHours = getRemainingHours()
-  const waCertUrl = get72HourVerificationWhatsAppUrl({
+  const emailCertUrl = getBusinessVerificationMailtoUrl({
     businessName: business.name,
     email: user?.email,
     phone: business.phone,
@@ -209,7 +210,7 @@ export default function BusinessDashboard() {
 
   return (
     <div className="business-dashboard">
-      {/* 72-Hour Success Alert if just posted */}
+      {/* Success Alert if just posted */}
       {postedJustNow && (
         <div
           style={{
@@ -229,7 +230,7 @@ export default function BusinessDashboard() {
               Your business listing is now live on Dotch!
             </strong>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Buyers can now search and find you. In the next <strong>72 hours</strong>, inform and meet the Admin at <strong>{ADMIN_PHONE_DISPLAY}</strong> for official verification.
+              Buyers can now search and find you. To get your official verified badge, email your CAC report or proof of business document to <strong>{ADMIN_EMAIL}</strong>.
             </span>
           </div>
         </div>
@@ -249,7 +250,7 @@ export default function BusinessDashboard() {
               </span>
             ) : (
               <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', fontWeight: 800, fontSize: '12px' }}>
-                <i className="fa-solid fa-clock" style={{ marginRight: '4px' }} /> 72-Hour Verification Active ({remainingHours}h remaining)
+                <i className="fa-solid fa-file-shield" style={{ marginRight: '4px' }} /> Proof of Business Pending
               </span>
             )}
           </div>
@@ -288,42 +289,31 @@ export default function BusinessDashboard() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ maxWidth: '620px' }}>
+            <div style={{ maxWidth: '640px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', fontWeight: 800 }}>
-                  <i className="fa-solid fa-hourglass-half" style={{ marginRight: '4px' }} /> 72-Hour Verification Window
+                <span className="badge-pill" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#2563eb', fontWeight: 800 }}>
+                  <i className="fa-solid fa-envelope" style={{ marginRight: '4px' }} /> Proof of Business Verification
                 </span>
-                <span className="badge-pill" style={{ background: 'rgba(37, 211, 102, 0.12)', color: '#16a34a', fontWeight: 800 }}>
-                  Admin Hotline: {ADMIN_PHONE_DISPLAY}
+                <span className="badge-pill" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-amber)', fontWeight: 800 }}>
+                  Email: {ADMIN_EMAIL}
                 </span>
               </div>
 
               <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 8px', color: 'var(--text-primary)' }}>
-                Meet the Admin for Verification ({remainingHours} Hours Remaining)
+                Send Your Proof of Business to {ADMIN_EMAIL}
               </h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.55, margin: '0 0 16px' }}>
-                Your business listing for <strong>{business.name}</strong> is live and searchable on Dotch! You have <strong>72 hours</strong> from listing to contact and meet the Admin for physical in-person or document verification to receive your permanent official verification checkmark.
+                Your business listing for <strong>{business.name}</strong> is live on Dotch! To get your official verified checkmark, simply send your proof of business (either a <strong>CAC report</strong>, registration certificate, or other official business document) via Gmail to <strong>{ADMIN_EMAIL}</strong>.
               </p>
 
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <a
-                  href={waCertUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-whatsapp btn-lg"
-                  style={{ fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <i className="fa-brands fa-whatsapp" style={{ fontSize: '18px' }} />
-                  <span>WhatsApp Admin ({ADMIN_PHONE_DISPLAY})</span>
-                </a>
-
-                <a
-                  href={ADMIN_TEL_HREF}
+                  href={emailCertUrl}
                   className="btn btn-primary btn-lg"
                   style={{ fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                 >
-                  <i className="fa-solid fa-phone" style={{ fontSize: '16px' }} />
-                  <span>Call Admin ({ADMIN_PHONE_DISPLAY})</span>
+                  <i className="fa-solid fa-envelope" style={{ fontSize: '16px' }} />
+                  <span>Email Proof to {ADMIN_EMAIL}</span>
                 </a>
 
                 <button
@@ -339,11 +329,11 @@ export default function BusinessDashboard() {
             </div>
 
             <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '16px', minWidth: '220px', textAlign: 'center' }}>
-              <div style={{ fontSize: '32px', marginBottom: '6px' }}>🛡️</div>
-              <strong style={{ fontSize: '14px', color: 'var(--text-primary)', display: 'block' }}>Admin Verification</strong>
+              <div style={{ fontSize: '32px', marginBottom: '6px' }}>📧</div>
+              <strong style={{ fontSize: '14px', color: 'var(--text-primary)', display: 'block' }}>Email CAC Proof</strong>
               <small style={{ color: 'var(--text-muted)', fontSize: '12px', display: 'block', marginTop: '4px' }}>
-                Direct Nigeria Contact:<br />
-                <strong style={{ color: 'var(--brand-primary)' }}>{ADMIN_PHONE_DISPLAY}</strong>
+                Official Verification Mail:<br />
+                <strong style={{ color: 'var(--brand-primary)' }}>{ADMIN_EMAIL}</strong>
               </small>
             </div>
           </div>

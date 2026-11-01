@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BusinessCard from '../components/BusinessCard'
 import { getAllSellers } from '../services/aiDiscoveryService'
+import { isMockBusiness } from '../services/businessService'
 
 const CATEGORIES = [
   'All',
@@ -66,6 +67,8 @@ export default function FinderDashboard() {
   const filteredBusinesses = useMemo(() => {
     const q = filterText.trim().toLowerCase()
     return businesses.filter((b) => {
+      if (isMockBusiness(b)) return false
+
       // Category match
       if (selectedCategory !== 'All') {
         const bCat = (b.category || '').toLowerCase()

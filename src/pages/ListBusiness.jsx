@@ -168,7 +168,7 @@ export default function ListBusiness() {
               </li>
               <li className="plan-feature-item">
                 <span className="feature-check">📜</span>
-                <span><strong>Certificate Verification:</strong> Send CAC/Company Certificate to Admin on WhatsApp (+234 707 354 4811) to unlock</span>
+                <span><strong>Proof of Business Verification:</strong> Send your CAC report or business document to <strong>championsmail18@gmail.com</strong></span>
               </li>
               <li className="plan-feature-item">
                 <span className="feature-check">✓</span>
@@ -185,7 +185,7 @@ export default function ListBusiness() {
             </Link>
 
             <div style={{ marginTop: '16px', padding: '12px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-sm)', textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)' }}>
-              🛡️ <strong>Scam-Free Guarantee:</strong> Only businesses with verified CAC or company certificates sent via WhatsApp are listed in public search.
+              🛡️ <strong>Scam-Free Guarantee:</strong> Only businesses with verified CAC or company certificates sent to championsmail18@gmail.com receive an official verified badge.
             </div>
           </div>
         </div>

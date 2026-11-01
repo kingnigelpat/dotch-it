@@ -1,14 +1,29 @@
 // Dotch Official Verification & Admin Contact Configuration
+// Admin Email: championsmail18@gmail.com
 // Admin Phone / WhatsApp: 07073544811 (+234 707 354 4811)
+
+export const ADMIN_EMAIL = 'championsmail18@gmail.com'
 export const ADMIN_PHONE_RAW = '07073544811'
 export const ADMIN_PHONE_INTL = '2347073544811'
 export const ADMIN_PHONE_DISPLAY = '07073544811'
 export const ADMIN_TEL_HREF = 'tel:07073544811'
 
 export const BANK_DETAILS = {
+  adminEmail: ADMIN_EMAIL,
   adminWhatsApp: ADMIN_PHONE_INTL,
   formattedAdminWhatsApp: '+234 707 354 4811',
   currency: '₦',
+}
+
+/**
+ * Returns formatted mailto link to send proof of business (CAC report or other document) to championsmail18@gmail.com
+ */
+export function getBusinessVerificationMailtoUrl({ businessName, email, phone } = {}) {
+  const subject = encodeURIComponent(`Proof of Business Verification - ${businessName || 'Business Listing'}`)
+  const body = encodeURIComponent(
+    `Hello Dotch Verification Team,\n\nI am submitting proof of business for official verification on Dotch.\n\nBusiness Name: ${businessName || ''}\nAccount Email: ${email || ''}\nPhone / WhatsApp: ${phone || ''}\n\nAttached: CAC Report / Business Registration Certificate / other proof of business document.\n\nPlease review and approve our verification status.\n\nThank you!`
+  )
+  return `mailto:${ADMIN_EMAIL}?subject=${subject}&body=${body}`
 }
 
 /**
@@ -16,7 +31,7 @@ export const BANK_DETAILS = {
  */
 export function get72HourVerificationWhatsAppUrl({ businessName, email, phone } = {}) {
   const text = encodeURIComponent(
-    `Hello Dotch Admin,\n\nI just posted my business "${businessName || 'My Store'}" on Dotch.\n\nAccount Email: ${email || 'Not specified'}\nPhone/WhatsApp: ${phone || 'Not specified'}\n\nI am reaching out within the 72-hour window to schedule official physical / store verification so my listing is fully verified.`
+    `Hello Dotch Admin,\n\nI just posted my business "${businessName || 'My Store'}" on Dotch.\n\nAccount Email: ${email || 'Not specified'}\nPhone/WhatsApp: ${phone || 'Not specified'}\n\nI have sent my CAC report / business document to championsmail18@gmail.com for verification.`
   )
   return `https://wa.me/${ADMIN_PHONE_INTL}?text=${text}`
 }
@@ -37,4 +52,3 @@ export function getPaymentWhatsAppUrl({ email, planName, planAmount, vendorName,
   )
   return `https://wa.me/${ADMIN_PHONE_INTL}?text=${text}`
 }
-
