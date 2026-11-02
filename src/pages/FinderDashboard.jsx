@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import BusinessCard from '../components/BusinessCard'
@@ -34,34 +34,61 @@ export default function FinderDashboard() {
 
   const [businesses, setBusinesses] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [feedError, setFeedError] = useState(null)
   const [filterText, setFilterText] = useState(initialQ)
   const [selectedCategory, setSelectedCategory] = useState(initialCat)
   const [selectedCity, setSelectedCity] = useState('All')
 
-  // Load all businesses on mount
+  const isMountedRef = useRef(true)
+  const requestIdRef = useRef(0)
+
   useEffect(() => {
-    let isMounted = true
-    setLoading(true)
-
-    getAllSellers()
-      .then((data) => {
-        if (isMounted) {
-          setBusinesses(data || [])
-        }
-      })
-      .catch((err) => {
-        console.warn('Error loading businesses:', err)
-      })
-      .finally(() => {
-        if (isMounted) {
-          setLoading(false)
-        }
-      })
-
+    isMountedRef.current = true
     return () => {
-      isMounted = false
+      isMountedRef.current = false
     }
   }, [])
+
+  const loadFeed = useCallback(async ({ isRefresh = false } = {}) => {
+    const currentRequestId = ++requestIdRef.current
+    if (isRefresh) {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
+    setFeedError(null)
+
+    try {
+      const data = await getAllSellers()
+      if (!isMountedRef.current || currentRequestId !== requestIdRef.current) return
+      setBusinesses(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('[DOTCH][FinderDashboard] Feed refresh failed:', {
+        message: err?.message || String(err),
+        code: err?.code,
+        stack: err?.stack,
+        isRefresh,
+        timestamp: new Date().toISOString(),
+      })
+      if (!isMountedRef.current || currentRequestId !== requestIdRef.current) return
+      setFeedError("We couldn't refresh your feed. Please try again.")
+    } finally {
+      if (isMountedRef.current && currentRequestId === requestIdRef.current) {
+        setLoading(false)
+        setRefreshing(false)
+      }
+    }
+  }, [])
+
+  // Load all businesses on mount
+  useEffect(() => {
+    loadFeed({ isRefresh: false })
+  }, [loadFeed])
+
+  const handleRefreshFeed = useCallback(() => {
+    return loadFeed({ isRefresh: true })
+  }, [loadFeed])
 
   // Filter businesses by search text, category, and city
   const filteredBusinesses = useMemo(() => {
@@ -252,23 +279,71 @@ export default function FinderDashboard() {
       </div>
 
       {/* Results Count Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', padding: '0 4px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', padding: '0 4px', flexWrap: 'wrap', gap: '8px' }}>
         <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
           {filteredBusinesses.length} {filteredBusinesses.length === 1 ? 'Business' : 'Businesses'} Listed
         </span>
-        {selectedCategory !== 'All' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {selectedCategory !== 'All' && (
+            <button
+              type="button"
+              onClick={() => handleCategoryChange('All')}
+              style={{ background: 'transparent', border: 'none', color: 'var(--brand-primary)', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              Show All Categories
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => handleCategoryChange('All')}
-            style={{ background: 'transparent', border: 'none', color: 'var(--brand-primary)', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer' }}
+            className="btn btn-outline btn-sm"
+            onClick={handleRefreshFeed}
+            disabled={loading || refreshing}
+            style={{ borderRadius: 'var(--radius-pill)', fontSize: '12.5px', fontWeight: 600 }}
           >
-            Show All Categories
+            <i className={`fa-solid fa-arrows-rotate ${refreshing ? 'fa-spin' : ''}`} style={{ marginRight: '5px' }} />
+            {refreshing ? 'Refreshing…' : 'Refresh Feed'}
           </button>
-        )}
+        </div>
       </div>
 
+      {/* Feed Refresh Error Banner (preserves existing businesses if already loaded) */}
+      {feedError && (
+        <div
+          role="alert"
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '18px 20px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '20px' }}>⚠️</span>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {feedError}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={handleRefreshFeed}
+            disabled={refreshing || loading}
+            style={{ borderRadius: 'var(--radius-pill)', fontWeight: 700 }}
+          >
+            {refreshing ? 'Retrying…' : 'Retry'}
+          </button>
+        </div>
+      )}
+
       {/* Loading State */}
-      {loading && (
+      {loading && businesses.length === 0 && (
         <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--brand-primary)' }}>
           <i className="fa-solid fa-circle-notch fa-spin fa-2x" />
           <div style={{ marginTop: '14px', fontSize: '14px', color: 'var(--text-secondary)' }}>
@@ -278,7 +353,7 @@ export default function FinderDashboard() {
       )}
 
       {/* Business Cards Grid */}
-      {!loading && filteredBusinesses.length > 0 && (
+      {(!loading || businesses.length > 0) && filteredBusinesses.length > 0 && (
         <div
           style={{
             display: 'grid',
@@ -293,7 +368,7 @@ export default function FinderDashboard() {
       )}
 
       {/* Empty Filter State */}
-      {!loading && filteredBusinesses.length === 0 && (
+      {!loading && !feedError && filteredBusinesses.length === 0 && (
         <div
           style={{
             textAlign: 'center',

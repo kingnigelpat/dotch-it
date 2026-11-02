@@ -11,7 +11,7 @@ import PhoneInput from '../components/PhoneInput'
 import CampaignCreatorModal from '../components/CampaignCreatorModal'
 
 export default function Account() {
-  const { user, profile, logout, refreshProfile, reloadUser, theme, toggleTheme } = useAuth()
+  const { user, profile, logout, refreshProfile, reloadUser, sendVerification, theme, toggleTheme } = useAuth()
   const { showSuccess, showError } = useToast()
   const navigate = useNavigate()
 

@@ -24,7 +24,7 @@ function getStoredSaves() {
 
 // Generate deterministic base stats based on business ID / Name
 export function getBusinessStats(business) {
-  if (!business) return { likes: 42, savesToday: 12, views: 320, isTrending: false }
+  if (!business) return { baseLikes: 42, likes: 42, savesToday: 12, views: 320, isTrending: false, isHiddenGem: false }
   
   const idStr = String(business.id || business.name || 'dotch')
   let hash = 0

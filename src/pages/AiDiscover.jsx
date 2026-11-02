@@ -40,15 +40,50 @@ export default function AiDiscover() {
   const [isThinking, setIsThinking] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [results, setResults] = useState([])
+  const [searchError, setSearchError] = useState(null)
   const [aiGreeting, setAiGreeting] = useState(DEFAULT_GREETING)
   const [notifyModalOpen, setNotifyModalOpen] = useState(false)
   const [realSellers, setRealSellers] = useState([])
 
+  const isMountedRef = useRef(true)
+  const typingTimerRef = useRef(null)
+  const searchTimerRef = useRef(null)
+  const scrollTimerRef = useRef(null)
+  const searchRequestIdRef = useRef(0)
+  const resultsRef = useRef(null)
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current)
+    }
+  }, [])
+
   // Load genuine businesses to find real sponsored partners
   useEffect(() => {
+    let active = true
     getAllSellers()
-      .then((data) => setRealSellers(data || []))
-      .catch(() => setRealSellers([]))
+      .then((data) => {
+        if (active && isMountedRef.current) {
+          setRealSellers(Array.isArray(data) ? data : [])
+        }
+      })
+      .catch((err) => {
+        console.error('[DOTCH][AiDiscover] Initial sponsored feed load failed:', {
+          message: err?.message || String(err),
+          stack: err?.stack,
+          timestamp: new Date().toISOString(),
+        })
+        if (active && isMountedRef.current) {
+          setRealSellers([])
+        }
+      })
+    return () => {
+      active = false
+    }
   }, [])
 
   // Sponsored Ads for slots surrounding the AI interface (only genuine sellers)
@@ -56,9 +91,6 @@ export default function AiDiscover() {
   const leftAdSeller = getSponsoredSellerForSlot('leftColumn', realSellers)
   const rightAdSeller = getSponsoredSellerForSlot('rightColumn', realSellers)
   const bottomAdSeller = getSponsoredSellerForSlot('bottomStrip', realSellers)
-
-  const typingTimerRef = useRef(null)
-  const resultsRef = useRef(null)
 
   // Handle typing detection for orb glow
   const handleInputChange = (e) => {
@@ -70,7 +102,9 @@ export default function AiDiscover() {
       clearTimeout(typingTimerRef.current)
     }
     typingTimerRef.current = setTimeout(() => {
-      setIsTyping(false)
+      if (isMountedRef.current) {
+        setIsTyping(false)
+      }
     }, 800)
   }
 
@@ -87,7 +121,12 @@ export default function AiDiscover() {
     const cleanQ = (queryToSearch !== undefined ? queryToSearch : query).trim()
     if (!cleanQ) return
 
+    const requestId = ++searchRequestIdRef.current
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current)
+
     setLastSubmittedQuery(cleanQ)
+    setSearchError(null)
     setIsTyping(false)
     setIsThinking(true)
     setAiGreeting(`Searching verified businesses for “${cleanQ}”...`)
@@ -102,15 +141,18 @@ export default function AiDiscover() {
     const startTime = Date.now()
     try {
       const matches = await searchSellers(cleanQ)
+      if (!isMountedRef.current || requestId !== searchRequestIdRef.current) return
+
       const elapsed = Date.now() - startTime
       const remainingDelay = Math.max(0, 1000 - elapsed)
 
-      setTimeout(() => {
+      searchTimerRef.current = setTimeout(() => {
+        if (!isMountedRef.current || requestId !== searchRequestIdRef.current) return
         setIsThinking(false)
         setHasSearched(true)
-        setResults(matches)
+        setResults(Array.isArray(matches) ? matches : [])
 
-        if (matches.length > 0) {
+        if (matches && matches.length > 0) {
           const countStr = matches.length === 1 ? '1 business' : `${matches.length} businesses`
           setAiGreeting(`I found ${countStr} for “${cleanQ}”`)
         } else {
@@ -118,17 +160,25 @@ export default function AiDiscover() {
         }
 
         // Smooth scroll to results
-        setTimeout(() => {
-          if (resultsRef.current) {
+        scrollTimerRef.current = setTimeout(() => {
+          if (isMountedRef.current && resultsRef.current) {
             resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
           }
         }, 150)
       }, remainingDelay)
     } catch (err) {
-      console.error('Search error:', err)
+      console.error('[DOTCH][AiDiscover] Feed search/refresh failed:', {
+        message: err?.message || String(err),
+        code: err?.code,
+        stack: err?.stack,
+        query: cleanQ,
+        timestamp: new Date().toISOString(),
+      })
+      if (!isMountedRef.current || requestId !== searchRequestIdRef.current) return
       setIsThinking(false)
       setHasSearched(true)
-      setAiGreeting("Sorry, nothing available for that yet.")
+      setSearchError("We couldn't refresh your feed. Please try again.")
+      setAiGreeting("We couldn't refresh your feed. Please try again.")
     }
   }
 
@@ -143,8 +193,12 @@ export default function AiDiscover() {
   }
 
   const handleClear = () => {
+    searchRequestIdRef.current += 1
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current)
     setQuery('')
     setHasSearched(false)
+    setSearchError(null)
     setResults([])
     setAiGreeting(DEFAULT_GREETING)
     setSearchParams({})
@@ -256,6 +310,31 @@ export default function AiDiscover() {
           {/* 3. SEARCH RESULTS (INSIDE this page, under the orb) */}
           {hasSearched && !isThinking && (
             <section className="ai-results-section" aria-label="AI Search Results">
+              {searchError && (
+                <div
+                  role="alert"
+                  className="ai-no-match-state"
+                  style={{ marginBottom: results.length > 0 ? '20px' : '0' }}
+                >
+                  <div className="no-match-icon-box">
+                    <i className="fa-solid fa-triangle-exclamation" />
+                  </div>
+                  <h3 className="no-match-title">
+                    {searchError}
+                  </h3>
+                  <div className="no-match-actions" style={{ marginTop: '14px' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-notify-me"
+                      onClick={() => executeSearch(lastSubmittedQuery || query)}
+                    >
+                      <i className="fa-solid fa-arrows-rotate" style={{ marginRight: '8px' }} />
+                      Retry
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {results.length > 0 ? (
                 <div className="ai-results-container">
                   <div className="ai-results-header">
@@ -280,7 +359,7 @@ export default function AiDiscover() {
                     ))}
                   </div>
                 </div>
-              ) : (
+              ) : !searchError ? (
                 /* No Matches State */
                 <div className="ai-no-match-state">
                   <div className="no-match-icon-box">
@@ -321,7 +400,7 @@ export default function AiDiscover() {
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
             </section>
           )}
 

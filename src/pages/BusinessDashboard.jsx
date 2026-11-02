@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -60,11 +60,13 @@ function getProfileStatus(business) {
 export default function BusinessDashboard() {
   const { user, profile, refreshProfile } = useAuth()
   const { showSuccess, showError } = useToast()
+  const [searchParams] = useSearchParams()
   const [business, setBusiness] = useState(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState(null)
   const [copiedShortlink, setCopiedShortlink] = useState(false)
 
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false)
@@ -78,37 +80,92 @@ export default function BusinessDashboard() {
   })
   const [recentEvents, setRecentEvents] = useState([])
 
-  useEffect(() => {
-    if (!user?.uid) return
-    getBusinessByOwner(user.uid)
-      .then((b) => {
-        setBusiness(b)
-        if (b) {
-          setAnalytics({
-            profileViews: Number(b.profileViews) || 0,
-            whatsappClicks: Number(b.whatsappClicks) || 0,
-            phoneClicks: Number(b.phoneClicks) || 0,
-            lastInteractionAt: b.lastInteractionAt || null,
-          })
-        }
-      })
-      .finally(() => setLoading(false))
+  const isMountedRef = useRef(true)
+  const copyTimerRef = useRef(null)
 
-    getUserAds(user.uid)
-      .then((ads) => setUserAds(ads || []))
-      .catch((e) => console.warn('Could not load user ads:', e))
-  }, [user?.uid])
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current)
+      }
+    }
+  }, [])
+
+  const loadBusinessData = useCallback(async ({ isManualRefresh = false } = {}) => {
+    if (!user?.uid) {
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
+      return
+    }
+
+    if (isManualRefresh) {
+      setRefreshing(true)
+    } else {
+      setLoading(true)
+    }
+    setRefreshError(null)
+
+    try {
+      if (isManualRefresh && refreshProfile) {
+        await refreshProfile()
+      }
+      const b = await getBusinessByOwner(user.uid)
+      if (!isMountedRef.current) return
+      setBusiness(b)
+      if (b) {
+        setAnalytics((prev) => ({
+          ...prev,
+          profileViews: Number(b.profileViews) || prev.profileViews || 0,
+          whatsappClicks: Number(b.whatsappClicks) || prev.whatsappClicks || 0,
+          phoneClicks: Number(b.phoneClicks) || prev.phoneClicks || 0,
+          lastInteractionAt: b.lastInteractionAt || prev.lastInteractionAt || null,
+        }))
+      }
+      getUserAds(user.uid)
+        .then((ads) => {
+          if (isMountedRef.current) setUserAds(ads || [])
+        })
+        .catch((e) => console.warn('[DOTCH][BusinessDashboard] Could not load user ads:', e))
+    } catch (err) {
+      console.error('[DOTCH][BusinessDashboard] Feed/status refresh failed:', {
+        message: err?.message || String(err),
+        code: err?.code,
+        stack: err?.stack,
+        uid: user?.uid,
+        timestamp: new Date().toISOString(),
+      })
+      if (isMountedRef.current) {
+        setRefreshError("We couldn't refresh your feed. Please try again.")
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false)
+        setRefreshing(false)
+      }
+    }
+  }, [user?.uid, refreshProfile])
+
+  useEffect(() => {
+    loadBusinessData({ isManualRefresh: false })
+  }, [loadBusinessData])
 
   // Real-time Firestore subscription to analytics & activity events
   useEffect(() => {
     if (!business?.id) return
 
     const unsubAnalytics = subscribeToBusinessAnalytics(business.id, (data) => {
-      setAnalytics((prev) => ({ ...prev, ...data }))
+      if (isMountedRef.current) {
+        setAnalytics((prev) => ({ ...prev, ...data }))
+      }
     })
 
     const unsubEvents = subscribeToRecentEvents(business.id, (events) => {
-      setRecentEvents(events)
+      if (isMountedRef.current) {
+        setRecentEvents(events)
+      }
     }, 6)
 
     return () => {
@@ -118,16 +175,7 @@ export default function BusinessDashboard() {
   }, [business?.id])
 
   const handleRefreshStatus = async () => {
-    setRefreshing(true)
-    try {
-      await refreshProfile()
-      if (user?.uid) {
-        const b = await getBusinessByOwner(user.uid)
-        setBusiness(b)
-      }
-    } finally {
-      setRefreshing(false)
-    }
+    await loadBusinessData({ isManualRefresh: true })
   }
 
   const handleDelete = async () => {
@@ -135,18 +183,50 @@ export default function BusinessDashboard() {
     setDeleting(true)
     try {
       await deleteBusiness(business.id)
+      if (!isMountedRef.current) return
       setBusiness(null)
       setIsConfirmOpen(false)
       showSuccess('Business listing deleted successfully.')
     } catch (err) {
       console.error('Failed to delete business listing:', err)
-      showError('Could not delete listing — please try again.')
+      if (isMountedRef.current) {
+        showError('Could not delete listing — please try again.')
+      }
     } finally {
-      setDeleting(false)
+      if (isMountedRef.current) {
+        setDeleting(false)
+      }
     }
   }
 
   if (loading) return <div className="center-loading">Loading business portal…</div>
+
+  if (refreshError && !business) {
+    return (
+      <div
+        role="alert"
+        className="empty-state-box"
+        style={{ maxWidth: '520px', margin: '40px auto', padding: '32px 24px', textAlign: 'center' }}
+      >
+        <div style={{ fontSize: '36px', marginBottom: '12px' }}>⚠️</div>
+        <h2 className="empty-state-title" style={{ fontSize: '20px', marginBottom: '8px' }}>
+          We couldn&apos;t refresh your feed. Please try again.
+        </h2>
+        <p className="empty-state-subtitle" style={{ maxWidth: '420px', margin: '0 auto 20px' }}>
+          Your business data is safe. Check your connection and tap Retry to reload your dashboard.
+        </p>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={() => loadBusinessData({ isManualRefresh: true })}
+          disabled={refreshing}
+          style={{ fontWeight: 700 }}
+        >
+          {refreshing ? 'Retrying…' : 'Retry'}
+        </button>
+      </div>
+    )
+  }
 
   // CASE: NO BUSINESS PROFILE CREATED YET
   if (!business) {
@@ -179,17 +259,20 @@ export default function BusinessDashboard() {
     if (!shortUrl) return
     try {
       await navigator.clipboard.writeText(shortUrl)
+      if (!isMountedRef.current) return
       setCopiedShortlink(true)
       showSuccess('Shortlink copied to clipboard!')
-      setTimeout(() => setCopiedShortlink(false), 2500)
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+      copyTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) setCopiedShortlink(false)
+      }, 2500)
     } catch {
       // ignore
     }
   }
 
   const profileStatus = getProfileStatus(business)
-
-  const [searchParams] = useSearchParams()
+  const isVerified = Boolean(business.verified === true && business.status === 'active')
   const postedJustNow = searchParams.get('posted') === '72h' || searchParams.get('posted') === 'verify_email'
 
   const getRemainingHours = () => {
@@ -210,6 +293,36 @@ export default function BusinessDashboard() {
 
   return (
     <div className="business-dashboard">
+      {refreshError && (
+        <div
+          role="alert"
+          style={{
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: 'var(--radius-md)',
+            padding: '14px 18px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+            {refreshError}
+          </span>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={handleRefreshStatus}
+            disabled={refreshing}
+            style={{ fontWeight: 700 }}
+          >
+            {refreshing ? 'Retrying…' : 'Retry'}
+          </button>
+        </div>
+      )}
       {/* Success Alert if just posted */}
       {postedJustNow && (
         <div

@@ -579,6 +579,7 @@ export async function getAllBusinesses(max = 50) {
   const combined = validDbResults
   
   // Sort priority tiers first
+  const tierWeight = { pro_eoy: 5, pro_2m: 4, pro_1m: 3, enterprise_monthly: 3, pro_monthly: 2, starter: 1 }
   combined.sort((a, b) => {
     const weightA = tierWeight[a.subscriptionTier] || 0
     const weightB = tierWeight[b.subscriptionTier] || 0

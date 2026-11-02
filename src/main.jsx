@@ -6,8 +6,8 @@ import { AuthProvider } from './context/AuthContext'
 import './index.css'
 import './styles/ai-discovery.css'
 
-// Global Error Boundary to catch any render exception and display visual recovery UI
-class ErrorBoundary extends Component {
+// Global Error Boundary to catch any render exception and display user-safe recovery UI
+export class ErrorBoundary extends Component {
   constructor(props) {
     super(props)
     this.state = { hasError: false, error: null }
@@ -17,33 +17,51 @@ class ErrorBoundary extends Component {
     return { hasError: true, error }
   }
 
-  componentDidCatch(error, errorInfo) {
-    console.error('Dotch Application Error Caught:', error, errorInfo)
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null })
+    }
   }
 
-  handleReload = () => {
+  componentDidCatch(error, errorInfo) {
+    console.error('[DOTCH][ErrorBoundary] Application error caught:', {
+      name: error?.name || 'Error',
+      message: error?.message || String(error),
+      stack: error?.stack,
+      componentStack: errorInfo?.componentStack,
+      route: typeof window !== 'undefined' ? window.location.href : '',
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  handleRetry = () => {
     try {
       localStorage.removeItem('dotch_cache_v1')
-      sessionStorage.clear()
     } catch (e) {}
-    window.location.reload()
+    this.setState({ hasError: false, error: null })
+    if (typeof this.props.onRetry === 'function') {
+      this.props.onRetry()
+    }
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '24px',
-          background: '#f8fafc',
-          color: '#1e293b',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          textAlign: 'center'
-        }}>
+        <div
+          role="alert"
+          style={{
+            minHeight: this.props.inline ? '50vh' : '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            background: this.props.inline ? 'transparent' : '#f8fafc',
+            color: '#1e293b',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            textAlign: 'center',
+          }}
+        >
           <div style={{
             background: '#ffffff',
             padding: '32px 28px',
@@ -51,17 +69,18 @@ class ErrorBoundary extends Component {
             maxWidth: '480px',
             width: '100%',
             boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
-            border: '1px solid #e2e8f0'
+            border: '1px solid #e2e8f0',
           }}>
             <div style={{ fontSize: '42px', marginBottom: '12px' }}>⚡</div>
             <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 8px 0', color: '#0f172a' }}>
-              Refreshing Feed
+              We couldn&apos;t refresh your feed. Please try again.
             </h2>
             <p style={{ fontSize: '13.5px', color: '#64748b', lineHeight: 1.5, margin: '0 0 20px 0' }}>
-              {this.state.error?.message || 'A temporary display glitch occurred. Tap below to reset your discovery feed.'}
+              A temporary issue occurred while updating your view. Tap Retry below to continue.
             </p>
             <button
-              onClick={this.handleReload}
+              type="button"
+              onClick={this.handleRetry}
               style={{
                 background: '#ee5d36',
                 color: '#ffffff',
@@ -72,10 +91,10 @@ class ErrorBoundary extends Component {
                 fontWeight: 700,
                 cursor: 'pointer',
                 boxShadow: '0 4px 12px rgba(238,93,54,0.3)',
-                transition: 'transform 0.15s ease'
+                transition: 'transform 0.15s ease',
               }}
             >
-              🔄 Reload Application
+              Retry
             </button>
           </div>
         </div>
@@ -107,14 +126,20 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   })
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
-    </ErrorBoundary>
-  </React.StrictMode>,
-)
+const rootElement = typeof document !== 'undefined' && typeof document.getElementById === 'function'
+  ? document.getElementById('root')
+  : null
+
+if (rootElement) {
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </React.StrictMode>,
+  )
+}
